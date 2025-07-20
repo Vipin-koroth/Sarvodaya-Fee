@@ -79,7 +79,7 @@ const Reports: React.FC = () => {
       specialFees: monthPayments.reduce((sum, p) => sum + p.specialFee, 0),
       totalCollection: monthPayments.reduce((sum, p) => sum + p.totalAmount, 0),
       dailyBreakdown: monthPayments.reduce((acc: Record<string, number>, payment) => {
-        const date = new Date(payment.paymentDate).toLocaleDateString();
+        const date = new Date(payment.paymentDate).toLocaleDateString('en-GB');
         acc[date] = (acc[date] || 0) + payment.totalAmount;
         return acc;
       }, {})

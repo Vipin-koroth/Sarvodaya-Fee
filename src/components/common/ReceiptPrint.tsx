@@ -308,7 +308,7 @@ Keep this receipt for your records.
                       </tr>
                       <tr>
                         <td style={{ paddingBottom: '1mm' }}><strong>Date:</strong></td>
-                        <td style={{ textAlign: 'right', paddingBottom: '1mm' }}>{new Date(payment.paymentDate).toLocaleDateString()}</td>
+                        <td style={{ textAlign: 'right', paddingBottom: '1mm' }}>{new Date(payment.paymentDate).toLocaleDateString('en-GB')}</td>
                       </tr>
                       <tr>
                         <td><strong>Receipt #:</strong></td>

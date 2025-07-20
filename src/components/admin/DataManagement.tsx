@@ -107,7 +107,7 @@ const DataManagement: React.FC = () => {
       payment.specialFee,
       payment.specialFeeType,
       payment.totalAmount,
-      new Date(payment.paymentDate).toLocaleDateString(),
+      new Date(payment.paymentDate).toLocaleDateString('en-GB'),
       payment.addedBy
     ]);
 
