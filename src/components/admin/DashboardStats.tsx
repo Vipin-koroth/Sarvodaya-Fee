@@ -96,7 +96,7 @@ const DashboardStats: React.FC = () => {
                 <div className="text-right">
                   <p className="font-semibold text-green-600">₹{payment.totalAmount}</p>
                   <p className="text-sm text-gray-600">
-                    {new Date(payment.paymentDate).toLocaleDateString()}
+                    {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
                   </p>
                 </div>
               </div>

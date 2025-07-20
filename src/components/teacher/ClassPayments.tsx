@@ -151,7 +151,7 @@ const ClassPayments: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(payment.paymentDate).toLocaleDateString()}
+                    {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button

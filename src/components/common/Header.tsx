@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({ user, onMobileMenuToggle }) => {
             Welcome back, {getUserDisplayName()}
           </h2>
             <p className="text-xs lg:text-sm text-gray-600 hidden sm:block">
-            {new Date().toLocaleDateString('en-US', { 
+            {new Date().toLocaleDateString('en-GB', { 
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 

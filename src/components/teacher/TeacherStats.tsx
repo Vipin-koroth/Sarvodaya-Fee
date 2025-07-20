@@ -112,7 +112,7 @@ const TeacherStats: React.FC = () => {
                 <div>
                   <p className="font-medium text-gray-900">{payment.studentName}</p>
                   <p className="text-sm text-gray-600">
-                    {payment.admissionNo} • {new Date(payment.paymentDate).toLocaleDateString()}
+                    {payment.admissionNo} • {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
                   </p>
                 </div>
                 <div className="text-right">

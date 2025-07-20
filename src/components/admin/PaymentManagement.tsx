@@ -119,7 +119,7 @@ const PaymentManagement: React.FC = () => {
                         {payment.specialFee > 0 && <div>{payment.specialFeeType}: ₹{payment.specialFee}</div>}
                       </div>
                       <div className="text-sm text-gray-500 sm:hidden mt-1">
-                        {new Date(payment.paymentDate).toLocaleDateString()}
+                        {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
                       </div>
                     </div>
                   </td>
@@ -142,7 +142,7 @@ const PaymentManagement: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
-                    {new Date(payment.paymentDate).toLocaleDateString()}
+                    {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
