@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useData } from '../../contexts/DataContext';
 import Sidebar from '../common/Sidebar';
 import Header from '../common/Header';
 import DashboardStats from './DashboardStats';
@@ -18,7 +17,6 @@ const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
-  const { students, payments } = useData();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -36,8 +34,6 @@ const AdminDashboard: React.FC = () => {
         return <PrintReceipt />;
       case 'sms-config':
         return <SMSConfiguration />;
-      case 'whatsapp-config':
-        return <WhatsAppConfiguration />;
       case 'data-management':
         return <DataManagement />;
       case 'user-management':

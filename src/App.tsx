@@ -29,7 +29,9 @@ function AppContent() {
             path="/dashboard" 
             element={
               user ? (
-                user.role === 'admin' ? <AdminDashboard /> : <TeacherDashboard />
+                <DataProvider>
+                  {user.role === 'admin' ? <AdminDashboard /> : <TeacherDashboard />}
+                </DataProvider>
               ) : (
                 <Navigate to="/login" />
               )
@@ -48,9 +50,7 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <DataProvider>
-        <AppContent />
-      </DataProvider>
+      <AppContent />
     </AuthProvider>
   );
 }

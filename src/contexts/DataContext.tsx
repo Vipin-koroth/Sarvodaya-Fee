@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { Student as SupabaseStudent, Payment as SupabasePayment, FeeConfig } from '../lib/supabase';
 
+// Transform Supabase types to match existing interface
 export interface Student {
   id: string;
   admissionNo: string;
@@ -29,24 +32,26 @@ export interface Payment {
 }
 
 export interface FeeConfiguration {
-  developmentFees: Record<string, number>; // class -> amount (for classes 1-10) or class-division -> amount (for classes 11-12)
-  busStops: Record<string, number>; // stop -> amount
+  developmentFees: Record<string, number>;
+  busStops: Record<string, number>;
 }
 
 interface DataContextType {
   students: Student[];
   payments: Payment[];
   feeConfig: FeeConfiguration;
-  addStudent: (student: Omit<Student, 'id'>) => void;
-  updateStudent: (id: string, student: Partial<Student>) => void;
-  deleteStudent: (id: string) => void;
-  importStudents: (students: Omit<Student, 'id'>[]) => void;
-  addPayment: (payment: Omit<Payment, 'id' | 'paymentDate'>) => void;
-  updatePayment: (id: string, payment: Partial<Payment>) => void;
-  deletePayment: (id: string) => void;
-  updateFeeConfig: (config: Partial<FeeConfiguration>) => void;
+  addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
+  updateStudent: (id: string, student: Partial<Student>) => Promise<void>;
+  deleteStudent: (id: string) => Promise<void>;
+  importStudents: (students: Omit<Student, 'id'>[]) => Promise<void>;
+  addPayment: (payment: Omit<Payment, 'id' | 'paymentDate'>) => Promise<void>;
+  updatePayment: (id: string, payment: Partial<Payment>) => Promise<void>;
+  deletePayment: (id: string) => Promise<void>;
+  updateFeeConfig: (config: Partial<FeeConfiguration>) => Promise<void>;
   sendSMS: (mobile: string, message: string) => void;
   sendWhatsApp: (mobile: string, message: string) => void;
+  loading: boolean;
+  error: string | null;
 }
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -59,6 +64,61 @@ export const useData = () => {
   return context;
 };
 
+// Transform functions
+const transformSupabaseStudent = (student: SupabaseStudent): Student => ({
+  id: student.id,
+  admissionNo: student.admission_no,
+  name: student.name,
+  mobile: student.mobile,
+  class: student.class,
+  division: student.division,
+  busStop: student.bus_stop,
+  busNumber: student.bus_number,
+  tripNumber: student.trip_number,
+});
+
+const transformStudentToSupabase = (student: Omit<Student, 'id'>): Omit<SupabaseStudent, 'id' | 'created_at'> => ({
+  admission_no: student.admissionNo,
+  name: student.name,
+  mobile: student.mobile,
+  class: student.class,
+  division: student.division,
+  bus_stop: student.busStop,
+  bus_number: student.busNumber,
+  trip_number: student.tripNumber,
+});
+
+const transformSupabasePayment = (payment: SupabasePayment): Payment => ({
+  id: payment.id,
+  studentId: payment.student_id || '',
+  studentName: payment.student_name,
+  admissionNo: payment.admission_no,
+  developmentFee: payment.development_fee,
+  busFee: payment.bus_fee,
+  specialFee: payment.special_fee,
+  specialFeeType: payment.special_fee_type,
+  totalAmount: payment.total_amount,
+  paymentDate: payment.payment_date,
+  addedBy: payment.added_by,
+  class: payment.class,
+  division: payment.division,
+});
+
+const transformPaymentToSupabase = (payment: Omit<Payment, 'id' | 'paymentDate'>): Omit<SupabasePayment, 'id' | 'created_at'> => ({
+  student_id: payment.studentId,
+  student_name: payment.studentName,
+  admission_no: payment.admissionNo,
+  development_fee: payment.developmentFee,
+  bus_fee: payment.busFee,
+  special_fee: payment.specialFee,
+  special_fee_type: payment.specialFeeType,
+  total_amount: payment.totalAmount,
+  payment_date: new Date().toISOString(),
+  added_by: payment.addedBy,
+  class: payment.class,
+  division: payment.division,
+});
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -66,112 +126,261 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     developmentFees: {},
     busStops: {}
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Load initial data
   useEffect(() => {
-    // Load data from localStorage
-    const savedStudents = localStorage.getItem('students');
-    const savedPayments = localStorage.getItem('payments');
-    const savedFeeConfig = localStorage.getItem('feeConfig');
-
-    if (savedStudents) setStudents(JSON.parse(savedStudents));
-    if (savedPayments) setPayments(JSON.parse(savedPayments));
-    if (savedFeeConfig) {
-      setFeeConfig(JSON.parse(savedFeeConfig));
-    } else {
-      // Initialize default fee configuration
-      const defaultConfig: FeeConfiguration = {
-        developmentFees: {
-          '1': 500, '2': 600, '3': 700, '4': 800, '5': 900, '6': 1000,
-          '7': 1100, '8': 1200, '9': 1300, '10': 1400,
-          '11-A': 1500, '11-B': 1600, '11-C': 1700, '11-D': 1800, '11-E': 1900,
-          '12-A': 1600, '12-B': 1700, '12-C': 1800, '12-D': 1900, '12-E': 2000
-        },
-        busStops: {
-          'Main Gate': 800, 'Market Square': 900, 'Railway Station': 1000,
-          'City Center': 850, 'Park Avenue': 750, 'School Road': 700
-        }
-      };
-      setFeeConfig(defaultConfig);
-      localStorage.setItem('feeConfig', JSON.stringify(defaultConfig));
-    }
+    loadInitialData();
+    setupRealtimeSubscriptions();
   }, []);
 
-  const addStudent = (student: Omit<Student, 'id'>) => {
-    const newStudent: Student = {
-      ...student,
-      id: Date.now().toString()
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        loadStudents(),
+        loadPayments(),
+        loadFeeConfig()
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStudents = async () => {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    setStudents(data?.map(transformSupabaseStudent) || []);
+  };
+
+  const loadPayments = async () => {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    setPayments(data?.map(transformSupabasePayment) || []);
+  };
+
+  const loadFeeConfig = async () => {
+    const { data, error } = await supabase
+      .from('fee_config')
+      .select('*');
+
+    if (error) throw error;
+
+    const developmentFees: Record<string, number> = {};
+    const busStops: Record<string, number> = {};
+
+    data?.forEach((config: FeeConfig) => {
+      if (config.config_type === 'development_fee') {
+        developmentFees[config.config_key] = config.config_value;
+      } else if (config.config_type === 'bus_stop') {
+        busStops[config.config_key] = config.config_value;
+      }
+    });
+
+    setFeeConfig({ developmentFees, busStops });
+  };
+
+  const setupRealtimeSubscriptions = () => {
+    // Students subscription
+    const studentsSubscription = supabase
+      .channel('students_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'students' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newStudent = transformSupabaseStudent(payload.new as SupabaseStudent);
+            setStudents(prev => [newStudent, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedStudent = transformSupabaseStudent(payload.new as SupabaseStudent);
+            setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+          } else if (payload.eventType === 'DELETE') {
+            setStudents(prev => prev.filter(s => s.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Payments subscription
+    const paymentsSubscription = supabase
+      .channel('payments_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newPayment = transformSupabasePayment(payload.new as SupabasePayment);
+            setPayments(prev => [newPayment, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedPayment = transformSupabasePayment(payload.new as SupabasePayment);
+            setPayments(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p));
+          } else if (payload.eventType === 'DELETE') {
+            setPayments(prev => prev.filter(p => p.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Fee config subscription
+    const feeConfigSubscription = supabase
+      .channel('fee_config_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'fee_config' },
+        () => {
+          loadFeeConfig(); // Reload entire config on any change
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions
+    return () => {
+      studentsSubscription.unsubscribe();
+      paymentsSubscription.unsubscribe();
+      feeConfigSubscription.unsubscribe();
     };
-    const updatedStudents = [...students, newStudent];
-    setStudents(updatedStudents);
-    localStorage.setItem('students', JSON.stringify(updatedStudents));
   };
 
-  const updateStudent = (id: string, studentData: Partial<Student>) => {
-    const updatedStudents = students.map(student =>
-      student.id === id ? { ...student, ...studentData } : student
-    );
-    setStudents(updatedStudents);
-    localStorage.setItem('students', JSON.stringify(updatedStudents));
+  const addStudent = async (student: Omit<Student, 'id'>) => {
+    const { error } = await supabase
+      .from('students')
+      .insert([transformStudentToSupabase(student)]);
+
+    if (error) throw error;
   };
 
-  const deleteStudent = (id: string) => {
-    const updatedStudents = students.filter(student => student.id !== id);
-    setStudents(updatedStudents);
-    localStorage.setItem('students', JSON.stringify(updatedStudents));
+  const updateStudent = async (id: string, studentData: Partial<Student>) => {
+    const updateData: Partial<Omit<SupabaseStudent, 'id' | 'created_at'>> = {};
+    
+    if (studentData.admissionNo) updateData.admission_no = studentData.admissionNo;
+    if (studentData.name) updateData.name = studentData.name;
+    if (studentData.mobile) updateData.mobile = studentData.mobile;
+    if (studentData.class) updateData.class = studentData.class;
+    if (studentData.division) updateData.division = studentData.division;
+    if (studentData.busStop) updateData.bus_stop = studentData.busStop;
+    if (studentData.busNumber) updateData.bus_number = studentData.busNumber;
+    if (studentData.tripNumber) updateData.trip_number = studentData.tripNumber;
+
+    const { error } = await supabase
+      .from('students')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
   };
 
-  const importStudents = (newStudents: Omit<Student, 'id'>[]) => {
-    const studentsWithIds = newStudents.map(student => ({
-      ...student,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-    }));
-    const updatedStudents = [...students, ...studentsWithIds];
-    setStudents(updatedStudents);
-    localStorage.setItem('students', JSON.stringify(updatedStudents));
+  const deleteStudent = async (id: string) => {
+    const { error } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   };
 
-  const addPayment = (payment: Omit<Payment, 'id' | 'paymentDate'>) => {
-    const newPayment: Payment = {
-      ...payment,
-      id: Date.now().toString(),
-      paymentDate: new Date().toISOString()
-    };
-    const updatedPayments = [...payments, newPayment];
-    setPayments(updatedPayments);
-    localStorage.setItem('payments', JSON.stringify(updatedPayments));
+  const importStudents = async (newStudents: Omit<Student, 'id'>[]) => {
+    const supabaseStudents = newStudents.map(transformStudentToSupabase);
+    
+    const { error } = await supabase
+      .from('students')
+      .insert(supabaseStudents);
+
+    if (error) throw error;
+  };
+
+  const addPayment = async (payment: Omit<Payment, 'id' | 'paymentDate'>) => {
+    const { error } = await supabase
+      .from('payments')
+      .insert([transformPaymentToSupabase(payment)]);
+
+    if (error) throw error;
 
     // Send SMS notification
     const student = students.find(s => s.id === payment.studentId);
     if (student) {
-      // Get the correct fee key for classes 11 and 12 (class-division) or regular classes (class only)
       const feeKey = (student.class === '11' || student.class === '12') 
         ? `${student.class}-${student.division}` 
         : student.class;
       
-      const message = `Dear Parent, Payment of ₹${payment.totalAmount} received for ${student.name} (${student.admissionNo}). Date: ${new Date().toLocaleDateString()}. Thank you! - Sarvodaya School`;
+      const message = `Dear Parent, Payment of ₹${payment.totalAmount} received for ${student.name} (${student.admissionNo}). Date: ${new Date().toLocaleDateString('en-GB')}. Thank you! - Sarvodaya School`;
       sendSMS(student.mobile, message);
       sendWhatsApp(student.mobile, message);
     }
   };
 
-  const updatePayment = (id: string, paymentData: Partial<Payment>) => {
-    const updatedPayments = payments.map(payment =>
-      payment.id === id ? { ...payment, ...paymentData } : payment
-    );
-    setPayments(updatedPayments);
-    localStorage.setItem('payments', JSON.stringify(updatedPayments));
+  const updatePayment = async (id: string, paymentData: Partial<Payment>) => {
+    const updateData: Partial<Omit<SupabasePayment, 'id' | 'created_at'>> = {};
+    
+    if (paymentData.studentId) updateData.student_id = paymentData.studentId;
+    if (paymentData.studentName) updateData.student_name = paymentData.studentName;
+    if (paymentData.admissionNo) updateData.admission_no = paymentData.admissionNo;
+    if (paymentData.developmentFee !== undefined) updateData.development_fee = paymentData.developmentFee;
+    if (paymentData.busFee !== undefined) updateData.bus_fee = paymentData.busFee;
+    if (paymentData.specialFee !== undefined) updateData.special_fee = paymentData.specialFee;
+    if (paymentData.specialFeeType) updateData.special_fee_type = paymentData.specialFeeType;
+    if (paymentData.totalAmount !== undefined) updateData.total_amount = paymentData.totalAmount;
+    if (paymentData.addedBy) updateData.added_by = paymentData.addedBy;
+    if (paymentData.class) updateData.class = paymentData.class;
+    if (paymentData.division) updateData.division = paymentData.division;
+
+    const { error } = await supabase
+      .from('payments')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
   };
 
-  const deletePayment = (id: string) => {
-    const updatedPayments = payments.filter(payment => payment.id !== id);
-    setPayments(updatedPayments);
-    localStorage.setItem('payments', JSON.stringify(updatedPayments));
+  const deletePayment = async (id: string) => {
+    const { error } = await supabase
+      .from('payments')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   };
 
-  const updateFeeConfig = (config: Partial<FeeConfiguration>) => {
-    const updatedConfig = { ...feeConfig, ...config };
-    setFeeConfig(updatedConfig);
-    localStorage.setItem('feeConfig', JSON.stringify(updatedConfig));
+  const updateFeeConfig = async (config: Partial<FeeConfiguration>) => {
+    const updates: Omit<FeeConfig, 'id' | 'created_at' | 'updated_at'>[] = [];
+
+    if (config.developmentFees) {
+      Object.entries(config.developmentFees).forEach(([key, value]) => {
+        updates.push({
+          config_type: 'development_fee',
+          config_key: key,
+          config_value: value
+        });
+      });
+    }
+
+    if (config.busStops) {
+      Object.entries(config.busStops).forEach(([key, value]) => {
+        updates.push({
+          config_type: 'bus_stop',
+          config_key: key,
+          config_value: value
+        });
+      });
+    }
+
+    for (const update of updates) {
+      const { error } = await supabase
+        .from('fee_config')
+        .upsert(update, { 
+          onConflict: 'config_type,config_key',
+          ignoreDuplicates: false 
+        });
+
+      if (error) throw error;
+    }
   };
 
   const sendSMS = (mobile: string, message: string) => {
@@ -207,12 +416,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log(`✅ SMS sent successfully to ${mobile}`);
     } catch (error) {
       console.error(`❌ SMS failed to ${mobile}:`, error);
-      // Silent failure - don't interrupt payment flow
       console.log('SMS notification failed, but payment was successful');
     }
   };
 
-  // Twilio SMS Integration
+  // SMS provider implementations (same as before)
   const sendViaTwilio = async (mobile: string, message: string, credentials: any) => {
     const TWILIO_ACCOUNT_SID = credentials?.accountSid;
     const TWILIO_AUTH_TOKEN = credentials?.authToken;
@@ -230,7 +438,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       body: new URLSearchParams({
         From: TWILIO_PHONE_NUMBER,
-        To: `+91${mobile}`, // Assuming Indian numbers
+        To: `+91${mobile}`,
         Body: message
       })
     });
@@ -240,7 +448,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // TextLocal SMS Integration (India)
   const sendViaTextLocal = async (mobile: string, message: string, credentials: any) => {
     const TEXTLOCAL_API_KEY = credentials?.apiKey;
     const TEXTLOCAL_SENDER = credentials?.sender || 'SCHOOL';
@@ -268,7 +475,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // MSG91 SMS Integration (India)
   const sendViaMSG91 = async (mobile: string, message: string, credentials: any) => {
     const MSG91_API_KEY = credentials?.apiKey;
     const MSG91_SENDER_ID = credentials?.senderId || 'SCHOOL';
@@ -298,7 +504,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // TextBee SMS Integration (India)
   const sendViaTextBee = async (mobile: string, message: string, credentials: any) => {
     const TEXTBEE_API_KEY = credentials?.apiKey;
     const TEXTBEE_DEVICE_ID = credentials?.deviceId;
@@ -358,11 +563,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log(`✅ WhatsApp sent successfully to ${mobile}`);
     } catch (error) {
       console.error(`❌ WhatsApp failed to ${mobile}:`, error);
-      // Don't show alert for WhatsApp failures to avoid interrupting workflow
     }
   };
 
-  // Twilio WhatsApp Integration
+  // WhatsApp provider implementations (same as before)
   const sendWhatsAppViaTwilio = async (mobile: string, message: string, credentials: any) => {
     const { accountSid, authToken, phoneNumber } = credentials;
     
@@ -388,7 +592,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // WhatsApp Business API Integration
   const sendWhatsAppViaBusinessAPI = async (mobile: string, message: string, credentials: any) => {
     const { accessToken, phoneNumberId } = credentials;
     
@@ -417,7 +620,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // UltraMsg WhatsApp Integration
   const sendWhatsAppViaUltraMsg = async (mobile: string, message: string, credentials: any) => {
     const { token, instanceId } = credentials;
     
@@ -443,7 +645,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // CallMeBot WhatsApp Integration
   const sendWhatsAppViaCallMeBot = async (mobile: string, message: string, credentials: any) => {
     const { apiKey } = credentials;
     
@@ -451,15 +652,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('CallMeBot API key not configured');
     }
 
-    const response = await fetch(`https://api.callmebot.com/whatsapp.php`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-
-    // Note: CallMeBot requires phone number to be registered first
-    // This is a simplified implementation
     const url = `https://api.callmebot.com/whatsapp.php?phone=91${mobile}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
     
     const result = await fetch(url);
@@ -481,7 +673,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     deletePayment,
     updateFeeConfig,
     sendSMS,
-    sendWhatsApp
+    sendWhatsApp,
+    loading,
+    error
   };
 
   return (
