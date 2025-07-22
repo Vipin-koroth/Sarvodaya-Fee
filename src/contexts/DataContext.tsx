@@ -43,7 +43,7 @@ interface DataContextType {
   addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
   updateStudent: (id: string, student: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
-  importStudents: (students: Omit<Student, 'id'>[]) => Promise<void>;
+  importStudents: (students: Omit<Student, 'id'>[]) => Promise<{ successCount: number; skipCount: number; errors: string[] }>;
   addPayment: (payment: Omit<Payment, 'id' | 'paymentDate'>) => Promise<void>;
   updatePayment: (id: string, payment: Partial<Payment>) => Promise<void>;
   deletePayment: (id: string) => Promise<void>;
@@ -336,11 +336,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // CRUD operations
   const addStudent = async (student: Omit<Student, 'id'>) => {
     if (useSupabase) {
+      // Check if admission number already exists
+      const { data: existingStudent, error: checkError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('admission_no', student.admissionNo)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingStudent) {
+        throw new Error(`Student with admission number ${student.admissionNo} already exists.`);
+      }
+
       const { error } = await supabase
         .from('students')
         .insert([transformStudentToSupabase(student)]);
       if (error) throw error;
     } else {
+      // Check for duplicate admission number in localStorage
+      const existingStudent = students.find(s => s.admissionNo === student.admissionNo);
+      if (existingStudent) {
+        throw new Error(`Student with admission number ${student.admissionNo} already exists.`);
+      }
+
       const newStudent: Student = { ...student, id: generateId() };
       const updatedStudents = [newStudent, ...students];
       setStudents(updatedStudents);
@@ -389,16 +410,68 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const importStudents = async (newStudents: Omit<Student, 'id'>[]) => {
     if (useSupabase) {
-      const supabaseStudents = newStudents.map(transformStudentToSupabase);
-      const { error } = await supabase
+      // Get existing admission numbers
+      const { data: existingStudents, error: fetchError } = await supabase
         .from('students')
-        .insert(supabaseStudents);
-      if (error) throw error;
+        .select('admission_no');
+      
+      if (fetchError) throw fetchError;
+      
+      const existingAdmissionNos = new Set(existingStudents?.map(s => s.admission_no) || []);
+      
+      let successCount = 0;
+      let skipCount = 0;
+      const errors: string[] = [];
+      
+      for (const student of newStudents) {
+        if (existingAdmissionNos.has(student.admissionNo)) {
+          skipCount++;
+          errors.push(`Skipped: Student with admission number ${student.admissionNo} already exists`);
+          continue;
+        }
+        
+        try {
+          const { error } = await supabase
+            .from('students')
+            .insert([transformStudentToSupabase(student)]);
+          
+          if (error) {
+            errors.push(`Failed to add ${student.name} (${student.admissionNo}): ${error.message}`);
+          } else {
+            successCount++;
+            existingAdmissionNos.add(student.admissionNo); // Add to set to prevent duplicates in same batch
+          }
+        } catch (err) {
+          errors.push(`Failed to add ${student.name} (${student.admissionNo}): ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+      }
+      
+      return { successCount, skipCount, errors };
     } else {
-      const studentsWithIds = newStudents.map(student => ({ ...student, id: generateId() }));
-      const updatedStudents = [...studentsWithIds, ...students];
+      const existingAdmissionNos = new Set(students.map(s => s.admissionNo));
+      
+      let successCount = 0;
+      let skipCount = 0;
+      const errors: string[] = [];
+      const validStudents: Student[] = [];
+      
+      for (const student of newStudents) {
+        if (existingAdmissionNos.has(student.admissionNo)) {
+          skipCount++;
+          errors.push(`Skipped: Student with admission number ${student.admissionNo} already exists`);
+          continue;
+        }
+        
+        validStudents.push({ ...student, id: generateId() });
+        existingAdmissionNos.add(student.admissionNo);
+        successCount++;
+      }
+      
+      const updatedStudents = [...validStudents, ...students];
       setStudents(updatedStudents);
       localStorage.setItem('students', JSON.stringify(updatedStudents));
+      
+      return { successCount, skipCount, errors };
     }
   };
 
