@@ -11,6 +11,7 @@ const StudentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('');
   const [filterDivision, setFilterDivision] = useState('');
+  const [importStatus, setImportStatus] = useState<string | null>(null);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -21,12 +22,14 @@ const StudentManagement: React.FC = () => {
     return matchesSearch && matchesClass && matchesDivision;
   });
 
-  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setImportStatus('Processing...');
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const csv = e.target?.result as string;
       const lines = csv.split('\n');
       const headers = lines[0].split(',').map(h => h.trim());
@@ -50,8 +53,26 @@ const StudentManagement: React.FC = () => {
       }
       
       if (students.length > 0) {
-        importStudents(students);
-        alert(`Successfully imported ${students.length} students`);
+        try {
+          const result = await importStudents(students);
+          let message = `Import completed:\n`;
+          message += `• Successfully added: ${result.successCount} students\n`;
+          message += `• Skipped (duplicates): ${result.skipCount} students\n`;
+          
+          if (result.errors.length > 0) {
+            message += `• Errors: ${result.errors.length}\n\nFirst few errors:\n`;
+            message += result.errors.slice(0, 3).join('\n');
+          }
+          
+          setImportStatus(message);
+          setTimeout(() => setImportStatus(null), 10000);
+        } catch (error) {
+          setImportStatus(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setTimeout(() => setImportStatus(null), 5000);
+        }
+      } else {
+        setImportStatus('No valid student records found in the CSV file');
+        setTimeout(() => setImportStatus(null), 5000);
       }
     };
     
@@ -110,6 +131,13 @@ const StudentManagement: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Import Status */}
+      {importStatus && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <pre className="text-sm text-blue-800 whitespace-pre-wrap">{importStatus}</pre>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6">

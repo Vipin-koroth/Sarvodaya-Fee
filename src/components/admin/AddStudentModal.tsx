@@ -8,6 +8,8 @@ interface AddStudentModalProps {
 
 const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
   const { addStudent, feeConfig } = useData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     admissionNo: '',
     name: '',
@@ -19,10 +21,19 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
     tripNumber: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addStudent(formData);
-    onClose();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await addStudent(formData);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add student');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -41,6 +52,12 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
             <X className="h-6 w-6" />
           </button>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -189,9 +206,10 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ onClose }) => {
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Student
+              {isSubmitting ? 'Adding...' : 'Add Student'}
             </button>
           </div>
         </form>

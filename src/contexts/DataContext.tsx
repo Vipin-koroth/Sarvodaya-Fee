@@ -250,6 +250,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addStudent = async (student: Omit<Student, 'id'>) => {
+    // Check if admission number already exists
+    const { data: existingStudent, error: checkError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('admission_no', student.admissionNo)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError;
+    }
+
+    if (existingStudent) {
+      throw new Error(`Student with admission number ${student.admissionNo} already exists`);
+    }
+
     const { error } = await supabase
       .from('students')
       .insert([transformStudentToSupabase(student)]);
@@ -287,13 +302,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const importStudents = async (newStudents: Omit<Student, 'id'>[]) => {
-    const supabaseStudents = newStudents.map(transformStudentToSupabase);
-    
-    const { error } = await supabase
-      .from('students')
-      .insert(supabaseStudents);
+    let successCount = 0;
+    let skipCount = 0;
+    const errors: string[] = [];
 
-    if (error) throw error;
+    for (const student of newStudents) {
+      try {
+        // Check if admission number already exists
+        const { data: existingStudent, error: checkError } = await supabase
+          .from('students')
+          .select('id')
+          .eq('admission_no', student.admissionNo)
+          .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          errors.push(`Error checking ${student.admissionNo}: ${checkError.message}`);
+          continue;
+        }
+
+        if (existingStudent) {
+          skipCount++;
+          continue;
+        }
+
+        // Insert the student
+        const { error: insertError } = await supabase
+          .from('students')
+          .insert([transformStudentToSupabase(student)]);
+
+        if (insertError) {
+          errors.push(`Error inserting ${student.admissionNo}: ${insertError.message}`);
+        } else {
+          successCount++;
+        }
+      } catch (error) {
+        errors.push(`Error processing ${student.admissionNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    return {
+      successCount,
+      skipCount,
+      errors,
+      total: newStudents.length
+    };
   };
 
   const addPayment = async (payment: Omit<Payment, 'id' | 'paymentDate'>) => {
