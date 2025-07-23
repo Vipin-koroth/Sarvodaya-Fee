@@ -69,8 +69,16 @@ const isSupabaseConfigured = () => {
   try {
     const url = import.meta.env.VITE_SUPABASE_URL;
     const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    return !!(url && key && url !== 'your_supabase_project_url' && key !== 'your_supabase_anon_key');
+    const isConfigured = !!(url && key && url !== 'your_supabase_project_url' && key !== 'your_supabase_anon_key');
+    console.log('Supabase configuration check:', { 
+      hasUrl: !!url, 
+      hasKey: !!key, 
+      isConfigured,
+      url: url?.substring(0, 20) + '...' 
+    });
+    return isConfigured;
   } catch {
+    console.log('Supabase configuration check failed, using localStorage');
     return false;
   }
 };
@@ -481,9 +489,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addPayment = async (payment: Omit<Payment, 'id' | 'paymentDate'>) => {
-    try {
-      setError(null);
-      
     if (useSupabase) {
       const { error } = await supabase
         .from('payments')
@@ -583,8 +588,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ignoreDuplicates: false 
           });
         if (error) throw error;
-        
-        console.log('Payment added to Supabase successfully');
       }
     } else {
       const updatedConfig = { ...feeConfig, ...config };
@@ -749,8 +752,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!savedCredentials || !savedProvider) {
         console.log('WhatsApp not configured, skipping...');
         return;
-        
-        console.log('Payment added to localStorage successfully');
       }
 
       const credentials = JSON.parse(savedCredentials);
@@ -768,18 +769,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         case 'callmebot':
           await sendWhatsAppViaCallMeBot(mobile, message, credentials.callmebot);
           break;
-        try {
-          sendSMS(student.mobile, message);
-          sendWhatsApp(student.mobile, message);
-        } catch (notificationError) {
-          console.warn('Notification failed but payment was successful:', notificationError);
-        }
+        default:
+          throw new Error('Unknown WhatsApp provider');
       }
-    } catch (error) {
-      console.error('Error adding payment:', error);
-      setError(error instanceof Error ? error.message : 'Failed to add payment');
-      throw error;
-    }
       
       console.log(`✅ WhatsApp sent successfully to ${mobile}`);
     } catch (error) {
