@@ -76,9 +76,28 @@ Keep this receipt for your records.
 
 - Sarvodaya School, Eachome`;
 
-    // Open WhatsApp Web with pre-filled message
-    const whatsappUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(receiptText)}`;
-    window.open(whatsappUrl, '_blank');
+    // Detect if user is on mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Use appropriate WhatsApp URL based on device
+    const whatsappUrl = isMobile 
+      ? `whatsapp://send?text=${encodeURIComponent(receiptText)}`
+      : `https://web.whatsapp.com/send?text=${encodeURIComponent(receiptText)}`;
+    
+    // Try to open WhatsApp
+    if (isMobile) {
+      // On mobile, try to open WhatsApp app first
+      window.location.href = whatsappUrl;
+      
+      // Fallback to web version if app doesn't open (after a short delay)
+      setTimeout(() => {
+        const fallbackUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(receiptText)}`;
+        window.open(fallbackUrl, '_blank');
+      }, 1500);
+    } else {
+      // On desktop, open WhatsApp Web
+      window.open(whatsappUrl, '_blank');
+    }
   };
   
   const handlePrint = () => {
