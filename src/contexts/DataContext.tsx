@@ -127,6 +127,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadSupabaseData = async () => {
     try {
       setLoading(true);
+      setError(null);
       await Promise.all([
         loadStudentsFromSupabase(),
         loadPaymentsFromSupabase(),
@@ -134,7 +135,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]);
       setupRealtimeSubscriptions();
     } catch (err) {
-      console.error('Supabase error, falling back to localStorage:', err);
+      console.error('Supabase connection failed, falling back to localStorage:', err);
+      setError('Supabase connection failed, using local storage');
       setUseSupabase(false);
       loadLocalStorageData();
     } finally {
@@ -145,6 +147,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadLocalStorageData = () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Load students
       const savedStudents = localStorage.getItem('students');
@@ -163,6 +166,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedFeeConfig) {
         setFeeConfig(JSON.parse(savedFeeConfig));
       }
+      
+      console.log('Data loaded from localStorage successfully');
     } catch (err) {
       console.error('Error loading from localStorage:', err);
       setError('Failed to load data from local storage');
