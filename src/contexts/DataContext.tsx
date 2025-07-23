@@ -481,6 +481,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addPayment = async (payment: Omit<Payment, 'id' | 'paymentDate'>) => {
+    try {
+      setError(null);
+      
     if (useSupabase) {
       const { error } = await supabase
         .from('payments')
@@ -580,6 +583,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ignoreDuplicates: false 
           });
         if (error) throw error;
+        
+        console.log('Payment added to Supabase successfully');
       }
     } else {
       const updatedConfig = { ...feeConfig, ...config };
@@ -744,6 +749,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!savedCredentials || !savedProvider) {
         console.log('WhatsApp not configured, skipping...');
         return;
+        
+        console.log('Payment added to localStorage successfully');
       }
 
       const credentials = JSON.parse(savedCredentials);
@@ -761,9 +768,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         case 'callmebot':
           await sendWhatsAppViaCallMeBot(mobile, message, credentials.callmebot);
           break;
-        default:
-          throw new Error('Unknown WhatsApp provider');
+        try {
+          sendSMS(student.mobile, message);
+          sendWhatsApp(student.mobile, message);
+        } catch (notificationError) {
+          console.warn('Notification failed but payment was successful:', notificationError);
+        }
       }
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      setError(error instanceof Error ? error.message : 'Failed to add payment');
+      throw error;
+    }
       
       console.log(`✅ WhatsApp sent successfully to ${mobile}`);
     } catch (error) {
