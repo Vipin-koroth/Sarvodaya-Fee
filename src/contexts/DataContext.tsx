@@ -712,7 +712,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('TextBee API key and Device ID not configured');
     }
 
-    const response = await fetch('https://api.textbee.dev/api/v1/gateway/send', {
+    const response = await fetch('https://api.textbee.dev/v1/gateway/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
