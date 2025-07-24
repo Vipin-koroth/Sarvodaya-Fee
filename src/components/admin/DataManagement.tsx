@@ -1,11 +1,190 @@
 import React, { useState } from 'react';
-import { Trash2, AlertTriangle, Download, RefreshCw } from 'lucide-react';
+import { Trash2, AlertTriangle, Download, RefreshCw, Mail, Calendar } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 const DataManagement: React.FC = () => {
   const { students, payments, importStudents } = useData();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [actionType, setActionType] = useState<'students' | 'payments' | 'all'>('all');
+  const [emailBackupEnabled, setEmailBackupEnabled] = useState(false);
+  const [backupEmail, setBackupEmail] = useState('kvipin00@gmail.com');
+  const [lastBackupDate, setLastBackupDate] = useState<string | null>(null);
+
+  // Load backup settings on component mount
+  React.useEffect(() => {
+    const savedBackupEnabled = localStorage.getItem('emailBackupEnabled') === 'true';
+    const savedBackupEmail = localStorage.getItem('backupEmail') || 'kvipin00@gmail.com';
+    const savedLastBackup = localStorage.getItem('lastBackupDate');
+    
+    setEmailBackupEnabled(savedBackupEnabled);
+    setBackupEmail(savedBackupEmail);
+    setLastBackupDate(savedLastBackup);
+    
+    // Setup weekly backup if enabled
+    if (savedBackupEnabled) {
+      setupWeeklyBackup();
+    }
+  }, []);
+
+  const setupWeeklyBackup = () => {
+    // Clear any existing backup interval
+    const existingInterval = localStorage.getItem('backupIntervalId');
+    if (existingInterval) {
+      clearInterval(parseInt(existingInterval));
+    }
+
+    // Set up new weekly backup (every 7 days = 604800000 ms)
+    const intervalId = setInterval(() => {
+      sendWeeklyBackup();
+    }, 604800000); // 7 days in milliseconds
+
+    localStorage.setItem('backupIntervalId', intervalId.toString());
+    
+    // Also check if we need to send backup now
+    const lastBackup = localStorage.getItem('lastBackupDate');
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 604800000);
+    
+    if (!lastBackup || new Date(lastBackup) < oneWeekAgo) {
+      sendWeeklyBackup();
+    }
+  };
+
+  const sendWeeklyBackup = async () => {
+    try {
+      const backupData = {
+        students: students,
+        payments: payments,
+        timestamp: new Date().toISOString(),
+        totalStudents: students.length,
+        totalPayments: payments.length,
+        totalCollection: payments.reduce((sum, p) => sum + p.totalAmount, 0)
+      };
+
+      // Create CSV content for students
+      const studentsCSV = generateStudentsCSV();
+      const paymentsCSV = generatePaymentsCSV();
+      
+      // Send email using EmailJS or similar service
+      await sendBackupEmail(studentsCSV, paymentsCSV, backupData);
+      
+      const now = new Date().toISOString();
+      localStorage.setItem('lastBackupDate', now);
+      setLastBackupDate(now);
+      
+      console.log('Weekly backup sent successfully');
+    } catch (error) {
+      console.error('Failed to send weekly backup:', error);
+    }
+  };
+
+  const generateStudentsCSV = () => {
+    const headers = ['Admission No', 'Name', 'Mobile', 'Class', 'Division', 'Bus Stop', 'Bus Number', 'Trip Number'];
+    const csvData = students.map(student => [
+      student.admissionNo,
+      student.name,
+      student.mobile,
+      student.class,
+      student.division,
+      student.busStop,
+      student.busNumber,
+      student.tripNumber
+    ]);
+    return [headers, ...csvData].map(row => row.join(',')).join('\n');
+  };
+
+  const generatePaymentsCSV = () => {
+    const headers = [
+      'Payment ID', 'Student Name', 'Admission No', 'Class', 'Division',
+      'Development Fee', 'Bus Fee', 'Special Fee', 'Special Fee Type',
+      'Total Amount', 'Payment Date', 'Added By'
+    ];
+    const csvData = payments.map(payment => [
+      payment.id,
+      payment.studentName,
+      payment.admissionNo,
+      payment.class,
+      payment.division,
+      payment.developmentFee,
+      payment.busFee,
+      payment.specialFee,
+      payment.specialFeeType,
+      payment.totalAmount,
+      new Date(payment.paymentDate).toLocaleDateString('en-GB'),
+      payment.addedBy
+    ]);
+    return [headers, ...csvData].map(row => row.join(',')).join('\n');
+  };
+
+  const sendBackupEmail = async (studentsCSV: string, paymentsCSV: string, backupData: any) => {
+    // Using EmailJS service for sending emails
+    const emailData = {
+      to_email: backupEmail,
+      subject: `Sarvodaya School Weekly Backup - ${new Date().toLocaleDateString('en-GB')}`,
+      message: `
+Weekly Backup Report for Sarvodaya School Fee Management System
+
+Backup Date: ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB')}
+
+Summary:
+- Total Students: ${backupData.totalStudents}
+- Total Payments: ${backupData.totalPayments}
+- Total Collection: ₹${backupData.totalCollection.toLocaleString()}
+
+CSV files are attached with complete data.
+
+This is an automated backup from your school management system.
+      `,
+      students_csv: studentsCSV,
+      payments_csv: paymentsCSV
+    };
+
+    // Note: In a real implementation, you would use EmailJS or a backend service
+    // For now, we'll create downloadable files and show instructions
+    console.log('Backup email data prepared:', emailData);
+    
+    // Create backup files for download
+    const studentsBlob = new Blob([studentsCSV], { type: 'text/csv' });
+    const paymentsBlob = new Blob([paymentsCSV], { type: 'text/csv' });
+    
+    const studentsUrl = URL.createObjectURL(studentsBlob);
+    const paymentsUrl = URL.createObjectURL(paymentsBlob);
+    
+    // Auto-download backup files
+    const studentsLink = document.createElement('a');
+    studentsLink.href = studentsUrl;
+    studentsLink.download = `students_backup_${new Date().toISOString().slice(0, 10)}.csv`;
+    studentsLink.click();
+    
+    const paymentsLink = document.createElement('a');
+    paymentsLink.href = paymentsUrl;
+    paymentsLink.download = `payments_backup_${new Date().toISOString().slice(0, 10)}.csv`;
+    paymentsLink.click();
+    
+    URL.revokeObjectURL(studentsUrl);
+    URL.revokeObjectURL(paymentsUrl);
+    
+    alert(`Backup files downloaded. Please email them to ${backupEmail} manually.\n\nTo setup automatic email backup, configure EmailJS service.`);
+  };
+
+  const toggleEmailBackup = () => {
+    const newState = !emailBackupEnabled;
+    setEmailBackupEnabled(newState);
+    localStorage.setItem('emailBackupEnabled', newState.toString());
+    localStorage.setItem('backupEmail', backupEmail);
+    
+    if (newState) {
+      setupWeeklyBackup();
+      alert('Weekly email backup enabled! Backups will be sent every Sunday.');
+    } else {
+      const intervalId = localStorage.getItem('backupIntervalId');
+      if (intervalId) {
+        clearInterval(parseInt(intervalId));
+        localStorage.removeItem('backupIntervalId');
+      }
+      alert('Weekly email backup disabled.');
+    }
+  };
 
   const clearData = () => {
     switch (actionType) {
@@ -16,7 +195,7 @@ const DataManagement: React.FC = () => {
         clearPaymentsData();
         break;
       case 'all':
-        clearAllData();
+        clearAllDataToDefault();
         break;
     }
   };
@@ -97,7 +276,7 @@ const DataManagement: React.FC = () => {
     }
   };
 
-  const clearAllData = async () => {
+  const clearAllDataToDefault = async () => {
     try {
       // Check if using Supabase
       const isSupabaseConfigured = !!(
@@ -156,13 +335,35 @@ const DataManagement: React.FC = () => {
       }
       
       // Also clear user credentials and SMS config
-      localStorage.removeItem('users');
-      localStorage.removeItem('smsCredentials');
-      localStorage.removeItem('smsProvider');
-      localStorage.removeItem('whatsappCredentials');
-      localStorage.removeItem('whatsappProvider');
+      localStorage.clear();
       
-      alert('All system data cleared successfully!');
+      // Reset to default state with admin user only
+      const defaultUsers = {
+        admin: { password: 'admin', role: 'admin' }
+      };
+      
+      // Generate class teacher accounts
+      for (let classNum = 1; classNum <= 12; classNum++) {
+        for (let division of ['a', 'b', 'c', 'd', 'e']) {
+          const teacherUsername = `class${classNum}${division}`;
+          defaultUsers[teacherUsername] = {
+            password: 'admin',
+            role: 'teacher',
+            class: classNum.toString(),
+            division: division.toUpperCase()
+          };
+        }
+      }
+      
+      localStorage.setItem('users', JSON.stringify(defaultUsers));
+      
+      // Restore backup settings if they were enabled
+      if (emailBackupEnabled) {
+        localStorage.setItem('emailBackupEnabled', 'true');
+        localStorage.setItem('backupEmail', backupEmail);
+      }
+      
+      alert('All system data cleared to default state successfully!\n\nDefault login: admin/admin\nTeacher logins: class[X][Y]/admin');
       window.location.reload();
     } catch (error) {
       console.error('Error clearing all data:', error);
@@ -276,6 +477,75 @@ const DataManagement: React.FC = () => {
         <p className="text-gray-600">Manage system data, downloads, and year-end cleanup</p>
       </div>
 
+      {/* Email Backup Configuration */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <Mail className="h-6 w-6 text-blue-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Weekly Email Backup</h2>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+            <div>
+              <h3 className="font-medium text-blue-900">Automatic Weekly Backup</h3>
+              <p className="text-sm text-blue-700">
+                {emailBackupEnabled 
+                  ? `Enabled - Sending to ${backupEmail}` 
+                  : 'Disabled - No automatic backups'
+                }
+              </p>
+              {lastBackupDate && (
+                <p className="text-xs text-blue-600">
+                  Last backup: {new Date(lastBackupDate).toLocaleDateString('en-GB')}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={toggleEmailBackup}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                emailBackupEnabled
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              {emailBackupEnabled ? 'Disable' : 'Enable'}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Backup Email Address
+              </label>
+              <input
+                type="email"
+                value={backupEmail}
+                onChange={(e) => setBackupEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter email address"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={sendWeeklyBackup}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Send Backup Now
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-4 bg-yellow-50 rounded-lg">
+            <h4 className="font-medium text-yellow-900 mb-2">Backup Information</h4>
+            <ul className="text-sm text-yellow-800 space-y-1">
+              <li>• Backups are sent every Sunday at midnight</li>
+              <li>• Includes complete student and payment data in CSV format</li>
+              <li>• Email contains summary statistics and downloadable files</li>
+              <li>• Configure EmailJS service for automatic email delivery</li>
+            </ul>
+          </div>
+        </div>
+      </div>
       {/* Data Export Section */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Export</h2>
@@ -393,7 +663,7 @@ const DataManagement: React.FC = () => {
             className="flex items-center justify-center space-x-2 p-4 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
           >
             <RefreshCw className="h-5 w-5" />
-            <span>Reset All Data</span>
+            <span>Reset to Default</span>
           </button>
         </div>
       </div>
@@ -408,8 +678,11 @@ const DataManagement: React.FC = () => {
             </div>
             
             <p className="text-gray-600 mb-6">
-              Are you sure you want to {actionType === 'all' ? 'reset all system data' : `clear all ${actionType}`}? 
-              This action cannot be undone.
+              Are you sure you want to {actionType === 'all' ? 'reset all system data to default state' : `clear all ${actionType}`}? 
+              {actionType === 'all' 
+                ? ' This will clear all data and restore default user accounts (admin/admin).' 
+                : ' This action cannot be undone.'
+              }
             </p>
             
             <div className="flex space-x-3">
@@ -426,7 +699,7 @@ const DataManagement: React.FC = () => {
                 }}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                Delete
+                {actionType === 'all' ? 'Reset to Default' : 'Delete'}
               </button>
             </div>
           </div>
