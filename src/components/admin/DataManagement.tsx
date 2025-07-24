@@ -10,19 +10,163 @@ const DataManagement: React.FC = () => {
   const clearData = () => {
     switch (actionType) {
       case 'students':
-        localStorage.removeItem('students');
-        window.location.reload();
+        clearStudentsData();
         break;
       case 'payments':
-        localStorage.removeItem('payments');
-        window.location.reload();
+        clearPaymentsData();
         break;
       case 'all':
+        clearAllData();
+        break;
+    }
+  };
+
+  const clearStudentsData = async () => {
+    try {
+      // Check if using Supabase
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
+
+      if (isSupabaseConfigured) {
+        // Clear from Supabase
+        const { supabase } = await import('../../lib/supabase');
+        const { error } = await supabase
+          .from('students')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+        
+        if (error) {
+          console.error('Error clearing students from Supabase:', error);
+          alert('Failed to clear students from database: ' + error.message);
+          return;
+        }
+        console.log('Students cleared from Supabase successfully');
+      } else {
+        // Clear from localStorage
+        localStorage.removeItem('students');
+        console.log('Students cleared from localStorage');
+      }
+      
+      alert('All students cleared successfully!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error clearing students:', error);
+      alert('Failed to clear students: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const clearPaymentsData = async () => {
+    try {
+      // Check if using Supabase
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
+
+      if (isSupabaseConfigured) {
+        // Clear from Supabase
+        const { supabase } = await import('../../lib/supabase');
+        const { error } = await supabase
+          .from('payments')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+        
+        if (error) {
+          console.error('Error clearing payments from Supabase:', error);
+          alert('Failed to clear payments from database: ' + error.message);
+          return;
+        }
+        console.log('Payments cleared from Supabase successfully');
+      } else {
+        // Clear from localStorage
+        localStorage.removeItem('payments');
+        console.log('Payments cleared from localStorage');
+      }
+      
+      alert('All payments cleared successfully!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error clearing payments:', error);
+      alert('Failed to clear payments: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const clearAllData = async () => {
+    try {
+      // Check if using Supabase
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
+
+      if (isSupabaseConfigured) {
+        // Clear from Supabase
+        const { supabase } = await import('../../lib/supabase');
+        
+        // Clear payments first (due to foreign key constraints)
+        const { error: paymentsError } = await supabase
+          .from('payments')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (paymentsError) {
+          console.error('Error clearing payments:', paymentsError);
+          alert('Failed to clear payments: ' + paymentsError.message);
+          return;
+        }
+
+        // Clear students
+        const { error: studentsError } = await supabase
+          .from('students')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (studentsError) {
+          console.error('Error clearing students:', studentsError);
+          alert('Failed to clear students: ' + studentsError.message);
+          return;
+        }
+
+        // Clear fee config
+        const { error: feeConfigError } = await supabase
+          .from('fee_config')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (feeConfigError) {
+          console.error('Error clearing fee config:', feeConfigError);
+          // Don't return here as fee config clearing is less critical
+        }
+
+        console.log('All data cleared from Supabase successfully');
+      } else {
+        // Clear from localStorage
         localStorage.removeItem('students');
         localStorage.removeItem('payments');
         localStorage.removeItem('feeConfig');
-        window.location.reload();
-        break;
+        console.log('All data cleared from localStorage');
+      }
+      
+      // Also clear user credentials and SMS config
+      localStorage.removeItem('users');
+      localStorage.removeItem('smsCredentials');
+      localStorage.removeItem('smsProvider');
+      localStorage.removeItem('whatsappCredentials');
+      localStorage.removeItem('whatsappProvider');
+      
+      alert('All system data cleared successfully!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      alert('Failed to clear all data: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
