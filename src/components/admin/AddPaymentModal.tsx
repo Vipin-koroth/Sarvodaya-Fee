@@ -9,7 +9,7 @@ interface AddPaymentModalProps {
   onPaymentSuccess?: (payment: Payment) => void;
 }
 
-const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
+const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuccess }) => {
   const { students, addPayment, feeConfig, payments } = useData();
   const { user } = useAuth();
   const [selectedStudent, setSelectedStudent] = useState('');
