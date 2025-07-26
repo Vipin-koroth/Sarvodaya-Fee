@@ -496,9 +496,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const busNumber = student.busNumber?.trim();
         const tripNumber = student.tripNumber?.trim();
         
-        if (!admissionNo || !name || !mobile || !classValue || !division || !busStop || !busNumber || !tripNumber) {
+        // Strict validation - check each field has actual content
+        const hasEmptyFields = !admissionNo || admissionNo.length === 0 ||
+                              !name || name.length === 0 ||
+                              !mobile || mobile.length === 0 ||
+                              !classValue || classValue.length === 0 ||
+                              !division || division.length === 0 ||
+                              !busStop || busStop.length === 0 ||
+                              !busNumber || busNumber.length === 0 ||
+                              !tripNumber || tripNumber.length === 0;
+        
+        if (hasEmptyFields) {
           skipCount++;
-          errors.push(`Skipped: Row with empty fields - ${name || 'Unknown'} (${admissionNo || 'No admission no'})`);
+          const emptyFields = [];
+          if (!admissionNo || admissionNo.length === 0) emptyFields.push('admissionNo');
+          if (!name || name.length === 0) emptyFields.push('name');
+          if (!mobile || mobile.length === 0) emptyFields.push('mobile');
+          if (!classValue || classValue.length === 0) emptyFields.push('class');
+          if (!division || division.length === 0) emptyFields.push('division');
+          if (!busStop || busStop.length === 0) emptyFields.push('busStop');
+          if (!busNumber || busNumber.length === 0) emptyFields.push('busNumber');
+          if (!tripNumber || tripNumber.length === 0) emptyFields.push('tripNumber');
+          
+          errors.push(`Skipped: Row with empty fields [${emptyFields.join(', ')}] - ${name || 'Unknown'} (${admissionNo || 'No admission no'})`);
           continue;
         }
         
@@ -544,9 +564,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const busNumber = student.busNumber?.trim();
         const tripNumber = student.tripNumber?.trim();
         
-        if (!admissionNo || !name || !mobile || !classValue || !division || !busStop || !busNumber || !tripNumber) {
+        // Strict validation - check each field has actual content
+        const hasEmptyFields = !admissionNo || admissionNo.length === 0 ||
+                              !name || name.length === 0 ||
+                              !mobile || mobile.length === 0 ||
+                              !classValue || classValue.length === 0 ||
+                              !division || division.length === 0 ||
+                              !busStop || busStop.length === 0 ||
+                              !busNumber || busNumber.length === 0 ||
+                              !tripNumber || tripNumber.length === 0;
+        
+        if (hasEmptyFields) {
           skipCount++;
-          errors.push(`Skipped: Row with empty fields - ${name || 'Unknown'} (${admissionNo || 'No admission no'})`);
+          const emptyFields = [];
+          if (!admissionNo || admissionNo.length === 0) emptyFields.push('admissionNo');
+          if (!name || name.length === 0) emptyFields.push('name');
+          if (!mobile || mobile.length === 0) emptyFields.push('mobile');
+          if (!classValue || classValue.length === 0) emptyFields.push('class');
+          if (!division || division.length === 0) emptyFields.push('division');
+          if (!busStop || busStop.length === 0) emptyFields.push('busStop');
+          if (!busNumber || busNumber.length === 0) emptyFields.push('busNumber');
+          if (!tripNumber || tripNumber.length === 0) emptyFields.push('tripNumber');
+          
+          errors.push(`Skipped: Row with empty fields [${emptyFields.join(', ')}] - ${name || 'Unknown'} (${admissionNo || 'No admission no'})`);
           continue;
         }
         
