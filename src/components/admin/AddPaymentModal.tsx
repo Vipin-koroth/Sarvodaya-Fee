@@ -55,7 +55,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
       setPaidAmounts(paid);
       
       // Auto-populate development fee based on class (handle classes 11-12 with divisions)
-      const feeKey = (selectedStudentData.class === '11' || selectedStudentData.class === '12') 
+      const feeKey = (['11', '12'].includes(selectedStudentData.class)) 
         ? `${selectedStudentData.class}-${selectedStudentData.division}` 
         : selectedStudentData.class;
       const totalDevelopmentFee = feeConfig.developmentFees[feeKey] || 0;
@@ -126,7 +126,11 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
       // Calculate maximum allowed amount
       let maxAmount = 0;
       if (name === 'developmentFee') {
-        const totalRequired = feeConfig.developmentFees[selectedStudentData?.class || ''] || 0;
+        if (!selectedStudentData) return;
+        const feeKey = (['11', '12'].includes(selectedStudentData.class)) 
+          ? `${selectedStudentData.class}-${selectedStudentData.division}` 
+          : selectedStudentData.class;
+        const totalRequired = feeConfig.developmentFees[feeKey] || 0;
         maxAmount = Math.max(0, totalRequired - paidAmounts.developmentFee);
       } else if (name === 'busFee') {
         const totalRequired = feeConfig.busStops[selectedStudentData?.busStop || ''] || 0;
@@ -155,7 +159,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
     if (!selectedStudentData) return null;
     
     // Get the correct fee key for classes 11 and 12 (class-division) or regular classes (class only)
-    const feeKey = (selectedStudentData.class === '11' || selectedStudentData.class === '12') 
+    const feeKey = (['11', '12'].includes(selectedStudentData.class)) 
       ? `${selectedStudentData.class}-${selectedStudentData.division}` 
       : selectedStudentData.class;
     const totalDevelopmentRequired = feeConfig.developmentFees[feeKey] || 0;
