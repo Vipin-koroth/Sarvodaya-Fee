@@ -10,8 +10,8 @@ export interface BackupEmailData {
 }
 
 export class EmailService {
-  private static SERVICE_ID = 'service_xyz123';
-  private static TEMPLATE_ID = 'template_xyz123';
+  private static SERVICE_ID = 'service_backup_system';
+  private static TEMPLATE_ID = 'template_backup_email';
   private static PUBLIC_KEY = '_RWoqN93jOymywN_a';
   private static PRIVATE_KEY = 'MaEp5XnCJqyJw8szR0Zcz';
 
@@ -51,12 +51,20 @@ export class EmailService {
     } catch (error) {
       console.error('Failed to send email:', error);
       console.error('Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : JSON.stringify(error),
+        status: (error as any)?.status,
+        text: (error as any)?.text,
         serviceId: this.SERVICE_ID,
         templateId: this.TEMPLATE_ID,
         publicKey: this.PUBLIC_KEY
       });
-      throw error;
+      
+      // Provide more helpful error message
+      if ((error as any)?.status === 400 && (error as any)?.text?.includes('service ID not found')) {
+        throw new Error(`EmailJS Service ID '${this.SERVICE_ID}' not found. Please create a service in your EmailJS dashboard at https://dashboard.emailjs.com/admin`);
+      }
+      
+      throw new Error(`Email sending failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   }
 
