@@ -90,7 +90,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
       return;
     }
 
-    addPayment({
+    const paymentData = {
       studentId: selectedStudentData.id,
       studentName: selectedStudentData.name,
       admissionNo: selectedStudentData.admissionNo,
@@ -102,9 +102,19 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
       addedBy: user?.username || '',
       class: selectedStudentData.class,
       division: selectedStudentData.division
-    });
+    };
 
-    onClose();
+    console.log('Submitting payment:', paymentData);
+    
+    addPayment(paymentData)
+      .then(() => {
+        console.log('Payment added successfully');
+        onClose();
+      })
+      .catch((error) => {
+        console.error('Failed to add payment:', error);
+        alert('Failed to add payment: ' + (error.message || 'Unknown error'));
+      });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

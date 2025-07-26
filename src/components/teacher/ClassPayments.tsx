@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Receipt, Calendar } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useData } from '../../contexts/DataContext';
+import { useData, Payment } from '../../contexts/DataContext';
 import AddPaymentModal from '../admin/AddPaymentModal';
 import ReceiptPrint from '../common/ReceiptPrint';
 

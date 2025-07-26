@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Receipt, Calendar } from 'lucide-react';
-import { useData } from '../../contexts/DataContext';
+import { useData, Payment } from '../../contexts/DataContext';
 import AddPaymentModal from './AddPaymentModal';
 import ReceiptPrint from '../common/ReceiptPrint';
 
