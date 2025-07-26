@@ -243,7 +243,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('Students realtime update:', payload);
           if (payload.eventType === 'INSERT') {
             const newStudent = transformSupabaseStudent(payload.new as SupabaseStudent);
-            setStudents(prev => [newStudent, ...prev]);
+            setStudents(prev => {
+              // Check if student already exists to avoid duplicates
+              const exists = prev.find(s => s.id === newStudent.id);
+              if (exists) {
+                console.log('Student already exists in state, skipping duplicate');
+                return prev;
+              }
+              console.log('Adding new student from realtime:', newStudent);
+              return [newStudent, ...prev];
+            });
           } else if (payload.eventType === 'UPDATE') {
             const updatedStudent = transformSupabaseStudent(payload.new as SupabaseStudent);
             setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
@@ -377,10 +386,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`Student with admission number ${student.admissionNo} already exists.`);
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('students')
-        .insert([transformStudentToSupabase(student)]);
+        .insert([transformStudentToSupabase(student)])
+        .select()
+        .single();
+      
       if (error) throw error;
+      
+      // Immediately add to local state for instant UI update
+      if (data) {
+        const newStudent = transformSupabaseStudent(data);
+        setStudents(prev => [newStudent, ...prev]);
+        console.log('Student added to Supabase and local state:', newStudent);
+      }
     } else {
       // Check for duplicate admission number in localStorage
       const existingStudent = students.find(s => s.admissionNo === student.admissionNo);
@@ -392,6 +411,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedStudents = [newStudent, ...students];
       setStudents(updatedStudents);
       localStorage.setItem('students', JSON.stringify(updatedStudents));
+      console.log('Student added to localStorage:', newStudent);
     }
   };
 
@@ -408,15 +428,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (studentData.busNumber) updateData.bus_number = studentData.busNumber;
       if (studentData.tripNumber) updateData.trip_number = studentData.tripNumber;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('students')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
+      
       if (error) throw error;
+      
+      // Immediately update local state
+      if (data) {
+        const updatedStudent = transformSupabaseStudent(data);
+        setStudents(prev => prev.map(s => s.id === id ? updatedStudent : s));
+        console.log('Student updated in Supabase and local state:', updatedStudent);
+      }
     } else {
       const updatedStudents = students.map(s => s.id === id ? { ...s, ...studentData } : s);
       setStudents(updatedStudents);
       localStorage.setItem('students', JSON.stringify(updatedStudents));
+      console.log('Student updated in localStorage');
     }
   };
 
@@ -427,10 +458,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .delete()
         .eq('id', id);
       if (error) throw error;
+      
+      // Immediately remove from local state
+      setStudents(prev => prev.filter(s => s.id !== id));
+      console.log('Student deleted from Supabase and local state:', id);
     } else {
       const updatedStudents = students.filter(s => s.id !== id);
       setStudents(updatedStudents);
       localStorage.setItem('students', JSON.stringify(updatedStudents));
+      console.log('Student deleted from localStorage:', id);
     }
   };
 
@@ -570,15 +606,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (paymentData.class) updateData.class = paymentData.class;
       if (paymentData.division) updateData.division = paymentData.division;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('payments')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
+      
       if (error) throw error;
+      
+      // Immediately update local state
+      if (data) {
+        const updatedPayment = transformSupabasePayment(data);
+        setPayments(prev => prev.map(p => p.id === id ? updatedPayment : p));
+        console.log('Payment updated in Supabase and local state:', updatedPayment);
+      }
     } else {
       const updatedPayments = payments.map(p => p.id === id ? { ...p, ...paymentData } : p);
       setPayments(updatedPayments);
       localStorage.setItem('payments', JSON.stringify(updatedPayments));
+      console.log('Payment updated in localStorage');
     }
   };
 
@@ -589,10 +636,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .delete()
         .eq('id', id);
       if (error) throw error;
+      
+      // Immediately remove from local state
+      setPayments(prev => prev.filter(p => p.id !== id));
+      console.log('Payment deleted from Supabase and local state:', id);
     } else {
       const updatedPayments = payments.filter(p => p.id !== id);
       setPayments(updatedPayments);
       localStorage.setItem('payments', JSON.stringify(updatedPayments));
+      console.log('Payment deleted from localStorage:', id);
     }
   };
 
@@ -629,10 +681,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         if (error) throw error;
       }
+      
+      // Immediately update local state
+      const updatedConfig = { ...feeConfig, ...config };
+      setFeeConfig(updatedConfig);
+      console.log('Fee config updated in Supabase and local state');
     } else {
       const updatedConfig = { ...feeConfig, ...config };
       setFeeConfig(updatedConfig);
       localStorage.setItem('feeConfig', JSON.stringify(updatedConfig));
+      console.log('Fee config updated in localStorage');
     }
   };
 
