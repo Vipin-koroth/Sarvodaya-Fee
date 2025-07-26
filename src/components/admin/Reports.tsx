@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { FileText, Download, Users, Bus, TrendingUp, Calendar } from 'lucide-react';
+import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 const Reports: React.FC = () => {
   const { students, payments } = useData();
-  const [reportType, setReportType] = useState('class-wise');
+  const [reportType, setReportType] = useState('receipt-wise');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dateFilter, setDateFilter] = useState<'single' | 'range'>('single');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   // Class-wise report data
   const getClassWiseReport = () => {
@@ -86,6 +90,54 @@ const Reports: React.FC = () => {
     };
   };
 
+  // Receipt-wise report data
+  const getReceiptWiseReport = () => {
+    let filteredPayments = payments;
+
+    // Apply date filter
+    if (dateFilter === 'single') {
+      filteredPayments = payments.filter(payment => 
+        new Date(payment.paymentDate).toISOString().split('T')[0] === selectedDate
+      );
+    } else {
+      filteredPayments = payments.filter(payment => {
+        const paymentDate = new Date(payment.paymentDate).toISOString().split('T')[0];
+        const matchesFromDate = !fromDate || paymentDate >= fromDate;
+        const matchesToDate = !toDate || paymentDate <= toDate;
+        return matchesFromDate && matchesToDate;
+      });
+    }
+
+    // Apply class filter if selected
+    if (selectedClass) {
+      filteredPayments = filteredPayments.filter(payment => payment.class === selectedClass);
+    }
+
+    return filteredPayments.sort((a, b) => 
+      new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+    );
+  };
+
+  const getStudentBalance = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return { devBalance: 0, busBalance: 0 };
+
+    const classKey = (['11', '12'].includes(student.class)) 
+      ? `${student.class}-${student.division}` 
+      : student.class;
+
+    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
+    const totalBusFee = feeConfig.busStops[student.busStop] || 0;
+
+    const studentPayments = payments.filter(p => p.studentId === studentId);
+    const paidDevFee = studentPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);
+    const paidBusFee = studentPayments.reduce((sum, p) => sum + (p.busFee || 0), 0);
+
+    return {
+      devBalance: Math.max(0, totalDevFee - paidDevFee),
+      busBalance: Math.max(0, totalBusFee - paidBusFee)
+    };
+  };
   const downloadReport = (reportData: any, filename: string) => {
     const csvContent = generateCSV(reportData, reportType);
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -102,6 +154,28 @@ const Reports: React.FC = () => {
     let rows: string[][] = [];
 
     switch (type) {
+      case 'receipt-wise':
+        headers = ['Receipt ID', 'Date', 'Student Name', 'Admission No', 'Class', 'Development Fee', 'Bus Fee', 'Special Fee', 'Special Fee Type', 'Total Amount', 'Added By', 'Dev Balance', 'Bus Balance'];
+        rows = data.map((payment: any) => {
+          const student = students.find(s => s.id === payment.studentId);
+          const balance = getStudentBalance(payment.studentId);
+          return [
+            payment.id.slice(-6),
+            new Date(payment.paymentDate).toLocaleDateString('en-GB'),
+            payment.studentName,
+            payment.admissionNo,
+            `${payment.class}-${payment.division}`,
+            payment.developmentFee.toString(),
+            payment.busFee.toString(),
+            payment.specialFee.toString(),
+            payment.specialFeeType || '',
+            payment.totalAmount.toString(),
+            payment.addedBy,
+            balance.devBalance.toString(),
+            balance.busBalance.toString()
+          ];
+        });
+        break;
       case 'class-wise':
         headers = ['Class', 'Total Students', 'Total Payments', 'Development Fees', 'Bus Fees', 'Special Fees', 'Total Collection'];
         rows = Object.entries(data).map(([key, value]: [string, any]) => [
@@ -135,6 +209,7 @@ const Reports: React.FC = () => {
   const classWiseData = getClassWiseReport();
   const busStopData = getBusStopReport();
   const monthlyData = getMonthlyReport();
+  const receiptWiseData = getReceiptWiseReport();
 
   return (
     <div className="space-y-6">
@@ -151,6 +226,19 @@ const Reports: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button
+            onClick={() => setReportType('receipt-wise')}
+            className={`p-4 rounded-lg border-2 transition-colors ${
+              reportType === 'receipt-wise' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <Receipt className="h-8 w-8 mx-auto mb-2" />
+            <div className="font-medium">Receipt-wise Report</div>
+            <div className="text-sm text-gray-600">Individual payment receipts</div>
+          </button>
+          
           <button
             onClick={() => setReportType('class-wise')}
             className={`p-4 rounded-lg border-2 transition-colors ${
@@ -176,7 +264,9 @@ const Reports: React.FC = () => {
             <div className="font-medium">Bus Stop Report</div>
             <div className="text-sm text-gray-600">Students by bus stops and routes</div>
           </button>
-          
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
           <button
             onClick={() => setReportType('monthly')}
             className={`p-4 rounded-lg border-2 transition-colors ${
@@ -193,6 +283,174 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Report Content */}
+      {reportType === 'receipt-wise' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Receipt-wise Payment Report</h3>
+            <button
+              onClick={() => downloadReport(receiptWiseData, 'receipt_wise_report')}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download CSV</span>
+            </button>
+          </div>
+          
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date Filter
+              </label>
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value as 'single' | 'range')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="single">Single Date</option>
+                <option value="range">Date Range</option>
+              </select>
+            </div>
+            
+            {dateFilter === 'single' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Date
+                </label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Class Filter
+              </label>
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Classes</option>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>Class {i + 1}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="text-blue-600 text-sm font-medium">Total Receipts</div>
+              <div className="text-2xl font-bold text-gray-900">{receiptWiseData.length}</div>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="text-green-600 text-sm font-medium">Total Collection</div>
+              <div className="text-2xl font-bold text-gray-900">₹{receiptWiseData.reduce((sum, p) => sum + p.totalAmount, 0).toLocaleString()}</div>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-4">
+              <div className="text-purple-600 text-sm font-medium">Development Fees</div>
+              <div className="text-2xl font-bold text-gray-900">₹{receiptWiseData.reduce((sum, p) => sum + p.developmentFee, 0).toLocaleString()}</div>
+            </div>
+            <div className="bg-orange-50 rounded-lg p-4">
+              <div className="text-orange-600 text-sm font-medium">Bus Fees</div>
+              <div className="text-2xl font-bold text-gray-900">₹{receiptWiseData.reduce((sum, p) => sum + p.busFee, 0).toLocaleString()}</div>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fee Breakdown</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Added By</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {receiptWiseData.map((payment) => {
+                  const balance = getStudentBalance(payment.studentId);
+                  return (
+                    <tr key={payment.id}>
+                      <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-900">
+                        #{payment.id.slice(-6)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{payment.studentName}</div>
+                        <div className="text-sm text-gray-500">{payment.admissionNo} • Class {payment.class}-{payment.division}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {payment.developmentFee > 0 && <div>Dev: ₹{payment.developmentFee}</div>}
+                        {payment.busFee > 0 && <div>Bus: ₹{payment.busFee}</div>}
+                        {payment.specialFee > 0 && <div>{payment.specialFeeType}: ₹{payment.specialFee}</div>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-green-600">
+                        ₹{payment.totalAmount.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {balance.devBalance > 0 && <div className="text-red-600">Dev: ₹{balance.devBalance}</div>}
+                        {balance.busBalance > 0 && <div className="text-red-600">Bus: ₹{balance.busBalance}</div>}
+                        {balance.devBalance === 0 && balance.busBalance === 0 && (
+                          <div className="text-green-600">✓ Paid</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {payment.addedBy}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          
+          {receiptWiseData.length === 0 && (
+            <div className="text-center py-12">
+              <Receipt className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No receipts found</h3>
+              <p className="mt-1 text-sm text-gray-500">No payments match your selected criteria.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {reportType === 'class-wise' && (
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex justify-between items-center mb-6">
