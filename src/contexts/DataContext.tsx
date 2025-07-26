@@ -240,7 +240,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'students' },
         (payload) => {
-          console.log('Students realtime update:', payload);
           if (payload.eventType === 'INSERT') {
             const newStudent = transformSupabaseStudent(payload.new as SupabaseStudent);
             setStudents(prev => [newStudent, ...prev]);
@@ -260,19 +259,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'payments' },
         (payload) => {
-          console.log('Payments realtime update:', payload);
           if (payload.eventType === 'INSERT') {
             const newPayment = transformSupabasePayment(payload.new as SupabasePayment);
-            setPayments(prev => {
-              // Check if payment already exists to avoid duplicates
-              const exists = prev.find(p => p.id === newPayment.id);
-              if (exists) {
-                console.log('Payment already exists in state, skipping duplicate');
-                return prev;
-              }
-              console.log('Adding new payment from realtime:', newPayment);
-              return [newPayment, ...prev];
-            });
+            setPayments(prev => [newPayment, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
             const updatedPayment = transformSupabasePayment(payload.new as SupabasePayment);
             setPayments(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p));
@@ -289,7 +278,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'fee_config' },
         () => {
-          console.log('Fee config realtime update');
           loadFeeConfigFromSupabase();
         }
       )
@@ -297,7 +285,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Cleanup subscriptions
     return () => {
-      console.log('Cleaning up realtime subscriptions');
       studentsSubscription.unsubscribe();
       paymentsSubscription.unsubscribe();
       feeConfigSubscription.unsubscribe();
@@ -506,10 +493,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       
     if (useSupabase) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('payments')
-        .insert([transformPaymentToSupabase(payment)]);
-      if (error) throw error;
+        .insert([transformPaymentToSupabase(payment)])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Supabase payment insert error:', error);
+        throw error;
+      }
+      
+      // Immediately add to local state for instant UI update
+      if (data) {
+        const newPayment = transformSupabasePayment(data);
+        setPayments(prev => [newPayment, ...prev]);
+        console.log('Payment added to Supabase and local state:', newPayment);
+      }
     } else {
       const newPayment: Payment = { 
         ...payment, 
@@ -519,6 +519,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedPayments = [newPayment, ...payments];
       setPayments(updatedPayments);
       localStorage.setItem('payments', JSON.stringify(updatedPayments));
+      console.log('Payment added to localStorage:', newPayment);
     }
 
       // Send SMS notification (don't let this fail the payment)
@@ -607,26 +608,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       for (const update of updates) {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('fee_config')
           .upsert(update, { 
             onConflict: 'config_type,config_key',
             ignoreDuplicates: false 
-          .insert([transformPaymentToSupabase(payment)])
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Supabase payment insert error:', error);
-          throw error;
-        }
-        
-        // Immediately add to local state for instant UI update
-        if (data) {
-          const newPayment = transformSupabasePayment(data);
-          setPayments(prev => [newPayment, ...prev]);
-          console.log('Payment added to Supabase and local state:', newPayment);
-        }
+          });
+        if (error) throw error;
       }
     } else {
       const updatedConfig = { ...feeConfig, ...config };
@@ -791,7 +779,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!savedCredentials || !savedProvider) {
         console.log('WhatsApp not configured, skipping...');
         return;
-        console.log('Payment added to localStorage:', newPayment);
       }
 
       const credentials = JSON.parse(savedCredentials);
