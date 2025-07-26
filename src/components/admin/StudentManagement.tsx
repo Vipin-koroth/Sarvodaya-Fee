@@ -54,8 +54,17 @@ const StudentManagement: React.FC = () => {
           const busNumber = values[6]?.trim() || '';
           const tripNumber = values[7]?.trim() || '';
           
-          // Only add if ALL fields have content
-          if (admissionNo && name && mobile && classValue && division && busStop && busNumber && tripNumber) {
+          // Strict validation - ALL fields must have content (not empty, not just whitespace)
+          const isValidRow = admissionNo.length > 0 && 
+                           name.length > 0 && 
+                           mobile.length > 0 && 
+                           classValue.length > 0 && 
+                           division.length > 0 && 
+                           busStop.length > 0 && 
+                           busNumber.length > 0 && 
+                           tripNumber.length > 0;
+          
+          if (isValidRow) {
           students.push({
             admissionNo: admissionNo,
             name: name,
@@ -67,7 +76,7 @@ const StudentManagement: React.FC = () => {
             tripNumber: tripNumber
           });
           } else {
-            console.log(`Skipping row ${i} due to empty fields:`, {
+            console.log(`Skipping row ${i + 1} due to empty fields:`, {
               admissionNo: admissionNo || 'EMPTY',
               name: name || 'EMPTY',
               mobile: mobile || 'EMPTY',
@@ -78,6 +87,8 @@ const StudentManagement: React.FC = () => {
               tripNumber: tripNumber || 'EMPTY'
             });
           }
+        } else {
+          console.log(`Skipping row ${i + 1} - insufficient columns (${values.length}/8 required)`);
         }
       }
       
