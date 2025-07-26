@@ -65,16 +65,69 @@ const DataManagement: React.FC = () => {
       const studentsCSV = generateStudentsCSV();
       const paymentsCSV = generatePaymentsCSV();
       
-      // Send email using EmailJS or similar service
-      await sendBackupEmail(studentsCSV, paymentsCSV, backupData);
+      // Send email using EmailJS
+      const emailData = {
+        to_email: backupEmail,
+        subject: `Sarvodaya School Weekly Backup - ${new Date().toLocaleDateString('en-GB')}`,
+        message: `
+Weekly Backup Report for Sarvodaya School Fee Management System
+
+Backup Date: ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB')}
+
+Summary:
+- Total Students: ${backupData.totalStudents}
+- Total Payments: ${backupData.totalPayments}
+- Total Collection: ₹${backupData.totalCollection.toLocaleString()}
+
+CSV files are attached with complete data.
+
+This is an automated backup from your school management system.
+        `,
+        students_csv: studentsCSV,
+        payments_csv: paymentsCSV
+      };
+
+      const { EmailService } = await import('../../lib/emailService');
+      const success = await EmailService.sendBackupEmail(emailData);
       
-      const now = new Date().toISOString();
-      localStorage.setItem('lastBackupDate', now);
-      setLastBackupDate(now);
+      if (success) {
+        const now = new Date().toISOString();
+        localStorage.setItem('lastBackupDate', now);
+        setLastBackupDate(now);
+        
+        alert('Weekly backup sent successfully via email!');
+        console.log('Weekly backup sent successfully');
+      } else {
+        throw new Error('Email service returned false');
+      }
       
-      console.log('Weekly backup sent successfully');
     } catch (error) {
       console.error('Failed to send weekly backup:', error);
+      alert('Failed to send weekly backup: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      
+      // Fallback to manual download
+      const studentsCSV = generateStudentsCSV();
+      const paymentsCSV = generatePaymentsCSV();
+      
+      const studentsBlob = new Blob([studentsCSV], { type: 'text/csv' });
+      const paymentsBlob = new Blob([paymentsCSV], { type: 'text/csv' });
+      
+      const studentsUrl = URL.createObjectURL(studentsBlob);
+      const paymentsUrl = URL.createObjectURL(paymentsBlob);
+      
+      // Auto-download backup files
+      const studentsLink = document.createElement('a');
+      studentsLink.href = studentsUrl;
+      studentsLink.download = `students_backup_${new Date().toISOString().slice(0, 10)}.csv`;
+      studentsLink.click();
+      
+      const paymentsLink = document.createElement('a');
+      paymentsLink.href = paymentsUrl;
+      paymentsLink.download = `payments_backup_${new Date().toISOString().slice(0, 10)}.csv`;
+      paymentsLink.click();
+      
+      URL.revokeObjectURL(studentsUrl);
+      URL.revokeObjectURL(paymentsUrl);
     }
   };
 
@@ -116,56 +169,6 @@ const DataManagement: React.FC = () => {
     return [headers, ...csvData].map(row => row.join(',')).join('\n');
   };
 
-  const sendBackupEmail = async (studentsCSV: string, paymentsCSV: string, backupData: any) => {
-    // Using EmailJS service for sending emails
-    const emailData = {
-      to_email: backupEmail,
-      subject: `Sarvodaya School Weekly Backup - ${new Date().toLocaleDateString('en-GB')}`,
-      message: `
-Weekly Backup Report for Sarvodaya School Fee Management System
-
-Backup Date: ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB')}
-
-Summary:
-- Total Students: ${backupData.totalStudents}
-- Total Payments: ${backupData.totalPayments}
-- Total Collection: ₹${backupData.totalCollection.toLocaleString()}
-
-CSV files are attached with complete data.
-
-This is an automated backup from your school management system.
-      `,
-      students_csv: studentsCSV,
-      payments_csv: paymentsCSV
-    };
-
-    // Note: In a real implementation, you would use EmailJS or a backend service
-    // For now, we'll create downloadable files and show instructions
-    console.log('Backup email data prepared:', emailData);
-    
-    // Create backup files for download
-    const studentsBlob = new Blob([studentsCSV], { type: 'text/csv' });
-    const paymentsBlob = new Blob([paymentsCSV], { type: 'text/csv' });
-    
-    const studentsUrl = URL.createObjectURL(studentsBlob);
-    const paymentsUrl = URL.createObjectURL(paymentsBlob);
-    
-    // Auto-download backup files
-    const studentsLink = document.createElement('a');
-    studentsLink.href = studentsUrl;
-    studentsLink.download = `students_backup_${new Date().toISOString().slice(0, 10)}.csv`;
-    studentsLink.click();
-    
-    const paymentsLink = document.createElement('a');
-    paymentsLink.href = paymentsUrl;
-    paymentsLink.download = `payments_backup_${new Date().toISOString().slice(0, 10)}.csv`;
-    paymentsLink.click();
-    
-    URL.revokeObjectURL(studentsUrl);
-    URL.revokeObjectURL(paymentsUrl);
-    
-    alert(`Backup files downloaded. Please email them to ${backupEmail} manually.\n\nTo setup automatic email backup, configure EmailJS service.`);
-  };
 
   const toggleEmailBackup = () => {
     const newState = !emailBackupEnabled;
