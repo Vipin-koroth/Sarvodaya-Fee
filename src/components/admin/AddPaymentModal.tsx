@@ -6,6 +6,7 @@ import { Payment } from '../../contexts/DataContext';
 
 interface AddPaymentModalProps {
   onClose: () => void;
+  onPaymentSuccess?: (payment: Payment) => void;
 }
 
 const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
@@ -109,6 +110,18 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose }) => {
     addPayment(paymentData)
       .then(() => {
         console.log('Payment added successfully');
+        // Create payment object for receipt
+        const newPayment: Payment = {
+          ...paymentData,
+          id: 'temp-' + Date.now(), // Temporary ID for immediate receipt
+          paymentDate: new Date().toISOString()
+        };
+        
+        // Call success callback if provided
+        if (onPaymentSuccess) {
+          onPaymentSuccess(newPayment);
+        }
+        
         onClose();
       })
       .catch((error) => {

@@ -3,6 +3,7 @@ import { Plus, Search, Edit, Trash2, Receipt, Calendar } from 'lucide-react';
 import { useData, Payment } from '../../contexts/DataContext';
 import AddPaymentModal from './AddPaymentModal';
 import ReceiptPrint from '../common/ReceiptPrint';
+import PaymentSuccessModal from './PaymentSuccessModal';
 
 const PaymentManagement: React.FC = () => {
   const { payments, deletePayment, students } = useData();
@@ -11,6 +12,7 @@ const PaymentManagement: React.FC = () => {
   const [filterDate, setFilterDate] = useState('');
   const [filterClass, setFilterClass] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [successPayment, setSuccessPayment] = useState<Payment | null>(null);
 
   const filteredPayments = payments.filter(payment => {
     const matchesSearch = payment.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -183,6 +185,10 @@ const PaymentManagement: React.FC = () => {
       {showAddModal && (
         <AddPaymentModal onClose={() => setShowAddModal(false)} />
       )}
+          onPaymentSuccess={(payment) => {
+            setSuccessPayment(payment);
+            setShowAddModal(false);
+          }}
 
       {selectedPayment && (
         <ReceiptPrint
@@ -191,6 +197,17 @@ const PaymentManagement: React.FC = () => {
         />
       )}
     </div>
+      {successPayment && (
+        <PaymentSuccessModal
+          payment={successPayment}
+          onClose={() => setSuccessPayment(null)}
+          onPrintReceipt={(payment) => {
+            setSelectedPayment(payment);
+            setSuccessPayment(null);
+          }}
+        />
+      )}
+
   );
 };
 

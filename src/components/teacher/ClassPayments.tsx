@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData, Payment } from '../../contexts/DataContext';
 import AddPaymentModal from '../admin/AddPaymentModal';
 import ReceiptPrint from '../common/ReceiptPrint';
+import PaymentSuccessModal from '../admin/PaymentSuccessModal';
 
 const ClassPayments: React.FC = () => {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ const ClassPayments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [successPayment, setSuccessPayment] = useState<Payment | null>(null);
 
   // Filter payments for current teacher's class
   const classPayments = payments.filter(
@@ -194,6 +196,10 @@ const ClassPayments: React.FC = () => {
       {showAddModal && (
         <AddPaymentModal onClose={() => setShowAddModal(false)} />
       )}
+          onPaymentSuccess={(payment) => {
+            setSuccessPayment(payment);
+            setShowAddModal(false);
+          }}
 
       {selectedPayment && (
         <ReceiptPrint
@@ -202,6 +208,17 @@ const ClassPayments: React.FC = () => {
         />
       )}
     </div>
+      {successPayment && (
+        <PaymentSuccessModal
+          payment={successPayment}
+          onClose={() => setSuccessPayment(null)}
+          onPrintReceipt={(payment) => {
+            setSelectedPayment(payment);
+            setSuccessPayment(null);
+          }}
+        />
+      )}
+
   );
 };
 
