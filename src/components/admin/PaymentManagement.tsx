@@ -183,12 +183,14 @@ const PaymentManagement: React.FC = () => {
 
       {/* Modals */}
       {showAddModal && (
-        <AddPaymentModal onClose={() => setShowAddModal(false)} />
-      )}
+        <AddPaymentModal 
+          onClose={() => setShowAddModal(false)}
           onPaymentSuccess={(payment) => {
             setSuccessPayment(payment);
             setShowAddModal(false);
           }}
+        />
+      )}
 
       {selectedPayment && (
         <ReceiptPrint
@@ -196,7 +198,7 @@ const PaymentManagement: React.FC = () => {
           onClose={() => setSelectedPayment(null)}
         />
       )}
-    </div>
+
       {successPayment && (
         <PaymentSuccessModal
           payment={successPayment}
@@ -207,7 +209,7 @@ const PaymentManagement: React.FC = () => {
           }}
         />
       )}
-
+    </div>
   );
 };
 
