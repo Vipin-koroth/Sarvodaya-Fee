@@ -486,6 +486,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errors: string[] = [];
       
       for (const student of newStudents) {
+        // Skip if any required field is empty or blank
+        if (!student.admissionNo?.trim() || 
+            !student.name?.trim() || 
+            !student.mobile?.trim() || 
+            !student.class?.trim() || 
+            !student.division?.trim() || 
+            !student.busStop?.trim() || 
+            !student.busNumber?.trim() || 
+            !student.tripNumber?.trim()) {
+          skipCount++;
+          errors.push(`Skipped: Row with blank/empty fields - ${student.name || 'Unknown'} (${student.admissionNo || 'No admission no'})`);
+          continue;
+        }
+        
         if (existingAdmissionNos.has(student.admissionNo)) {
           skipCount++;
           errors.push(`Skipped: Student with admission number ${student.admissionNo} already exists`);
@@ -518,6 +532,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const validStudents: Student[] = [];
       
       for (const student of newStudents) {
+        // Skip if any required field is empty or blank
+        if (!student.admissionNo?.trim() || 
+            !student.name?.trim() || 
+            !student.mobile?.trim() || 
+            !student.class?.trim() || 
+            !student.division?.trim() || 
+            !student.busStop?.trim() || 
+            !student.busNumber?.trim() || 
+            !student.tripNumber?.trim()) {
+          skipCount++;
+          errors.push(`Skipped: Row with blank/empty fields - ${student.name || 'Unknown'} (${student.admissionNo || 'No admission no'})`);
+          continue;
+        }
+        
         if (existingAdmissionNos.has(student.admissionNo)) {
           skipCount++;
           errors.push(`Skipped: Student with admission number ${student.admissionNo} already exists`);

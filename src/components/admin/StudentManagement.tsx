@@ -37,8 +37,21 @@ const StudentManagement: React.FC = () => {
       const students: Omit<Student, 'id'>[] = [];
       
       for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue; // Skip completely empty lines
+        
         const values = lines[i].split(',').map(v => v.trim());
-        if (values.length === headers.length && values[0]) {
+        
+        // Check if all required fields have values (not empty or just whitespace)
+        if (values.length >= 8 && 
+            values[0] && values[0].trim() && // admissionNo
+            values[1] && values[1].trim() && // name
+            values[2] && values[2].trim() && // mobile
+            values[3] && values[3].trim() && // class
+            values[4] && values[4].trim() && // division
+            values[5] && values[5].trim() && // busStop
+            values[6] && values[6].trim() && // busNumber
+            values[7] && values[7].trim()) { // tripNumber
           students.push({
             admissionNo: values[0],
             name: values[1],
