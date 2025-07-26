@@ -52,6 +52,8 @@ const DataManagement: React.FC = () => {
 
   const sendWeeklyBackup = async () => {
     try {
+      console.log('Starting backup process...');
+      
       const backupData = {
         students: students,
         payments: payments,
@@ -61,9 +63,13 @@ const DataManagement: React.FC = () => {
         totalCollection: payments.reduce((sum, p) => sum + p.totalAmount, 0)
       };
 
+      console.log('Backup data prepared:', backupData);
+
       // Create CSV content for students
       const studentsCSV = generateStudentsCSV();
       const paymentsCSV = generatePaymentsCSV();
+      
+      console.log('CSV data generated, students length:', studentsCSV.length, 'payments length:', paymentsCSV.length);
       
       // Send email using EmailJS
       const emailData = {
@@ -87,6 +93,8 @@ This is an automated backup from your school management system.
         payments_csv: paymentsCSV
       };
 
+      console.log('Attempting to send email to:', backupEmail);
+      
       const { EmailService } = await import('../../lib/emailService');
       const success = await EmailService.sendBackupEmail(emailData);
       
@@ -95,17 +103,22 @@ This is an automated backup from your school management system.
         localStorage.setItem('lastBackupDate', now);
         setLastBackupDate(now);
         
-        alert('Weekly backup sent successfully via email!');
         console.log('Weekly backup sent successfully');
+        alert('✅ Weekly backup sent successfully via email!');
       } else {
         throw new Error('Email service returned false');
       }
       
     } catch (error) {
       console.error('Failed to send weekly backup:', error);
-      alert('Failed to send weekly backup: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Detailed error:', errorMessage);
+      
+      alert(`❌ Failed to send weekly backup via email: ${errorMessage}\n\nPlease check:\n1. EmailJS service is configured\n2. Template exists\n3. Internet connection\n\nFalling back to file download...`);
       
       // Fallback to manual download
+      console.log('Falling back to manual download...');
       const studentsCSV = generateStudentsCSV();
       const paymentsCSV = generatePaymentsCSV();
       

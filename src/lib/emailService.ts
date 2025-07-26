@@ -10,81 +10,89 @@ export interface BackupEmailData {
 }
 
 export class EmailService {
-  private static SERVICE_ID = 'service_backup';
-  private static TEMPLATE_ID = 'template_backup';
+  private static SERVICE_ID = 'service_xyz123';
+  private static TEMPLATE_ID = 'template_xyz123';
   private static PUBLIC_KEY = '_RWoqN93jOymywN_a';
   private static PRIVATE_KEY = 'MaEp5XnCJqyJw8szR0Zcz';
 
   static async sendBackupEmail(data: BackupEmailData): Promise<boolean> {
     try {
-      // Check if EmailJS is available
-      if (typeof window !== 'undefined' && (window as any).emailjs) {
-        const emailjs = (window as any).emailjs;
-        
-        const templateParams = {
-          to_email: data.to_email,
-          subject: data.subject,
-          message: data.message,
-          students_csv: data.students_csv,
-          payments_csv: data.payments_csv,
-          from_name: 'Sarvodaya School Management System',
-          reply_to: 'noreply@sarvodayaschool.edu'
-        };
-
-        const response = await emailjs.send(
-          this.SERVICE_ID,
-          this.TEMPLATE_ID,
-          templateParams,
-          {
-            publicKey: this.PUBLIC_KEY,
-            privateKey: this.PRIVATE_KEY
-          }
-        );
-
-        console.log('Email sent successfully:', response);
-        return true;
-      } else {
-        console.warn('EmailJS not loaded. Loading EmailJS...');
-        await this.setupEmailJS();
-        // Retry sending after loading
-        return this.sendBackupEmail(data);
+      // Ensure EmailJS is loaded
+      await this.setupEmailJS();
+      
+      const emailjs = (window as any).emailjs;
+      if (!emailjs) {
+        throw new Error('EmailJS failed to load');
       }
+      
+      const templateParams = {
+        to_email: data.to_email,
+        subject: data.subject,
+        message: data.message,
+        students_csv: data.students_csv,
+        payments_csv: data.payments_csv,
+        from_name: 'Sarvodaya School Management System',
+        reply_to: 'noreply@sarvodayaschool.edu'
+      };
+
+      console.log('Sending email with params:', templateParams);
+      console.log('Using service ID:', this.SERVICE_ID);
+      console.log('Using template ID:', this.TEMPLATE_ID);
+
+      const response = await emailjs.send(
+        this.SERVICE_ID,
+        this.TEMPLATE_ID,
+        templateParams,
+        this.PUBLIC_KEY
+      );
+
+      console.log('Email sent successfully:', response);
+      return response.status === 200;
     } catch (error) {
       console.error('Failed to send email:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        serviceId: this.SERVICE_ID,
+        templateId: this.TEMPLATE_ID,
+        publicKey: this.PUBLIC_KEY
+      });
       throw error;
     }
   }
 
   static async setupEmailJS(): Promise<void> {
-    try {
-      // Load EmailJS script if not already loaded
-      if (typeof window !== 'undefined' && !(window as any).emailjs) {
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
-          script.onload = () => {
-            (window as any).emailjs.init({
-              publicKey: this.PUBLIC_KEY,
-              privateKey: this.PRIVATE_KEY
-            });
-            console.log('EmailJS initialized successfully');
-            resolve();
-          };
-          script.onerror = () => {
-            reject(new Error('Failed to load EmailJS script'));
-          };
-          document.head.appendChild(script);
-        });
-      } else {
-        // Re-initialize with new keys
-        (window as any).emailjs.init({
-          publicKey: this.PUBLIC_KEY,
-          privateKey: this.PRIVATE_KEY
-        });
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined') {
+        reject(new Error('Window is not available'));
+        return;
       }
-    } catch (error) {
-      console.error('Failed to setup EmailJS:', error);
-      throw error;
+
+      // Check if EmailJS is already loaded
+      if ((window as any).emailjs) {
+        console.log('EmailJS already loaded, initializing...');
+        (window as any).emailjs.init(this.PUBLIC_KEY);
+        resolve();
+        return;
+      }
+
+      // Load EmailJS script
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+      script.onload = () => {
+        try {
+          (window as any).emailjs.init(this.PUBLIC_KEY);
+          console.log('EmailJS loaded and initialized successfully');
+          resolve();
+        } catch (error) {
+          console.error('Failed to initialize EmailJS:', error);
+          reject(error);
+        }
+      };
+      script.onerror = () => {
+        reject(new Error('Failed to load EmailJS script'));
+      };
+      document.head.appendChild(script);
+    });
     }
   }
 }
