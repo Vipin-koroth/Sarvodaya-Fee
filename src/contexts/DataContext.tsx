@@ -240,6 +240,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'students' },
         (payload) => {
+          console.log('Students realtime update:', payload);
           if (payload.eventType === 'INSERT') {
             const newStudent = transformSupabaseStudent(payload.new as SupabaseStudent);
             setStudents(prev => [newStudent, ...prev]);
@@ -259,9 +260,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'payments' },
         (payload) => {
+          console.log('Payments realtime update:', payload);
           if (payload.eventType === 'INSERT') {
             const newPayment = transformSupabasePayment(payload.new as SupabasePayment);
-            setPayments(prev => [newPayment, ...prev]);
+            setPayments(prev => {
+              // Check if payment already exists to avoid duplicates
+              const exists = prev.find(p => p.id === newPayment.id);
+              if (exists) {
+                console.log('Payment already exists in state, skipping duplicate');
+                return prev;
+              }
+              console.log('Adding new payment from realtime:', newPayment);
+              return [newPayment, ...prev];
+            });
           } else if (payload.eventType === 'UPDATE') {
             const updatedPayment = transformSupabasePayment(payload.new as SupabasePayment);
             setPayments(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p));
@@ -278,6 +289,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'fee_config' },
         () => {
+          console.log('Fee config realtime update');
           loadFeeConfigFromSupabase();
         }
       )
@@ -285,6 +297,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Cleanup subscriptions
     return () => {
+      console.log('Cleaning up realtime subscriptions');
       studentsSubscription.unsubscribe();
       paymentsSubscription.unsubscribe();
       feeConfigSubscription.unsubscribe();
