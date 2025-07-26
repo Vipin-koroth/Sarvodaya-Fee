@@ -486,17 +486,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errors: string[] = [];
       
       for (const student of newStudents) {
-        // Skip if any required field is empty or blank
-        if (!student.admissionNo?.trim() || 
-            !student.name?.trim() || 
-            !student.mobile?.trim() || 
-            !student.class?.trim() || 
-            !student.division?.trim() || 
-            !student.busStop?.trim() || 
-            !student.busNumber?.trim() || 
-            !student.tripNumber?.trim()) {
+        // Validate all required fields are present and not empty
+        const admissionNo = student.admissionNo?.trim();
+        const name = student.name?.trim();
+        const mobile = student.mobile?.trim();
+        const classValue = student.class?.trim();
+        const division = student.division?.trim();
+        const busStop = student.busStop?.trim();
+        const busNumber = student.busNumber?.trim();
+        const tripNumber = student.tripNumber?.trim();
+        
+        if (!admissionNo || !name || !mobile || !classValue || !division || !busStop || !busNumber || !tripNumber) {
           skipCount++;
-          errors.push(`Skipped: Row with blank/empty fields - ${student.name || 'Unknown'} (${student.admissionNo || 'No admission no'})`);
+          errors.push(`Skipped: Row with empty fields - ${name || 'Unknown'} (${admissionNo || 'No admission no'})`);
           continue;
         }
         
@@ -532,17 +534,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const validStudents: Student[] = [];
       
       for (const student of newStudents) {
-        // Skip if any required field is empty or blank
-        if (!student.admissionNo?.trim() || 
-            !student.name?.trim() || 
-            !student.mobile?.trim() || 
-            !student.class?.trim() || 
-            !student.division?.trim() || 
-            !student.busStop?.trim() || 
-            !student.busNumber?.trim() || 
-            !student.tripNumber?.trim()) {
+        // Validate all required fields are present and not empty
+        const admissionNo = student.admissionNo?.trim();
+        const name = student.name?.trim();
+        const mobile = student.mobile?.trim();
+        const classValue = student.class?.trim();
+        const division = student.division?.trim();
+        const busStop = student.busStop?.trim();
+        const busNumber = student.busNumber?.trim();
+        const tripNumber = student.tripNumber?.trim();
+        
+        if (!admissionNo || !name || !mobile || !classValue || !division || !busStop || !busNumber || !tripNumber) {
           skipCount++;
-          errors.push(`Skipped: Row with blank/empty fields - ${student.name || 'Unknown'} (${student.admissionNo || 'No admission no'})`);
+          errors.push(`Skipped: Row with empty fields - ${name || 'Unknown'} (${admissionNo || 'No admission no'})`);
           continue;
         }
         
