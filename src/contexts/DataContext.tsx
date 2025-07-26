@@ -363,17 +363,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addStudent = async (student: Omit<Student, 'id'>) => {
     if (useSupabase) {
       // Check if admission number already exists
-      const { data: existingStudent, error: checkError } = await supabase
+      const { data: existingStudents, error: checkError } = await supabase
         .from('students')
         .select('id')
         .eq('admission_no', student.admissionNo)
-        .single();
+        .limit(1);
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         throw checkError;
       }
 
-      if (existingStudent) {
+      if (existingStudents && existingStudents.length > 0) {
         throw new Error(`Student with admission number ${student.admissionNo} already exists.`);
       }
 
