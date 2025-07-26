@@ -43,25 +43,41 @@ const StudentManagement: React.FC = () => {
         const values = lines[i].split(',').map(v => v.trim());
         
         // Check if all required fields have values (not empty or just whitespace)
-        if (values.length >= 8 && 
-            values[0] && values[0].trim() && // admissionNo
-            values[1] && values[1].trim() && // name
-            values[2] && values[2].trim() && // mobile
-            values[3] && values[3].trim() && // class
-            values[4] && values[4].trim() && // division
-            values[5] && values[5].trim() && // busStop
-            values[6] && values[6].trim() && // busNumber
-            values[7] && values[7].trim()) { // tripNumber
+        // Check if we have at least 8 columns and all are non-empty
+        if (values.length >= 8) {
+          const admissionNo = values[0]?.trim() || '';
+          const name = values[1]?.trim() || '';
+          const mobile = values[2]?.trim() || '';
+          const classValue = values[3]?.trim() || '';
+          const division = values[4]?.trim() || '';
+          const busStop = values[5]?.trim() || '';
+          const busNumber = values[6]?.trim() || '';
+          const tripNumber = values[7]?.trim() || '';
+          
+          // Only add if ALL fields have content
+          if (admissionNo && name && mobile && classValue && division && busStop && busNumber && tripNumber) {
           students.push({
-            admissionNo: values[0],
-            name: values[1],
-            mobile: values[2],
-            class: values[3],
-            division: values[4],
-            busStop: values[5],
-            busNumber: values[6],
-            tripNumber: values[7]
+            admissionNo: admissionNo,
+            name: name,
+            mobile: mobile,
+            class: classValue,
+            division: division,
+            busStop: busStop,
+            busNumber: busNumber,
+            tripNumber: tripNumber
           });
+          } else {
+            console.log(`Skipping row ${i} due to empty fields:`, {
+              admissionNo: admissionNo || 'EMPTY',
+              name: name || 'EMPTY',
+              mobile: mobile || 'EMPTY',
+              class: classValue || 'EMPTY',
+              division: division || 'EMPTY',
+              busStop: busStop || 'EMPTY',
+              busNumber: busNumber || 'EMPTY',
+              tripNumber: tripNumber || 'EMPTY'
+            });
+          }
         }
       }
       
