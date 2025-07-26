@@ -93,7 +93,6 @@ export class EmailService {
       };
       document.head.appendChild(script);
     });
-    }
   }
 }
 
