@@ -35,7 +35,7 @@ const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ payment, onClose }) => {
     const totalPaidBus = busPayments.reduce((sum, p) => sum + p.amount, 0);
     
     // Get the correct fee key for classes 11 and 12 (class-division) or regular classes (class only)
-    const feeKey = (student.class === '11' || student.class === '12') 
+    const feeKey = (['11', '12'].includes(student.class)) 
       ? `${student.class}-${student.division}` 
       : student.class;
     const totalDevelopmentRequired = feeConfig.developmentFees[feeKey] || 0;

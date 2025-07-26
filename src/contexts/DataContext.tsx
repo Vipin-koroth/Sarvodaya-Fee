@@ -368,6 +368,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     division: payment.division,
   });
 
+  const getStudentBalance = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return { devBalance: 0, busBalance: 0 };
+
+    const classKey = (['11', '12'].includes(student.class)) 
+      ? `${student.class}-${student.division}` 
+      : student.class;
+
+    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
+    const totalBusFee = feeConfig.busStops[student.busStop] || 0;
+
+    const studentPayments = payments.filter(p => p.studentId === studentId);
+    const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+    const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+
+    return {
+      devBalance: totalDevFee - paidDevFee,
+      busBalance: totalBusFee - paidBusFee
+    };
+  };
+
   // CRUD operations
   const addStudent = async (student: Omit<Student, 'id'>) => {
     if (useSupabase) {

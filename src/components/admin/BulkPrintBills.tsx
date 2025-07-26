@@ -16,7 +16,7 @@ const BulkPrintBills: React.FC = () => {
     const student = students.find(s => s.id === studentId);
     if (!student) return { devBalance: 0, busBalance: 0 };
 
-    const classKey = ['11', '12'].includes(student.class) 
+    const classKey = (['11', '12'].includes(student.class)) 
       ? `${student.class}-${student.division}` 
       : student.class;
 
