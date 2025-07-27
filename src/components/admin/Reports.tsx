@@ -379,6 +379,11 @@ const Reports: React.FC = () => {
     
     Object.entries(reportData).forEach(([classKey, classData]: [string, any]) => {
       classData.students.forEach((student: any) => {
+        // Skip students with zero total amount
+        if (student.totalCollected === 0) {
+          return;
+        }
+        
         // Combined row
         const combinedRow = [
           classKey,
