@@ -643,8 +643,9 @@ This is an automated weekly report from your school management system.
             <ul className="text-sm text-yellow-800 space-y-1">
               <li>• Reports are sent every Sunday at midnight</li>
               <li>• Includes receipt-wise and class monthly collection reports</li>
-              <li>• Email contains summary statistics and CSV files</li>
-              <li>• Configure EmailJS service for automatic email delivery</li>
+              <li>• Email contains summary statistics and Base64 encoded CSV attachments</li>
+              <li>• CSV files are automatically downloadable from email</li>
+              <li>• Configure EmailJS service with attachment support for delivery</li>
             </ul>
           </div>
         </div>
