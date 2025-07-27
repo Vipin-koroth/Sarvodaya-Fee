@@ -122,36 +122,14 @@ const TeacherReports: React.FC = () => {
     };
   };
 
-  const getFilteredPayments = () => {
-    let filteredPayments = classPayments;
-
-    if (dateFilter === 'month') {
-      const [year, month] = selectedMonth.split('-');
-      filteredPayments = filteredPayments.filter(payment => {
-        const paymentDate = new Date(payment.paymentDate);
-        return paymentDate.getFullYear() === parseInt(year) && 
-               paymentDate.getMonth() === parseInt(month) - 1;
-      });
-    } else if (dateFilter === 'custom') {
-      filteredPayments = filteredPayments.filter(payment => {
-        const paymentDate = new Date(payment.paymentDate).toISOString().split('T')[0];
-        const matchesFromDate = !fromDate || paymentDate >= fromDate;
-        const matchesToDate = !toDate || paymentDate <= toDate;
-        return matchesFromDate && matchesToDate;
-      });
-    }
-
-    return filteredPayments;
-  };
-
-  // Get student payment details
+  // Get student payment details with proper discount calculation
   const getStudentPaymentDetails = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return null;
 
     const studentPayments = payments.filter(p => p.studentId === studentId);
     
-    // Calculate fee structure
+    // Calculate fee structure with discount
     const classKey = (['11', '12'].includes(student.class)) 
       ? `${student.class}-${student.division}` 
       : student.class;
@@ -194,6 +172,45 @@ const TeacherReports: React.FC = () => {
     };
   };
 
+  const getFilteredPayments = () => {
+    let filteredPayments = classPayments;
+
+    if (dateFilter === 'month') {
+      const [year, month] = selectedMonth.split('-');
+      filteredPayments = filteredPayments.filter(payment => {
+        const paymentDate = new Date(payment.paymentDate);
+        return paymentDate.getFullYear() === parseInt(year) && 
+               paymentDate.getMonth() === parseInt(month) - 1;
+      });
+    } else if (dateFilter === 'custom') {
+      filteredPayments = filteredPayments.filter(payment => {
+        const paymentDate = new Date(payment.paymentDate).toISOString().split('T')[0];
+        const matchesFromDate = !fromDate || paymentDate >= fromDate;
+        const matchesToDate = !toDate || paymentDate <= toDate;
+        return matchesFromDate && matchesToDate;
+      });
+    }
+
+    return filteredPayments;
+  };
+
+  // Get student payment details
+  const getStudentPaymentDetails = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return null;
+
+    const studentPayments = payments.filter(p => p.studentId === studentId);
+    
+    // Calculate fee structure
+    const classKey = (['11', '12'].includes(student.class)) 
+      ? `${student.class}-${student.division}` 
+      : student.class;
+    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const busFeeDiscount = student.busFeeDiscount || 0;
+    const discountedBusFee = Math.max(0, originalBusFee - busFeeDiscount);
+    
+    // Calculate totals
   // Student Details Modal Component
   const StudentDetailsModal: React.FC<{ studentId: string; onClose: () => void }> = ({ studentId, onClose }) => {
     const details = getStudentPaymentDetails(studentId);
