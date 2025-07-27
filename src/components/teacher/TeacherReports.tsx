@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Calendar, Users, TrendingUp, Bus } from 'lucide-react';
+import { FileText, Download, Calendar, Users, TrendingUp, Bus, Eye, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 
@@ -11,6 +11,7 @@ const TeacherReports: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<string | null>(null);
 
   // Filter data for current teacher's class
   const classStudents = students.filter(
@@ -43,6 +44,251 @@ const TeacherReports: React.FC = () => {
     return filteredPayments;
   };
 
+  // Get student payment details
+  const getStudentPaymentDetails = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return null;
+
+    const studentPayments = payments.filter(p => p.studentId === studentId);
+    
+    // Calculate fee structure
+    const classKey = (['11', '12'].includes(student.class)) 
+      ? `${student.class}-${student.division}` 
+      : student.class;
+    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const discountedBusFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
+    
+    // Calculate totals
+    const totalPaidDev = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+    const totalPaidBus = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+    const totalPaidSpecial = studentPayments.reduce((sum, p) => sum + p.specialFee, 0);
+    const totalPaidAll = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+    
+    return {
+      student,
+      payments: studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()),
+      feeStructure: {
+        developmentFee: {
+          total: totalDevFee,
+          paid: totalPaidDev,
+          remaining: Math.max(0, totalDevFee - totalPaidDev)
+        },
+        busFee: {
+          original: originalBusFee,
+          discount: student.busFeeDiscount || 0,
+          total: discountedBusFee,
+          paid: totalPaidBus,
+          remaining: Math.max(0, discountedBusFee - totalPaidBus)
+        },
+        specialFee: {
+          paid: totalPaidSpecial
+        },
+        grandTotal: {
+          required: totalDevFee + discountedBusFee,
+          paid: totalPaidAll,
+          remaining: Math.max(0, (totalDevFee + discountedBusFee) - (totalPaidDev + totalPaidBus))
+        }
+      }
+    };
+  };
+
+  // Student Details Modal Component
+  const StudentDetailsModal: React.FC<{ studentId: string; onClose: () => void }> = ({ studentId, onClose }) => {
+    const details = getStudentPaymentDetails(studentId);
+    
+    if (!details) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Student Payment Details</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Student Info */}
+          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-blue-900 mb-3">Student Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-blue-700 font-medium">Name:</span>
+                <div className="text-gray-900">{details.student.name}</div>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">Admission No:</span>
+                <div className="text-gray-900">{details.student.admissionNo}</div>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">Class:</span>
+                <div className="text-gray-900">{details.student.class}-{details.student.division}</div>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">Bus Stop:</span>
+                <div className="text-gray-900">{details.student.busStop}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fee Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {/* Development Fee */}
+            <div className="bg-purple-50 rounded-lg p-4">
+              <h4 className="font-medium text-purple-900 mb-3">Development Fee</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-purple-700">Total Required:</span>
+                  <span className="font-medium">₹{details.feeStructure.developmentFee.total}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-700">Paid:</span>
+                  <span className="font-medium text-green-600">₹{details.feeStructure.developmentFee.paid}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="text-purple-700 font-medium">Remaining:</span>
+                  <span className="font-bold text-red-600">₹{details.feeStructure.developmentFee.remaining}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bus Fee */}
+            <div className="bg-green-50 rounded-lg p-4">
+              <h4 className="font-medium text-green-900 mb-3">Bus Fee</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-green-700">Original Amount:</span>
+                  <span className="font-medium">₹{details.feeStructure.busFee.original}</span>
+                </div>
+                {details.feeStructure.busFee.discount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-green-700">Discount:</span>
+                    <span className="font-medium text-orange-600">-₹{details.feeStructure.busFee.discount}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-green-700">After Discount:</span>
+                  <span className="font-medium">₹{details.feeStructure.busFee.total}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-700">Paid:</span>
+                  <span className="font-medium text-green-600">₹{details.feeStructure.busFee.paid}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="text-green-700 font-medium">Remaining:</span>
+                  <span className="font-bold text-red-600">₹{details.feeStructure.busFee.remaining}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Grand Total */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-3">Grand Total</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Total Required:</span>
+                  <span className="font-medium">₹{details.feeStructure.grandTotal.required}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Total Paid:</span>
+                  <span className="font-medium text-green-600">₹{details.feeStructure.grandTotal.paid}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Special Fees:</span>
+                  <span className="font-medium text-blue-600">₹{details.feeStructure.specialFee.paid}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="text-gray-700 font-medium">Balance:</span>
+                  <span className="font-bold text-red-600">₹{details.feeStructure.grandTotal.remaining}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment History */}
+          <div className="bg-white rounded-lg border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Payment History ({details.payments.length} payments)</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Receipt #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Development Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Bus Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Special Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Added By
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {details.payments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        #{payment.id.slice(-6)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {payment.developmentFee > 0 ? `₹${payment.developmentFee}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {payment.busFee > 0 ? `₹${payment.busFee}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {payment.specialFee > 0 ? (
+                          <div>
+                            <div className="text-sm text-gray-900">₹{payment.specialFee}</div>
+                            <div className="text-xs text-gray-500">{payment.specialFeeType}</div>
+                          </div>
+                        ) : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-green-600">
+                          ₹{payment.totalAmount}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {payment.addedBy}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {details.payments.length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  This student has not made any payments yet.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
   const ClassWiseReport: React.FC = () => {
     const filteredPayments = getFilteredPayments();
     const totalCollection = filteredPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
@@ -180,6 +426,9 @@ const TeacherReports: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -210,6 +459,15 @@ const TeacherReports: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => setSelectedStudentForDetails(payment.studentId)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="View Student Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -314,6 +572,9 @@ const TeacherReports: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -353,6 +614,15 @@ const TeacherReports: React.FC = () => {
                         <span className="text-sm font-semibold text-green-600">
                           ₹{totalAmount}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => setSelectedStudentForDetails(student.id)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="View Student Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -516,6 +786,13 @@ const TeacherReports: React.FC = () => {
       {activeReport === 'class-wise' && <ClassWiseReport />}
       {activeReport === 'monthly-collection' && <MonthlyCollectionReport />}
     </div>
+      {/* Student Details Modal */}
+      {selectedStudentForDetails && (
+        <StudentDetailsModal
+          studentId={selectedStudentForDetails}
+          onClose={() => setSelectedStudentForDetails(null)}
+        />
+      )}
   );
 };
 
