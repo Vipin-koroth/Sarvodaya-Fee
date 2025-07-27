@@ -111,6 +111,8 @@ const BulkPrintBills: React.FC = () => {
               border: none;
             }
             .receipt-number { text-align: left; font-size: 10px; margin-bottom: 1mm; color: #666; }
+            .school-logo { text-align: center; margin-bottom: 3mm; }
+            .school-logo img { width: 20mm; height: 20mm; object-fit: contain; margin: 0 auto; display: block; }
             .receipt-header { text-align: center; margin-bottom: 3mm; }
             .receipt-header .school-name { font-size: 22px; font-weight: bold; margin-bottom: 1mm; }
             .receipt-header .school-subtitle { font-size: 20px; font-weight: bold; margin-bottom: 1mm; }
@@ -366,6 +368,13 @@ const BulkPrintBills: React.FC = () => {
             return (
               <div key={payment.id} className="receipt">
                 <div className="receipt-number">#{payment.id.slice(-6)}</div>
+                
+                <div className="school-logo">
+                  <img 
+                    src="/Sarvodaya Pay_small.png" 
+                    alt="Sarvodaya School Logo"
+                  />
+                </div>
                 
                 <div className="receipt-header">
                   <div className="school-name">Sarvodaya</div>

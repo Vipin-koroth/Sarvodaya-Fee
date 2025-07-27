@@ -293,6 +293,20 @@ Keep this receipt for your records.
                     #{payment.id.slice(-6)}
                   </div>
                   
+                  {/* School Logo */}
+                  <div style={{ textAlign: 'center', marginBottom: '3mm' }}>
+                    <img 
+                      src="/Sarvodaya Pay_small.png" 
+                      alt="Sarvodaya School Logo" 
+                      style={{ 
+                        width: '20mm', 
+                        height: '20mm', 
+                        objectFit: 'contain',
+                        margin: '0 auto'
+                      }} 
+                    />
+                  </div>
+                  
                   {/* Header */}
                   <div style={{ textAlign: 'center', marginBottom: '3mm' }}>
                     <div style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '1mm' }}>
