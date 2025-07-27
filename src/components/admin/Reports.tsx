@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Calendar, Users, Bus, AlertTriangle, UserX } from 'lucide-react';
+import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt, AlertTriangle } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 const Reports: React.FC = () => {
@@ -195,6 +195,62 @@ const Reports: React.FC = () => {
     
     return report;
   };
+
+  // Fee not paid students report data
+  const getFeeNotPaidStudentsReport = () => {
+    const report: Record<string, any> = {};
+    
+    for (let classNum = 1; classNum <= 12; classNum++) {
+      for (const division of ['A', 'B', 'C', 'D', 'E']) {
+        const classKey = `${classNum}-${division}`;
+        const classStudents = students.filter(s => 
+          s.class === classNum.toString() && s.division === division
+        );
+        
+        if (classStudents.length > 0) {
+          const studentsWithBalance = classStudents.map(student => {
+            const balance = getStudentBalance(student.id);
+            const studentPayments = payments.filter(p => p.studentId === student.id);
+            
+            const feeKey = (['11', '12'].includes(student.class)) 
+              ? `${student.class}-${student.division}` 
+              : student.class;
+            
+            const totalDevRequired = feeConfig.developmentFees[feeKey] || 0;
+            const totalBusRequired = feeConfig.busStops[student.busStop] || 0;
+            const paidDev = studentPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);
+            const paidBus = studentPayments.reduce((sum, p) => sum + (p.busFee || 0), 0);
+            
+            const lastPayment = studentPayments.sort((a, b) => 
+              new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+            )[0];
+            
+            return {
+              ...student,
+              devBalance: balance.devBalance,
+              busBalance: balance.busBalance,
+              totalBalance: balance.devBalance + balance.busBalance,
+              totalDevRequired,
+              totalBusRequired,
+              paidDev,
+              paidBus,
+              lastPaymentDate: lastPayment?.paymentDate
+            };
+          }).filter(student => student.totalBalance > 0);
+          
+          if (studentsWithBalance.length > 0) {
+            report[classKey] = {
+              className: classKey,
+              students: studentsWithBalance
+            };
+          }
+        }
+      }
+    }
+    
+    return report;
+  };
+
   // Receipt-wise report data
   const getReceiptWiseReport = () => {
     let filteredPayments = payments;
@@ -243,6 +299,7 @@ const Reports: React.FC = () => {
       busBalance: Math.max(0, totalBusFee - paidBusFee)
     };
   };
+
   const downloadReport = (reportData: any, filename: string) => {
     const csvContent = generateCSV(reportData, reportType);
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -347,6 +404,7 @@ const Reports: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+
   const generateCSV = (data: any, type: string) => {
     let headers: string[] = [];
     let rows: string[][] = [];
@@ -428,6 +486,7 @@ const Reports: React.FC = () => {
   const receiptWiseData = getReceiptWiseReport();
   const classMonthlyCollectionData = getClassMonthlyCollectionReport();
   const noPaymentStudentsData = getNoPaymentStudentsReport();
+  const feeNotPaidData = getFeeNotPaidStudentsReport();
 
   return (
     <div className="space-y-6">
@@ -439,8 +498,6 @@ const Reports: React.FC = () => {
       {/* Report Type Selection */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center space-x-4 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Row 1 */}
           <h2 className="text-lg font-semibold text-gray-900">Select Report Type</h2>
         </div>
         
@@ -485,7 +542,7 @@ const Reports: React.FC = () => {
           </button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <button
             onClick={() => setReportType('monthly')}
             className={`p-4 rounded-lg border-2 transition-colors ${
@@ -496,8 +553,9 @@ const Reports: React.FC = () => {
           >
             <Calendar className="h-8 w-8 mx-auto mb-2" />
             <div className="font-medium">Monthly Report</div>
+            <div className="text-sm text-gray-600">Monthly fee collections</div>
+          </button>
           
-          {/* Row 2 */}
           <button
             onClick={() => setReportType('class-monthly')}
             className={`p-4 rounded-lg border-2 transition-colors ${
@@ -523,7 +581,7 @@ const Reports: React.FC = () => {
             <div className="font-medium">Fee Not Paid Students</div>
             <div className="text-sm text-gray-600">Students with pending fees</div>
           </button>
-          
+        </div>
       </div>
 
       {/* Report Content */}
@@ -850,7 +908,7 @@ const Reports: React.FC = () => {
         </div>
       )}
 
-      {reportType === 'class-monthly-collection' && (
+      {reportType === 'class-monthly' && (
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Class-wise Monthly Collection Report</h3>
@@ -947,6 +1005,7 @@ const Reports: React.FC = () => {
           )}
         </div>
       )}
+
       {reportType === 'no-payment-students' && (
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex justify-between items-center mb-6">
