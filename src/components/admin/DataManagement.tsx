@@ -270,14 +270,14 @@ This is an automated weekly report from your school management system.
     
     if (newState) {
       setupWeeklyBackup();
-      alert('Weekly email backup enabled! Backups will be sent every Sunday.');
+      alert('Weekly email reports enabled! Reports will be sent every Sunday.');
     } else {
       const intervalId = localStorage.getItem('backupIntervalId');
       if (intervalId) {
         clearInterval(parseInt(intervalId));
         localStorage.removeItem('backupIntervalId');
       }
-      alert('Weekly email backup disabled.');
+      alert('Weekly email reports disabled.');
     }
   };
 
