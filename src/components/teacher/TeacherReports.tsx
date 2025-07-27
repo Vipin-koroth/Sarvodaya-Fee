@@ -785,7 +785,7 @@ const TeacherReports: React.FC = () => {
       {/* Report Content */}
       {activeReport === 'class-wise' && <ClassWiseReport />}
       {activeReport === 'monthly-collection' && <MonthlyCollectionReport />}
-    </div>
+
       {/* Student Details Modal */}
       {selectedStudentForDetails && (
         <StudentDetailsModal
@@ -793,6 +793,7 @@ const TeacherReports: React.FC = () => {
           onClose={() => setSelectedStudentForDetails(null)}
         />
       )}
+    </div>
   );
 };
 
