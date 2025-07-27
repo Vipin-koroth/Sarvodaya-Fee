@@ -1,3 +1,150 @@
+            {(() => {
+              const { unpaidStudents, groupedByClass } = getFeeUnpaidStudentsReport();
+              
+              if (unpaidStudents.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+                    <h3 className="text-xl font-semibold text-green-900 mb-2">All Fees Paid!</h3>
+                    <p className="text-green-700">Every student has paid their required fees.</p>
+                  </div>
+                );
+              }
+
+              const totalDevBalance = unpaidStudents.reduce((sum, student) => {
+                const studentPayments = payments.filter(p => p.studentId === student.id);
+                const classKey = (['11', '12'].includes(student.class)) 
+                  ? `${student.class}-${student.division}` 
+                  : student.class;
+                const requiredDevFee = feeConfig.developmentFees[classKey] || 0;
+                const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+                return sum + Math.max(0, requiredDevFee - paidDevFee);
+              }, 0);
+
+              const totalBusBalance = unpaidStudents.reduce((sum, student) => {
+                const studentPayments = payments.filter(p => p.studentId === student.id);
+                const requiredBusFee = feeConfig.busStops[student.busStop] || 0;
+                const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+                return sum + Math.max(0, requiredBusFee - paidBusFee);
+              }, 0);
+
+              return (
+                <>
+                  {/* Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-red-50 rounded-lg p-4">
+                      <div className="text-red-600 text-sm font-medium">Total Students</div>
+                      <div className="text-2xl font-bold text-gray-900">{unpaidStudents.length}</div>
+                    </div>
+                    <div className="bg-orange-50 rounded-lg p-4">
+                      <div className="text-orange-600 text-sm font-medium">Development Balance</div>
+                      <div className="text-2xl font-bold text-gray-900">₹{totalDevBalance.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-yellow-50 rounded-lg p-4">
+                      <div className="text-yellow-600 text-sm font-medium">Bus Balance</div>
+                      <div className="text-2xl font-bold text-gray-900">₹{totalBusBalance.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-4">
+                      <div className="text-red-600 text-sm font-medium">Total Outstanding</div>
+                      <div className="text-2xl font-bold text-gray-900">₹{(totalDevBalance + totalBusBalance).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Class-wise breakdown */}
+                  <div className="space-y-6">
+                    {Object.entries(groupedByClass).map(([classKey, classStudents]) => (
+                      <div key={classKey} className="border border-gray-200 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          Class {classKey} ({classStudents.length} students)
+                        </h3>
+                        
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Development Fee</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bus Fee</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Balance</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Payment</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {classStudents.map((student) => {
+                                const studentPayments = payments.filter(p => p.studentId === student.id);
+                                
+                                // Calculate development fee status
+                                const classKey = (['11', '12'].includes(student.class)) 
+                                  ? `${student.class}-${student.division}` 
+                                  : student.class;
+                                const requiredDevFee = feeConfig.developmentFees[classKey] || 0;
+                                const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+                                const devBalance = Math.max(0, requiredDevFee - paidDevFee);
+                                
+                                // Calculate bus fee status
+                                const requiredBusFee = feeConfig.busStops[student.busStop] || 0;
+                                const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+                                const busBalance = Math.max(0, requiredBusFee - paidBusFee);
+                                
+                                const totalBalance = devBalance + busBalance;
+                                const lastPayment = studentPayments.length > 0 
+                                  ? new Date(Math.max(...studentPayments.map(p => new Date(p.paymentDate).getTime())))
+                                  : null;
+                                
+                                return (
+                                  <tr key={student.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-4">
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                                        <div className="text-sm text-gray-500">{student.admissionNo}</div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                      <div>
+                                        <div className="text-sm text-gray-900">{student.mobile}</div>
+                                        <div className="text-sm text-gray-500">{student.busStop}</div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                      <div className="text-sm">
+                                        <div className="text-gray-600">Required: ₹{requiredDevFee}</div>
+                                        <div className="text-green-600">Paid: ₹{paidDevFee}</div>
+                                        <div className="text-red-600 font-medium">Balance: ₹{devBalance}</div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                      <div className="text-sm">
+                                        <div className="text-gray-600">Required: ₹{requiredBusFee}</div>
+                                        <div className="text-green-600">Paid: ₹{paidBusFee}</div>
+                                        <div className="text-red-600 font-medium">Balance: ₹{busBalance}</div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                      <span className="text-lg font-semibold text-red-600">
+                                        ₹{totalBalance.toLocaleString()}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-4 text-sm text-gray-900">
+                                      {lastPayment ? lastPayment.toLocaleDateString('en-GB') : 'Never'}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 import React, { useState } from 'react';
 import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt, AlertTriangle } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
@@ -146,6 +293,41 @@ const Reports: React.FC = () => {
     }
     
     return report;
+  const getFeeUnpaidStudentsReport = () => {
+    const unpaidStudents = students.filter(student => {
+      const studentPayments = payments.filter(p => p.studentId === student.id);
+      
+      // Calculate required fees
+      const classKey = (['11', '12'].includes(student.class)) 
+        ? `${student.class}-${student.division}` 
+        : student.class;
+      const requiredDevFee = feeConfig.developmentFees[classKey] || 0;
+      const requiredBusFee = feeConfig.busStops[student.busStop] || 0;
+      
+      // Calculate paid amounts
+      const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+      const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+      
+      // Check if there's any outstanding balance
+      const devBalance = Math.max(0, requiredDevFee - paidDevFee);
+      const busBalance = Math.max(0, requiredBusFee - paidBusFee);
+      
+      return devBalance > 0 || busBalance > 0;
+    });
+
+    // Group by class
+    const groupedByClass = unpaidStudents.reduce((acc, student) => {
+      const classKey = `${student.class}-${student.division}`;
+      if (!acc[classKey]) {
+        acc[classKey] = [];
+      }
+      acc[classKey].push(student);
+      return acc;
+    }, {} as Record<string, typeof students>);
+
+    return { unpaidStudents, groupedByClass };
+  };
+
   };
   // Receipt-wise report data
   const getReceiptWiseReport = () => {
@@ -1010,223 +1192,41 @@ const Reports: React.FC = () => {
           </div>
           
           {Object.keys(feeNotPaidData).length > 0 ? (
+        {reportType === 'fee-unpaid-students' && (
             <div className="space-y-8">
-              {Object.entries(feeNotPaidData).map(([classKey, classData]: [string, any]) => (
-                <div key={classKey} className="border border-gray-200 rounded-lg p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Class {classData.className}</h4>
-                    <div className="text-sm text-gray-600">
-                      {classData.students.length} students with pending fees
-                    </div>
+          <div className="bg-white rounded-lg shadow p-6">
                   </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student Details</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Development Fee</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bus Fee</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Balance</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Payment</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {classData.students.map((student: any) => (
-                          <tr key={student.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                              <div className="text-sm text-gray-500">Adm: {student.admissionNo}</div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{student.mobile}</div>
-                              <div className="text-sm text-gray-500">{student.busStop}</div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                Required: ₹{student.totalDevRequired}
-                              </div>
-                              <div className="text-sm text-green-600">
-                                Paid: ₹{student.paidDev}
-                              </div>
-                              <div className="text-sm font-semibold text-red-600">
-                                Balance: ₹{student.devBalance}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                Required: ₹{student.totalBusRequired}
-                              </div>
-                              <div className="text-sm text-green-600">
-                                Paid: ₹{student.paidBus}
-                              </div>
-                              <div className="text-sm font-semibold text-red-600">
-                                Balance: ₹{student.busBalance}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-lg font-bold text-red-600">
-                                ₹{student.totalBalance.toLocaleString()}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {student.lastPaymentDate 
-                                ? new Date(student.lastPaymentDate).toLocaleDateString('en-GB')
-                                : 'Never'
-                              }
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+            <div className="flex items-center justify-between mb-6">
                 </div>
+              <div className="flex items-center space-x-3">
               ))}
+                <AlertTriangle className="h-6 w-6 text-red-600" />
             </div>
+                <div>
           ) : (
+                  <h2 className="text-xl font-bold text-gray-900">Fee Unpaid Students Report</h2>
             <div className="text-center py-12">
+                  <p className="text-sm text-gray-600">Students with outstanding fee balances</p>
               <Users className="mx-auto h-12 w-12 text-green-400" />
-              <h3 className="mt-2 text-sm font-medium text-green-900">All Fees Paid!</h3>
-              <p className="mt-1 text-sm text-green-600">No students have pending fee payments.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {reportType === 'fee-unpaid' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Fee Unpaid Students Report</h3>
-            <button
-              onClick={() => downloadReport(feeUnpaidStudentsData, 'fee_unpaid_students')}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Download className="h-4 w-4" />
-              <span>Download CSV</span>
-            </button>
-          </div>
-          
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-red-50 rounded-lg p-4">
-              <div className="text-red-600 text-sm font-medium">Total Students with Pending Fees</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => sum + classData.students.length, 0)}
-              </div>
-            </div>
-            <div className="bg-orange-50 rounded-lg p-4">
-              <div className="text-orange-600 text-sm font-medium">Total Development Balance</div>
-              <div className="text-2xl font-bold text-gray-900">
-                ₹{Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => 
-                  sum + classData.students.reduce((classSum: number, student: any) => classSum + student.devBalance, 0), 0
-                ).toLocaleString()}
-              </div>
-            </div>
-            <div className="bg-yellow-50 rounded-lg p-4">
-              <div className="text-yellow-600 text-sm font-medium">Total Bus Balance</div>
-              <div className="text-2xl font-bold text-gray-900">
-                ₹{Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => 
-                  sum + classData.students.reduce((classSum: number, student: any) => classSum + student.busBalance, 0), 0
-                ).toLocaleString()}
-              </div>
-            </div>
-            <div className="bg-red-50 rounded-lg p-4">
-              <div className="text-red-600 text-sm font-medium">Total Outstanding Amount</div>
-              <div className="text-2xl font-bold text-gray-900">
-                ₹{Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => 
-                  sum + classData.students.reduce((classSum: number, student: any) => classSum + student.totalBalance, 0), 0
-                ).toLocaleString()}
-              </div>
-            </div>
-          </div>
-          
-          {Object.keys(feeUnpaidStudentsData).length > 0 ? (
-            <div className="space-y-8">
-              {Object.entries(feeUnpaidStudentsData).map(([classKey, classData]: [string, any]) => (
-                <div key={classKey} className="border border-gray-200 rounded-lg p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Class {classData.className}</h4>
-                    <div className="text-sm text-gray-600">
-                      {classData.students.length} students with pending fees
-                    </div>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student Details</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Development Fee</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bus Fee</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Balance</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Payment</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {classData.students.map((student: any) => (
-                          <tr key={student.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                              <div className="text-sm text-gray-500">Adm: {student.admissionNo}</div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{student.mobile}</div>
-                              <div className="text-sm text-gray-500">{student.busStop}</div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                Required: ₹{student.totalDevRequired}
-                              </div>
-                              <div className="text-sm text-green-600">
-                                Paid: ₹{student.paidDev}
-                              </div>
-                              <div className="text-sm font-semibold text-red-600">
-                                Balance: ₹{student.devBalance}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                Required: ₹{student.totalBusRequired}
-                              </div>
-                              <div className="text-sm text-green-600">
-                                Paid: ₹{student.paidBus}
-                              </div>
-                              <div className="text-sm font-semibold text-red-600">
-                                Balance: ₹{student.busBalance}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-lg font-bold text-red-600">
-                                ₹{student.totalBalance.toLocaleString()}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {student.lastPaymentDate 
-                                ? new Date(student.lastPaymentDate).toLocaleDateString('en-GB')
-                                : 'Never'
-                              }
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Users className="mx-auto h-12 w-12 text-green-400" />
               <h3 className="mt-2 text-sm font-medium text-green-900">All Fees Paid!</h3>
+              </div>
               <p className="mt-1 text-sm text-green-600">No students have pending fee payments.</p>
+              <button
             </div>
+                onClick={downloadFeeUnpaidStudentsCSV}
           )}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
         </div>
+              >
       )}
+                <Download className="h-4 w-4" />
     </div>
+                <span>Download CSV</span>
   );
+              </button>
 };
+            </div>
+
 
 export default Reports;
