@@ -3,7 +3,7 @@ import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt } from 'l
 import { useData } from '../../contexts/DataContext';
 
 const Reports: React.FC = () => {
-  const { students, payments } = useData();
+  const { students, payments, feeConfig } = useData();
   const [reportType, setReportType] = useState('receipt-wise');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
