@@ -255,8 +255,6 @@ const Reports: React.FC = () => {
   const getReceiptWiseReport = () => {
     let filteredPayments = payments;
 
-        case 'receipt-wise':
-          return <ReceiptWiseReport />;
     // Apply date filter
     if (dateFilter === 'single') {
       filteredPayments = payments.filter(payment => 
