@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useData, Student } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface EditStudentModalProps {
   student: Student;
@@ -9,6 +10,7 @@ interface EditStudentModalProps {
 
 const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose }) => {
   const { updateStudent, feeConfig } = useData();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     admissionNo: student.admissionNo,
     name: student.name,
@@ -191,26 +193,28 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose })
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bus Fee Discount (₹)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-              <input
-                type="number"
-                name="busFeeDiscount"
-                value={formData.busFeeDiscount}
-                onChange={handleChange}
-                className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                min="0"
-                placeholder="0"
-              />
+          {user?.role === 'admin' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Bus Fee Discount (₹)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                <input
+                  type="number"
+                  name="busFeeDiscount"
+                  value={formData.busFeeDiscount}
+                  onChange={handleChange}
+                  className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  placeholder="0"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Discount amount to be deducted from total bus fee
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Discount amount to be deducted from total bus fee
-            </p>
-          </div>
+          )}
 
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
             <button
