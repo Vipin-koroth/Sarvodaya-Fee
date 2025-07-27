@@ -54,8 +54,12 @@ const Header: React.FC<HeaderProps> = ({ user, onMobileMenuToggle }) => {
 
         <div className="flex items-center space-x-4">
           <div className="hidden sm:flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <User className="h-5 w-5 text-blue-600" />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img 
+                src="/Sarvodaya Pay_small.png" 
+                alt="Sarvodaya School Logo" 
+                className="w-8 h-8 object-contain rounded"
+              />
             </div>
             <div className="text-sm">
               <p className="font-medium text-gray-900">{user.username}</p>

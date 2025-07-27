@@ -32,8 +32,12 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <School className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            <img 
+              src="/Sarvodaya Pay_small.png" 
+              alt="Sarvodaya School Logo" 
+              className="w-20 h-20 object-contain rounded-lg"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Sarvodaya School</h1>
           <p className="text-gray-600">Fee Management System</p>

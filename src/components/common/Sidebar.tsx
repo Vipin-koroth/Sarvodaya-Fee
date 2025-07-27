@@ -88,8 +88,12 @@ const Sidebar: React.FC<SidebarProps> = ({
         
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-600 rounded-lg">
-            <School className="h-6 w-6 text-white" />
+          <div className="w-10 h-10 flex items-center justify-center">
+            <img 
+              src="/Sarvodaya Pay_small.png" 
+              alt="Sarvodaya School Logo" 
+              className="w-10 h-10 object-contain rounded"
+            />
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">Sarvodaya</h1>
