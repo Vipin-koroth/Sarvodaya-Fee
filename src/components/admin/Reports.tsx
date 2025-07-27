@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt, AlertTriangle } from 'lucide-react';
+import { FileText, Download, Calendar, Users, Bus, AlertTriangle, UserX } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 const Reports: React.FC = () => {
@@ -439,7 +439,8 @@ const Reports: React.FC = () => {
       {/* Report Type Selection */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center space-x-4 mb-4">
-          <FileText className="h-6 w-6 text-blue-600" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Row 1 */}
           <h2 className="text-lg font-semibold text-gray-900">Select Report Type</h2>
         </div>
         
@@ -495,35 +496,34 @@ const Reports: React.FC = () => {
           >
             <Calendar className="h-8 w-8 mx-auto mb-2" />
             <div className="font-medium">Monthly Report</div>
-            <div className="text-sm text-gray-600">Collection summary by month</div>
-          </button>
           
+          {/* Row 2 */}
           <button
-            onClick={() => setReportType('class-monthly-collection')}
+            onClick={() => setReportType('class-monthly')}
             className={`p-4 rounded-lg border-2 transition-colors ${
-              reportType === 'class-monthly-collection' 
+              reportType === 'class-monthly' 
                 ? 'border-blue-500 bg-blue-50 text-blue-700' 
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
-            <TrendingUp className="h-8 w-8 mx-auto mb-2" />
+            <FileText className="h-8 w-8 mx-auto mb-2" />
             <div className="font-medium">Class Monthly Collection</div>
-            <div className="text-sm text-gray-600">Students with monthly collections by fee type</div>
+            <div className="text-sm text-gray-600">Monthly collections by class</div>
           </button>
           
           <button
-            onClick={() => setReportType('no-payment-students')}
+            onClick={() => setReportType('fee-not-paid')}
             className={`p-4 rounded-lg border-2 transition-colors ${
-              reportType === 'no-payment-students' 
+              reportType === 'fee-not-paid' 
                 ? 'border-blue-500 bg-blue-50 text-blue-700' 
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
             <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-            <div className="font-medium">No Payment Students</div>
-            <div className="text-sm text-gray-600">Students who haven't made any payments</div>
+            <div className="font-medium">Fee Not Paid Students</div>
+            <div className="text-sm text-gray-600">Students with pending fees</div>
           </button>
-        </div>
+          
       </div>
 
       {/* Report Content */}
