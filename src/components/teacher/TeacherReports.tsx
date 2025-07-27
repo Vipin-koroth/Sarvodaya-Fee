@@ -22,37 +22,36 @@ const TeacherReports: React.FC = () => {
     payment => payment.class === user?.class && payment.division === user?.division
   );
 
-  // Get filtered payments based on date filter
   const getFilteredPayments = () => {
-    let filtered = classPayments;
+    let filteredPayments = classPayments;
 
     if (dateFilter === 'month') {
       const [year, month] = selectedMonth.split('-');
-      filtered = filtered.filter(payment => {
+      filteredPayments = filteredPayments.filter(payment => {
         const paymentDate = new Date(payment.paymentDate);
         return paymentDate.getFullYear() === parseInt(year) && 
                paymentDate.getMonth() === parseInt(month) - 1;
       });
-    } else if (dateFilter === 'custom' && fromDate && toDate) {
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      filtered = filtered.filter(payment => {
-        const paymentDate = new Date(payment.paymentDate);
-        return paymentDate >= from && paymentDate <= to;
+    } else if (dateFilter === 'custom') {
+      filteredPayments = filteredPayments.filter(payment => {
+        const paymentDate = new Date(payment.paymentDate).toISOString().split('T')[0];
+        const matchesFromDate = !fromDate || paymentDate >= fromDate;
+        const matchesToDate = !toDate || paymentDate <= toDate;
+        return matchesFromDate && matchesToDate;
       });
     }
 
-    return filtered;
+    return filteredPayments;
   };
 
-  // Get student payment details with proper discount calculation
+  // Get student payment details
   const getStudentPaymentDetails = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return null;
 
     const studentPayments = payments.filter(p => p.studentId === studentId);
     
-    // Calculate fee structure with discount
+    // Calculate fee structure
     const classKey = (['11', '12'].includes(student.class)) 
       ? `${student.class}-${student.division}` 
       : student.class;
@@ -291,7 +290,6 @@ const TeacherReports: React.FC = () => {
       </div>
     );
   };
-
   const ClassWiseReport: React.FC = () => {
     const filteredPayments = getFilteredPayments();
     const totalCollection = filteredPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
@@ -345,11 +343,8 @@ const TeacherReports: React.FC = () => {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-green-600">Total Paid</p>
-                <p className="text-2xl font-bold text-gray-900">₹{classStudents.reduce((sum, student) => {
-                  const details = getStudentPaymentDetails(student.id);
-                  return sum + (details?.feeStructure.grandTotal.paid || 0);
-                }, 0).toLocaleString()}</p>
+                <p className="text-sm font-medium text-green-600">Total Collection</p>
+                <p className="text-2xl font-bold text-gray-900">₹{totalCollection.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -358,11 +353,8 @@ const TeacherReports: React.FC = () => {
             <div className="flex items-center">
               <FileText className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-purple-600">Total Required</p>
-                <p className="text-2xl font-bold text-gray-900">₹{classStudents.reduce((sum, student) => {
-                  const details = getStudentPaymentDetails(student.id);
-                  return sum + (details?.feeStructure.grandTotal.required || 0);
-                }, 0).toLocaleString()}</p>
+                <p className="text-sm font-medium text-purple-600">Total Payments</p>
+                <p className="text-2xl font-bold text-gray-900">{filteredPayments.length}</p>
               </div>
             </div>
           </div>
@@ -371,12 +363,28 @@ const TeacherReports: React.FC = () => {
             <div className="flex items-center">
               <Bus className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-orange-600">Total Balance</p>
-                <p className="text-2xl font-bold text-gray-900">₹{classStudents.reduce((sum, student) => {
-                  const details = getStudentPaymentDetails(student.id);
-                  return sum + (details?.feeStructure.grandTotal.remaining || 0);
-                }, 0).toLocaleString()}</p>
+                <p className="text-sm font-medium text-orange-600">Bus Fees</p>
+                <p className="text-2xl font-bold text-gray-900">₹{busFees.toLocaleString()}</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fee Breakdown */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Fee Breakdown</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">₹{developmentFees.toLocaleString()}</div>
+              <div className="text-sm text-gray-600">Development Fees</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">₹{busFees.toLocaleString()}</div>
+              <div className="text-sm text-gray-600">Bus Fees</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">₹{specialFees.toLocaleString()}</div>
+              <div className="text-sm text-gray-600">Special Fees</div>
             </div>
           </div>
         </div>
@@ -388,30 +396,36 @@ const TeacherReports: React.FC = () => {
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Download className="h-4 w-4" />
-            <span>Download Student Balance Report</span>
+            <span>Download CSV Report</span>
           </button>
         </div>
 
-        {/* Students Balance Table */}
+        {/* Payments Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Student Balance Report</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Payment Details</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Student Details
+                    Student
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Development Fee
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Bus Fee (After Discount)
+                    Bus Fee
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Balance
+                    Special Fee
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -419,45 +433,37 @@ const TeacherReports: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {classStudents.map((student) => {
-                  const details = getStudentPaymentDetails(student.id);
-                  if (!details) return null;
-                  
-                  return (
-                    <tr key={student.id} className="hover:bg-gray-50">
+                {filteredPayments.map((payment) => (
+                  <tr key={payment.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                        <div className="text-sm text-gray-500">{student.admissionNo} • {student.busStop}</div>
+                        <div className="text-sm font-medium text-gray-900">{payment.studentName}</div>
+                        <div className="text-sm text-gray-500">{payment.admissionNo}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="text-sm">
-                        <div className="text-gray-900">Required: ₹{details.feeStructure.developmentFee.total}</div>
-                        <div className="text-green-600">Paid: ₹{details.feeStructure.developmentFee.paid}</div>
-                        <div className="text-red-600 font-medium">Balance: ₹{details.feeStructure.developmentFee.remaining}</div>
-                      </div>
+                      ₹{payment.developmentFee}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="text-sm">
-                        <div className="text-gray-900">
-                          Required: ₹{details.feeStructure.busFee.total}
-                          {details.feeStructure.busFee.discount > 0 && (
-                            <span className="text-orange-600 ml-1">(₹{details.feeStructure.busFee.original} - ₹{details.feeStructure.busFee.discount})</span>
-                          )}
-                        </div>
-                        <div className="text-green-600">Paid: ₹{details.feeStructure.busFee.paid}</div>
-                        <div className="text-red-600 font-medium">Balance: ₹{details.feeStructure.busFee.remaining}</div>
-                      </div>
+                      ₹{payment.busFee}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-lg font-bold text-red-600">
-                        ₹{details.feeStructure.grandTotal.remaining}
-                      </div>
+                      <div className="text-sm text-gray-900">₹{payment.specialFee}</div>
+                      {payment.specialFeeType && (
+                        <div className="text-sm text-gray-500">{payment.specialFeeType}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-semibold text-green-600">
+                        ₹{payment.totalAmount}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => setSelectedStudentForDetails(student.id)}
+                        onClick={() => setSelectedStudentForDetails(payment.studentId)}
                         className="text-blue-600 hover:text-blue-900"
                         title="View Student Details"
                       >
@@ -465,18 +471,17 @@ const TeacherReports: React.FC = () => {
                       </button>
                     </td>
                   </tr>
-                  );
-                }).filter(Boolean)}
+                ))}
               </tbody>
             </table>
           </div>
           
-          {classStudents.length === 0 && (
+          {filteredPayments.length === 0 && (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No students found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                No students are registered in this class.
+                No payments match your selected criteria.
               </p>
             </div>
           )}
