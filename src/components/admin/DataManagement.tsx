@@ -54,43 +54,36 @@ const DataManagement: React.FC = () => {
     try {
       console.log('Starting backup process...');
       
-      const backupData = {
-        students: students,
-        payments: payments,
-        timestamp: new Date().toISOString(),
-        totalStudents: students.length,
-        totalPayments: payments.length,
-        totalCollection: payments.reduce((sum, p) => sum + p.totalAmount, 0)
-      };
-
-      console.log('Backup data prepared:', backupData);
-
-      // Create CSV content for students
-      const studentsCSV = generateStudentsCSV();
-      const paymentsCSV = generatePaymentsCSV();
+      // Generate receipt-wise report (payments with student details)
+      const receiptWiseCSV = generateReceiptWiseCSV();
       
-      console.log('CSV data generated, students length:', studentsCSV.length, 'payments length:', paymentsCSV.length);
+      // Generate class monthly collection report
+      const classMonthlyCSV = generateClassMonthlyCollectionCSV();
+      
+      console.log('Report CSVs generated');
       
       // Send email using EmailJS
       const emailData = {
         to_email: backupEmail,
-        subject: `Sarvodaya School Weekly Backup - ${new Date().toLocaleDateString('en-GB')}`,
+        subject: `Sarvodaya School Weekly Reports - ${new Date().toLocaleDateString('en-GB')}`,
         message: `
-Weekly Backup Report for Sarvodaya School Fee Management System
+Weekly Reports for Sarvodaya School Fee Management System
 
-Backup Date: ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB')}
+Report Date: ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB')}
 
 Summary:
-- Total Students: ${backupData.totalStudents}
-- Total Payments: ${backupData.totalPayments}
-- Total Collection: ₹${backupData.totalCollection.toLocaleString()}
+- Total Students: ${students.length}
+- Total Payments: ${payments.length}
+- Total Collection: ₹${payments.reduce((sum, p) => sum + p.totalAmount, 0).toLocaleString()}
 
-CSV files are attached with complete data.
+Reports Included:
+1. Receipt-wise Report: All payment receipts with student details
+2. Class Monthly Collection Report: Monthly collections organized by class
 
-This is an automated backup from your school management system.
+This is an automated weekly report from your school management system.
         `,
-        students_csv: studentsCSV,
-        payments_csv: paymentsCSV
+        receipt_wise_csv: receiptWiseCSV,
+        class_monthly_csv: classMonthlyCSV
       };
 
       console.log('Attempting to send email to:', backupEmail);
@@ -103,44 +96,44 @@ This is an automated backup from your school management system.
         localStorage.setItem('lastBackupDate', now);
         setLastBackupDate(now);
         
-        console.log('Weekly backup sent successfully');
-        alert('✅ Weekly backup sent successfully via email!');
+        console.log('Weekly reports sent successfully');
+        alert('✅ Weekly reports sent successfully via email!');
       } else {
         throw new Error('Email service returned false');
       }
       
     } catch (error) {
-      console.error('Failed to send weekly backup:', error);
+      console.error('Failed to send weekly reports:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Detailed error:', errorMessage);
       
-      alert(`❌ Failed to send weekly backup via email: ${errorMessage}\n\nPlease check:\n1. EmailJS service is configured\n2. Template exists\n3. Internet connection\n\nFalling back to file download...`);
+      alert(`❌ Failed to send weekly reports via email: ${errorMessage}\n\nPlease check:\n1. EmailJS service is configured\n2. Template exists\n3. Internet connection\n\nFalling back to file download...`);
       
       // Fallback to manual download
       console.log('Falling back to manual download...');
-      const studentsCSV = generateStudentsCSV();
-      const paymentsCSV = generatePaymentsCSV();
+      const receiptWiseCSV = generateReceiptWiseCSV();
+      const classMonthlyCSV = generateClassMonthlyCollectionCSV();
       
-      const studentsBlob = new Blob([studentsCSV], { type: 'text/csv' });
-      const paymentsBlob = new Blob([paymentsCSV], { type: 'text/csv' });
+      const receiptBlob = new Blob([receiptWiseCSV], { type: 'text/csv' });
+      const classBlob = new Blob([classMonthlyCSV], { type: 'text/csv' });
       
-      const studentsUrl = URL.createObjectURL(studentsBlob);
-      const paymentsUrl = URL.createObjectURL(paymentsBlob);
+      const receiptUrl = URL.createObjectURL(receiptBlob);
+      const classUrl = URL.createObjectURL(classBlob);
       
-      // Auto-download backup files
-      const studentsLink = document.createElement('a');
-      studentsLink.href = studentsUrl;
-      studentsLink.download = `students_backup_${new Date().toISOString().slice(0, 10)}.csv`;
-      studentsLink.click();
+      // Auto-download report files
+      const receiptLink = document.createElement('a');
+      receiptLink.href = receiptUrl;
+      receiptLink.download = `receipt_wise_report_${new Date().toISOString().slice(0, 10)}.csv`;
+      receiptLink.click();
       
-      const paymentsLink = document.createElement('a');
-      paymentsLink.href = paymentsUrl;
-      paymentsLink.download = `payments_backup_${new Date().toISOString().slice(0, 10)}.csv`;
-      paymentsLink.click();
+      const classLink = document.createElement('a');
+      classLink.href = classUrl;
+      classLink.download = `class_monthly_collection_${new Date().toISOString().slice(0, 10)}.csv`;
+      classLink.click();
       
-      URL.revokeObjectURL(studentsUrl);
-      URL.revokeObjectURL(paymentsUrl);
+      URL.revokeObjectURL(receiptUrl);
+      URL.revokeObjectURL(classUrl);
     }
   };
 
@@ -179,6 +172,92 @@ This is an automated backup from your school management system.
       new Date(payment.paymentDate).toLocaleDateString('en-GB'),
       payment.addedBy
     ]);
+    return [headers, ...csvData].map(row => row.join(',')).join('\n');
+  };
+
+  const generateReceiptWiseCSV = () => {
+    const headers = [
+      'Receipt ID', 'Receipt Date', 'Student Name', 'Admission No', 'Class', 'Division',
+      'Mobile', 'Bus Stop', 'Development Fee', 'Bus Fee', 'Special Fee', 'Special Fee Type',
+      'Total Amount', 'Added By'
+    ];
+    
+    const csvData = payments.map(payment => {
+      const student = students.find(s => s.id === payment.studentId);
+      return [
+        payment.id.slice(-6), // Receipt number
+        new Date(payment.paymentDate).toLocaleDateString('en-GB'),
+        payment.studentName,
+        payment.admissionNo,
+        payment.class,
+        payment.division,
+        student?.mobile || '',
+        student?.busStop || '',
+        payment.developmentFee,
+        payment.busFee,
+        payment.specialFee,
+        payment.specialFeeType || '',
+        payment.totalAmount,
+        payment.addedBy
+      ];
+    });
+    
+    return [headers, ...csvData].map(row => row.join(',')).join('\n');
+  };
+
+  const generateClassMonthlyCollectionCSV = () => {
+    // Get all unique months from payments
+    const months = [...new Set(payments.map(p => {
+      const date = new Date(p.paymentDate);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }))].sort();
+
+    const monthNames = months.map(month => {
+      const [year, monthNum] = month.split('-');
+      const date = new Date(parseInt(year), parseInt(monthNum) - 1);
+      return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    });
+
+    const headers = ['Class', 'Division', 'Student Name', 'Admission No', ...monthNames, 'Total'];
+    
+    const csvData: string[][] = [];
+    
+    // Group students by class
+    const studentsByClass = students.reduce((acc, student) => {
+      const classKey = `${student.class}-${student.division}`;
+      if (!acc[classKey]) acc[classKey] = [];
+      acc[classKey].push(student);
+      return acc;
+    }, {} as Record<string, typeof students>);
+
+    Object.entries(studentsByClass).forEach(([classKey, classStudents]) => {
+      const [classNum, division] = classKey.split('-');
+      
+      classStudents.forEach(student => {
+        const studentPayments = payments.filter(p => p.studentId === student.id);
+        
+        const monthlyAmounts = months.map(month => {
+          const monthPayments = studentPayments.filter(p => {
+            const paymentMonth = new Date(p.paymentDate);
+            const paymentMonthStr = `${paymentMonth.getFullYear()}-${String(paymentMonth.getMonth() + 1).padStart(2, '0')}`;
+            return paymentMonthStr === month;
+          });
+          return monthPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+        });
+        
+        const totalAmount = monthlyAmounts.reduce((sum, amount) => sum + amount, 0);
+        
+        csvData.push([
+          classNum,
+          division,
+          student.name,
+          student.admissionNo,
+          ...monthlyAmounts.map(amount => amount.toString()),
+          totalAmount.toString()
+        ]);
+      });
+    });
+    
     return [headers, ...csvData].map(row => row.join(',')).join('\n');
   };
 
@@ -503,16 +582,16 @@ This is an automated backup from your school management system.
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
             <div>
-              <h3 className="font-medium text-blue-900">Automatic Weekly Backup</h3>
+              <h3 className="font-medium text-blue-900">Automatic Weekly Reports</h3>
               <p className="text-sm text-blue-700">
                 {emailBackupEnabled 
                   ? `Enabled - Sending to ${backupEmail}` 
-                  : 'Disabled - No automatic backups'
+                  : 'Disabled - No automatic reports'
                 }
               </p>
               {lastBackupDate && (
                 <p className="text-xs text-blue-600">
-                  Last backup: {new Date(lastBackupDate).toLocaleDateString('en-GB')}
+                  Last report: {new Date(lastBackupDate).toLocaleDateString('en-GB')}
                 </p>
               )}
             </div>
@@ -531,7 +610,7 @@ This is an automated backup from your school management system.
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Backup Email Address
+                Report Email Address
               </label>
               <input
                 type="email"
@@ -546,17 +625,17 @@ This is an automated backup from your school management system.
                 onClick={sendWeeklyBackup}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Send Backup Now
+                Send Reports Now
               </button>
             </div>
           </div>
           
           <div className="p-4 bg-yellow-50 rounded-lg">
-            <h4 className="font-medium text-yellow-900 mb-2">Backup Information</h4>
+            <h4 className="font-medium text-yellow-900 mb-2">Report Information</h4>
             <ul className="text-sm text-yellow-800 space-y-1">
-              <li>• Backups are sent every Sunday at midnight</li>
-              <li>• Includes complete student and payment data in CSV format</li>
-              <li>• Email contains summary statistics and downloadable files</li>
+              <li>• Reports are sent every Sunday at midnight</li>
+              <li>• Includes receipt-wise and class monthly collection reports</li>
+              <li>• Email contains summary statistics and CSV files</li>
               <li>• Configure EmailJS service for automatic email delivery</li>
             </ul>
           </div>
