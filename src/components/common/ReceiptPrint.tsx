@@ -296,7 +296,7 @@ Keep this receipt for your records.
                   {/* School Logo */}
                   <div style={{ textAlign: 'center', marginBottom: '3mm' }}>
                     <img 
-                      src="/Sarvodaya Pay_small.png" 
+                     src="/Sravodaya_Small.png" 
                       alt="Sarvodaya School Logo" 
                       style={{ 
                         width: '20mm', 

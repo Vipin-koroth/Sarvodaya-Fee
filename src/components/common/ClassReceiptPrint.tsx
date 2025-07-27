@@ -300,7 +300,7 @@ const ClassReceiptPrint: React.FC = () => {
                 
                 <div className="school-logo">
                   <img 
-                    src="/Sarvodaya Pay_small.png" 
+                   src="/Sravodaya_Small.png" 
                     alt="Sarvodaya School Logo"
                   />
                 </div>
