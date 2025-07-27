@@ -321,6 +321,10 @@ const Reports: React.FC = () => {
       a.click();
       URL.revokeObjectURL(url);
     };
+
+    return <div></div>;
+  };
+
   const getStudentBalance = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return { devBalance: 0, busBalance: 0 };
