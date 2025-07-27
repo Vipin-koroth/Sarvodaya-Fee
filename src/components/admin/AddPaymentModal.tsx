@@ -286,7 +286,15 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
                   <div className="space-y-2">
                     <div className="font-medium text-yellow-800">Bus Fee</div>
                     <div className="text-yellow-700">
-                      Total Required: ₹{feeStatus.bus.total}
+                      Original Amount: ₹{feeConfig.busStops[selectedStudentData.busStop] || 0}
+                    </div>
+                    {selectedStudentData.busFeeDiscount > 0 && (
+                      <div className="text-yellow-700">
+                        Discount Applied: -₹{selectedStudentData.busFeeDiscount}
+                      </div>
+                    )}
+                    <div className="text-yellow-700">
+                      After Discount: ₹{feeStatus.bus.total}
                     </div>
                     <div className="text-yellow-700">
                       Already Paid: ₹{feeStatus.bus.paid}
