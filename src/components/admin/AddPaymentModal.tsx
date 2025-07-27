@@ -342,48 +342,46 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
                 </div>
               </div>
 
-              {/* Special Fee (Admin Only) */}
-              {user?.role === 'admin' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Special Fee Type
-                    </label>
-                    <select
-                      name="specialFeeType"
-                      value={formData.specialFeeType}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Select Type</option>
-                      <option value="Educational Tour">Educational Tour</option>
-                      <option value="Exam Fee">Exam Fee</option>
-                      <option value="Sports Fee">Sports Fee</option>
-                      <option value="Library Fee">Library Fee</option>
-                      <option value="Lab Fee">Lab Fee</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+              {/* Special Fee (Available for All Users) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Special Fee Type
+                  </label>
+                  <select
+                    name="specialFeeType"
+                    value={formData.specialFeeType}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Type</option>
+                    <option value="Educational Tour">Educational Tour</option>
+                    <option value="Exam Fee">Exam Fee</option>
+                    <option value="Sports Fee">Sports Fee</option>
+                    <option value="Library Fee">Library Fee</option>
+                    <option value="Lab Fee">Lab Fee</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Special Fee Amount
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                      <input
-                        type="number"
-                        name="specialFee"
-                        value={formData.specialFee}
-                        onChange={handleChange}
-                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        min="0"
-                        disabled={!formData.specialFeeType}
-                      />
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Special Fee Amount
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                    <input
+                      type="number"
+                      name="specialFee"
+                      value={formData.specialFee}
+                      onChange={handleChange}
+                      className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="0"
+                      disabled={!formData.specialFeeType}
+                    />
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Total Amount */}
               <div className="bg-green-50 rounded-lg p-4">
