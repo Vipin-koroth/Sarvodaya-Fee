@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt, AlertTriangle } from 'lucide-react';
+import { FileText, Download, Calendar, Users, Bus, AlertTriangle, UserX } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 const Reports: React.FC = () => {
@@ -510,7 +510,7 @@ const Reports: React.FC = () => {
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
-            <Receipt className="h-8 w-8 mx-auto mb-2" />
+            <FileText className="h-8 w-8 mx-auto mb-2" />
             <div className="font-medium">Receipt-wise Report</div>
             <div className="text-sm text-gray-600">Individual payment receipts</div>
           </button>
@@ -580,6 +580,21 @@ const Reports: React.FC = () => {
             <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
             <div className="font-medium">Fee Not Paid Students</div>
             <div className="text-sm text-gray-600">Students with pending fees</div>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
+          <button
+            onClick={() => setReportType('no-payment-students')}
+            className={`p-4 rounded-lg border-2 transition-colors ${
+              reportType === 'no-payment-students' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <UserX className="h-8 w-8 mx-auto mb-2" />
+            <div className="font-medium">No Payment Students</div>
+            <div className="text-sm text-gray-600">Students who never made payments</div>
           </button>
         </div>
       </div>
@@ -745,7 +760,7 @@ const Reports: React.FC = () => {
           
           {receiptWiseData.length === 0 && (
             <div className="text-center py-12">
-              <Receipt className="mx-auto h-12 w-12 text-gray-400" />
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No receipts found</h3>
               <p className="mt-1 text-sm text-gray-500">No payments match your selected criteria.</p>
             </div>
@@ -998,7 +1013,7 @@ const Reports: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <TrendingUp className="mx-auto h-12 w-12 text-gray-400" />
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No data available</h3>
               <p className="mt-1 text-sm text-gray-500">No students or payments found to generate the report.</p>
             </div>
