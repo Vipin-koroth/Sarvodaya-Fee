@@ -60,12 +60,17 @@ const DataManagement: React.FC = () => {
       // Generate class monthly collection report
       const classMonthlyCSV = generateClassMonthlyCollectionCSV();
       
-      console.log('Report CSVs generated');
-      console.log('Receipt CSV size:', receiptWiseCSV.length);
-      console.log('Class monthly CSV size:', classMonthlyCSV.length);
+      // Convert CSV content to Base64
+      const receiptWiseBase64 = btoa(unescape(encodeURIComponent(receiptWiseCSV)));
+      const classMonthlyBase64 = btoa(unescape(encodeURIComponent(classMonthlyCSV)));
       
-      // Prepare email data
-      const emailMessage = `
+      console.log('Report CSVs generated');
+      
+      // Send email using EmailJS
+      const emailData = {
+        to_email: backupEmail,
+        subject: `Sarvodaya School Weekly Reports - ${new Date().toLocaleDateString('en-GB')}`,
+        message: `
 Weekly Reports for Sarvodaya School Fee Management System
 
 Report Date: ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB')}
@@ -80,105 +85,63 @@ Reports Included:
 2. Class Monthly Collection Report: Monthly collections organized by class
 
 This is an automated weekly report from your school management system.
-`;
-
-      const emailData = {
-        to_email: backupEmail,
-        subject: `Sarvodaya School Weekly Reports - ${new Date().toLocaleDateString('en-GB')}`,
-        message: emailMessage,
+        `,
         from_name: 'Sarvodaya School Management System',
         reply_to: 'noreply@sarvodayaschool.edu',
         attachment_1_name: `receipt_wise_report_${new Date().toISOString().slice(0, 10)}.csv`,
         attachment_1_content: receiptWiseCSV,
+        attachment_1_base64: receiptWiseBase64,
         attachment_2_name: `class_monthly_collection_${new Date().toISOString().slice(0, 10)}.csv`,
-        attachment_2_content: classMonthlyCSV
+        attachment_2_content: classMonthlyCSV,
+        attachment_2_base64: classMonthlyBase64
       };
 
       console.log('Attempting to send email to:', backupEmail);
       
-      try {
-        const { EmailService } = await import('../../lib/emailService');
-        const success = await EmailService.sendBackupEmail(emailData);
+      const { EmailService } = await import('../../lib/emailService');
+      const success = await EmailService.sendBackupEmail(emailData);
+      
+      if (success) {
+        const now = new Date().toISOString();
+        localStorage.setItem('lastBackupDate', now);
+        setLastBackupDate(now);
         
-        if (success) {
-          const now = new Date().toISOString();
-          localStorage.setItem('lastBackupDate', now);
-          setLastBackupDate(now);
-          
-          console.log('Weekly reports sent successfully');
-          alert('✅ Weekly reports sent successfully via email!');
-          return; // Exit successfully
-        } else {
-          throw new Error('Email service returned false');
-        }
-      } catch (emailError) {
-        console.error('Email sending failed:', emailError);
-        
-        const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
-        console.error('Email error details:', errorMessage);
-        
-        // Show specific error message and fallback
-        alert(`❌ Email sending failed: ${errorMessage}\n\n📥 Downloading reports as files instead...`);
-        
-        // Fallback to file download
-        downloadReportsAsFiles(receiptWiseCSV, classMonthlyCSV);
+        console.log('Weekly reports sent successfully');
+        alert('✅ Weekly reports sent successfully via email!');
+      } else {
+        throw new Error('Email service returned false');
       }
       
     } catch (error) {
-      console.error('Failed to generate weekly reports:', error);
+      console.error('Failed to send weekly reports:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`❌ Failed to generate weekly reports: ${errorMessage}`);
-    }
-  };
-
-  const downloadReportsAsFiles = (receiptWiseCSV: string, classMonthlyCSV: string) => {
-    try {
-      console.log('Starting file download fallback...');
+      console.error('Detailed error:', errorMessage);
       
-      const receiptBlob = new Blob([receiptWiseCSV], { type: 'text/csv;charset=utf-8;' });
-      const classBlob = new Blob([classMonthlyCSV], { type: 'text/csv;charset=utf-8;' });
+      alert(`❌ Failed to send weekly reports via email: ${errorMessage}\n\nPlease check:\n1. EmailJS service is configured\n2. Template exists\n3. Internet connection\n\nFalling back to file download...`);
+      
+      // Fallback to manual download
+      console.log('Falling back to manual download...');
+      
+      const receiptBlob = new Blob([receiptWiseCSV], { type: 'text/csv' });
+      const classBlob = new Blob([classMonthlyCSV], { type: 'text/csv' });
       
       const receiptUrl = URL.createObjectURL(receiptBlob);
       const classUrl = URL.createObjectURL(classBlob);
       
-      // Create and trigger download for receipt report
+      // Auto-download report files
       const receiptLink = document.createElement('a');
       receiptLink.href = receiptUrl;
       receiptLink.download = `receipt_wise_report_${new Date().toISOString().slice(0, 10)}.csv`;
-      receiptLink.style.display = 'none';
-      document.body.appendChild(receiptLink);
       receiptLink.click();
-      document.body.removeChild(receiptLink);
       
-      // Create and trigger download for class monthly report
-      setTimeout(() => {
-        const classLink = document.createElement('a');
-        classLink.href = classUrl;
-        classLink.download = `class_monthly_collection_${new Date().toISOString().slice(0, 10)}.csv`;
-        classLink.style.display = 'none';
-        document.body.appendChild(classLink);
-        classLink.click();
-        document.body.removeChild(classLink);
-        
-        // Clean up URLs
-        setTimeout(() => {
-          URL.revokeObjectURL(receiptUrl);
-          URL.revokeObjectURL(classUrl);
-        }, 1000);
-      }, 500);
+      const classLink = document.createElement('a');
+      classLink.href = classUrl;
+      classLink.download = `class_monthly_collection_${new Date().toISOString().slice(0, 10)}.csv`;
+      classLink.click();
       
-      // Update last backup date even for file download
-      const now = new Date().toISOString();
-      localStorage.setItem('lastBackupDate', now);
-      setLastBackupDate(now);
-      
-      console.log('Reports downloaded successfully as files');
-      alert('📥 Reports downloaded successfully as CSV files!');
-      
-    } catch (downloadError) {
-      console.error('File download failed:', downloadError);
-      alert('❌ Failed to download report files. Please try again.');
+      URL.revokeObjectURL(receiptUrl);
+      URL.revokeObjectURL(classUrl);
     }
   };
 
