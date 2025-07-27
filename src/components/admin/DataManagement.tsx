@@ -82,8 +82,12 @@ Reports Included:
 
 This is an automated weekly report from your school management system.
         `,
-        receipt_wise_csv: receiptWiseCSV,
-        class_monthly_csv: classMonthlyCSV
+        from_name: 'Sarvodaya School Management System',
+        reply_to: 'noreply@sarvodayaschool.edu',
+        attachment_1_name: `receipt_wise_report_${new Date().toISOString().slice(0, 10)}.csv`,
+        attachment_1_content: receiptWiseCSV,
+        attachment_2_name: `class_monthly_collection_${new Date().toISOString().slice(0, 10)}.csv`,
+        attachment_2_content: classMonthlyCSV
       };
 
       console.log('Attempting to send email to:', backupEmail);

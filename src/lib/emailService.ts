@@ -5,8 +5,12 @@ export interface BackupEmailData {
   to_email: string;
   subject: string;
   message: string;
-  students_csv: string;
-  payments_csv: string;
+  from_name: string;
+  reply_to: string;
+  attachment_1_name: string;
+  attachment_1_content: string;
+  attachment_2_name: string;
+  attachment_2_content: string;
 }
 
 export class EmailService {
@@ -29,10 +33,12 @@ export class EmailService {
         to_email: data.to_email,
         subject: data.subject,
         message: data.message,
-        receipt_wise_csv: data.receipt_wise_csv,
-        class_monthly_csv: data.class_monthly_csv,
-        from_name: 'Sarvodaya School Management System',
-        reply_to: 'noreply@sarvodayaschool.edu'
+        from_name: data.from_name,
+        reply_to: data.reply_to,
+        attachment_1_name: data.attachment_1_name,
+        attachment_1_content: data.attachment_1_content,
+        attachment_2_name: data.attachment_2_name,
+        attachment_2_content: data.attachment_2_content
       };
 
       console.log('Sending email with params:', templateParams);
