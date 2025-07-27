@@ -116,8 +116,6 @@ This is an automated weekly report from your school management system.
       
       // Fallback to manual download
       console.log('Falling back to manual download...');
-      const receiptWiseCSV = generateReceiptWiseCSV();
-      const classMonthlyCSV = generateClassMonthlyCollectionCSV();
       
       const receiptBlob = new Blob([receiptWiseCSV], { type: 'text/csv' });
       const classBlob = new Blob([classMonthlyCSV], { type: 'text/csv' });
