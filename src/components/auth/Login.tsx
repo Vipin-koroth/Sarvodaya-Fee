@@ -32,18 +32,8 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-lg border-2 border-blue-100">
-            <img 
-              src="/Sarvodaya Pay_small.png" 
-              alt="Sarvodaya School Logo" 
-              className="h-16 w-16 object-contain"
-              onError={(e) => {
-                // Fallback to icon if image fails to load
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            <School className="h-8 w-8 text-blue-600 hidden" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+            <School className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Sarvodaya School</h1>
           <p className="text-gray-600">Fee Management System</p>

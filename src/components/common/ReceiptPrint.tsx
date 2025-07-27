@@ -295,23 +295,6 @@ Keep this receipt for your records.
                   
                   {/* Header */}
                   <div style={{ textAlign: 'center', marginBottom: '3mm' }}>
-                    <div style={{ marginBottom: '2mm' }}>
-                      <img 
-                        src="/Sarvodaya Pay_small.png" 
-                        alt="Sarvodaya School Logo" 
-                        style={{ 
-                          height: '15mm', 
-                          width: 'auto', 
-                          maxWidth: '20mm',
-                          objectFit: 'contain',
-                          display: 'block',
-                          margin: '0 auto'
-                        }}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
                     <div style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '1mm' }}>
                       Sarvodaya
                     </div>

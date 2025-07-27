@@ -368,23 +368,6 @@ const BulkPrintBills: React.FC = () => {
                 <div className="receipt-number">#{payment.id.slice(-6)}</div>
                 
                 <div className="receipt-header">
-                  <div style={{ marginBottom: '2mm', textAlign: 'center' }}>
-                    <img 
-                      src="/Sarvodaya Pay_small.png" 
-                      alt="Sarvodaya School Logo" 
-                      style={{ 
-                        height: '15mm', 
-                        width: 'auto', 
-                        maxWidth: '20mm',
-                        objectFit: 'contain',
-                        display: 'block',
-                        margin: '0 auto'
-                      }}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  </div>
                   <div className="school-name">Sarvodaya</div>
                   <div className="school-subtitle">Higher Secondary School</div>
                   <div className="location">Eachome</div>

@@ -88,18 +88,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="p-1 bg-white rounded-lg shadow-sm border border-gray-200">
-            <img 
-              src="/Sarvodaya Pay_small.png" 
-              alt="Sarvodaya School Logo" 
-              className="h-8 w-8 object-contain"
-              onError={(e) => {
-                // Fallback to icon if image fails to load
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            <School className="h-6 w-6 text-blue-600 hidden" />
+          <div className="p-2 bg-blue-600 rounded-lg">
+            <School className="h-6 w-6 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">Sarvodaya</h1>
