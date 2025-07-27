@@ -28,10 +28,20 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose })
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    const { name, value } = e.target;
+    
+    if (name === 'busFeeDiscount') {
+      const numValue = parseInt(value) || 0;
+      setFormData(prev => ({
+        ...prev,
+        [name]: numValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   return (
