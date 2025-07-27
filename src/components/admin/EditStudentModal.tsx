@@ -72,25 +72,6 @@ const TeacherReports: React.FC = () => {
     };
   };
 
-  // Get student payment details with proper discount calculation
-  const getStudentPaymentDetails = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
-    if (!student) return null;
-
-    const studentPayments = payments.filter(p => p.studentId === studentId);
-    
-    // Calculate fee structure with discount
-    const classKey = (['11', '12'].includes(student.class)) 
-      ? `${student.class}-${student.division}` 
-      : student.class;
-    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-    const busFeeDiscount = student.busFeeDiscount || 0;
-    const discountedBusFee = Math.max(0, originalBusFee - busFeeDiscount);
-    
-    // Calculate totals
-    const totalPaidDev = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
-    const totalPaidBus = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
   const getFilteredPayments = () => {
     let filteredPayments = classPayments;
 
