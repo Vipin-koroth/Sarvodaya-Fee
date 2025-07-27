@@ -22,6 +22,106 @@ const TeacherReports: React.FC = () => {
     payment => payment.class === user?.class && payment.division === user?.division
   );
 
+  // Get student payment details with proper discount calculation
+  const getStudentPaymentDetails = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return null;
+
+    const studentPayments = payments.filter(p => p.studentId === studentId);
+    
+    // Calculate fee structure with discount
+    const classKey = (['11', '12'].includes(student.class)) 
+      ? `${student.class}-${student.division}` 
+      : student.class;
+    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const busFeeDiscount = student.busFeeDiscount || 0;
+    const discountedBusFee = Math.max(0, originalBusFee - busFeeDiscount);
+    
+    // Calculate totals
+    const totalPaidDev = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+    const totalPaidBus = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+    const totalPaidSpecial = studentPayments.reduce((sum, p) => sum + p.specialFee, 0);
+    const totalPaidAll = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+    
+    return {
+      student,
+      payments: studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()),
+      feeStructure: {
+        developmentFee: {
+          total: totalDevFee,
+          paid: totalPaidDev,
+          remaining: Math.max(0, totalDevFee - totalPaidDev)
+        },
+        busFee: {
+          original: originalBusFee,
+          discount: busFeeDiscount,
+          total: discountedBusFee,
+          paid: totalPaidBus,
+          remaining: Math.max(0, discountedBusFee - totalPaidBus)
+        },
+        specialFee: {
+          paid: totalPaidSpecial
+        },
+        grandTotal: {
+          required: totalDevFee + discountedBusFee,
+          paid: totalPaidAll,
+          remaining: Math.max(0, (totalDevFee + discountedBusFee) - (totalPaidDev + totalPaidBus))
+        }
+      }
+    };
+  };
+
+  // Get student payment details with proper discount calculation
+  const getStudentPaymentDetails = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return null;
+
+    const studentPayments = payments.filter(p => p.studentId === studentId);
+    
+    // Calculate fee structure with discount
+    const classKey = (['11', '12'].includes(student.class)) 
+      ? `${student.class}-${student.division}` 
+      : student.class;
+    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const busFeeDiscount = student.busFeeDiscount || 0;
+    const discountedBusFee = Math.max(0, originalBusFee - busFeeDiscount);
+    
+    // Calculate totals
+    const totalPaidDev = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+    const totalPaidBus = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+    const totalPaidSpecial = studentPayments.reduce((sum, p) => sum + p.specialFee, 0);
+    const totalPaidAll = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+    
+    return {
+      student,
+      payments: studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()),
+      feeStructure: {
+        developmentFee: {
+          total: totalDevFee,
+          paid: totalPaidDev,
+          remaining: Math.max(0, totalDevFee - totalPaidDev)
+        },
+        busFee: {
+          original: originalBusFee,
+          discount: busFeeDiscount,
+          total: discountedBusFee,
+          paid: totalPaidBus,
+          remaining: Math.max(0, discountedBusFee - totalPaidBus)
+        },
+        specialFee: {
+          paid: totalPaidSpecial
+        },
+        grandTotal: {
+          required: totalDevFee + discountedBusFee,
+          paid: totalPaidAll,
+          remaining: Math.max(0, (totalDevFee + discountedBusFee) - (totalPaidDev + totalPaidBus))
+        }
+      }
+    };
+  };
+
   const getFilteredPayments = () => {
     let filteredPayments = classPayments;
 
@@ -343,8 +443,11 @@ const TeacherReports: React.FC = () => {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-green-600">Total Collection</p>
-                <p className="text-2xl font-bold text-gray-900">₹{totalCollection.toLocaleString()}</p>
+                <p className="text-sm font-medium text-green-600">Total Paid</p>
+                <p className="text-2xl font-bold text-gray-900">₹{classStudents.reduce((sum, student) => {
+                  const details = getStudentPaymentDetails(student.id);
+                  return sum + (details?.feeStructure.grandTotal.paid || 0);
+                }, 0).toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -353,8 +456,11 @@ const TeacherReports: React.FC = () => {
             <div className="flex items-center">
               <FileText className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-purple-600">Total Payments</p>
-                <p className="text-2xl font-bold text-gray-900">{filteredPayments.length}</p>
+                <p className="text-sm font-medium text-purple-600">Total Required</p>
+                <p className="text-2xl font-bold text-gray-900">₹{classStudents.reduce((sum, student) => {
+                  const details = getStudentPaymentDetails(student.id);
+                  return sum + (details?.feeStructure.grandTotal.required || 0);
+                }, 0).toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -363,28 +469,12 @@ const TeacherReports: React.FC = () => {
             <div className="flex items-center">
               <Bus className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-orange-600">Bus Fees</p>
-                <p className="text-2xl font-bold text-gray-900">₹{busFees.toLocaleString()}</p>
+                <p className="text-sm font-medium text-orange-600">Total Balance</p>
+                <p className="text-2xl font-bold text-gray-900">₹{classStudents.reduce((sum, student) => {
+                  const details = getStudentPaymentDetails(student.id);
+                  return sum + (details?.feeStructure.grandTotal.remaining || 0);
+                }, 0).toLocaleString()}</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Fee Breakdown */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Fee Breakdown</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">₹{developmentFees.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Development Fees</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">₹{busFees.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Bus Fees</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">₹{specialFees.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">Special Fees</div>
             </div>
           </div>
         </div>
@@ -396,36 +486,30 @@ const TeacherReports: React.FC = () => {
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Download className="h-4 w-4" />
-            <span>Download CSV Report</span>
+            <span>Download Student Balance Report</span>
           </button>
         </div>
 
-        {/* Payments Table */}
+        {/* Students Balance Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Payment Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Student Balance Report</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Student
+                    Student Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Development Fee
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Bus Fee
+                    Bus Fee (After Discount)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Special Fee
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                    Total Balance
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -433,37 +517,45 @@ const TeacherReports: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPayments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
+                {classStudents.map((student) => {
+                  const details = getStudentPaymentDetails(student.id);
+                  if (!details) return null;
+                  
+                  return (
+                    <tr key={student.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{payment.studentName}</div>
-                        <div className="text-sm text-gray-500">{payment.admissionNo}</div>
+                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                        <div className="text-sm text-gray-500">{student.admissionNo} • {student.busStop}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₹{payment.developmentFee}
+                      <div className="text-sm">
+                        <div className="text-gray-900">Required: ₹{details.feeStructure.developmentFee.total}</div>
+                        <div className="text-green-600">Paid: ₹{details.feeStructure.developmentFee.paid}</div>
+                        <div className="text-red-600 font-medium">Balance: ₹{details.feeStructure.developmentFee.remaining}</div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₹{payment.busFee}
+                      <div className="text-sm">
+                        <div className="text-gray-900">
+                          Required: ₹{details.feeStructure.busFee.total}
+                          {details.feeStructure.busFee.discount > 0 && (
+                            <span className="text-orange-600 ml-1">(₹{details.feeStructure.busFee.original} - ₹{details.feeStructure.busFee.discount})</span>
+                          )}
+                        </div>
+                        <div className="text-green-600">Paid: ₹{details.feeStructure.busFee.paid}</div>
+                        <div className="text-red-600 font-medium">Balance: ₹{details.feeStructure.busFee.remaining}</div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">₹{payment.specialFee}</div>
-                      {payment.specialFeeType && (
-                        <div className="text-sm text-gray-500">{payment.specialFeeType}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-green-600">
-                        ₹{payment.totalAmount}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
+                      <div className="text-lg font-bold text-red-600">
+                        ₹{details.feeStructure.grandTotal.remaining}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => setSelectedStudentForDetails(payment.studentId)}
+                        onClick={() => setSelectedStudentForDetails(student.id)}
                         className="text-blue-600 hover:text-blue-900"
                         title="View Student Details"
                       >
@@ -471,17 +563,18 @@ const TeacherReports: React.FC = () => {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                }).filter(Boolean)}
               </tbody>
             </table>
           </div>
           
-          {filteredPayments.length === 0 && (
+          {classStudents.length === 0 && (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No students found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                No payments match your selected criteria.
+                No students are registered in this class.
               </p>
             </div>
           )}
