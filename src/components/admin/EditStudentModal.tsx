@@ -91,37 +91,6 @@ const TeacherReports: React.FC = () => {
     // Calculate totals
     const totalPaidDev = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
     const totalPaidBus = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
-    const totalPaidSpecial = studentPayments.reduce((sum, p) => sum + p.specialFee, 0);
-    const totalPaidAll = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
-    
-    return {
-      student,
-      payments: studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()),
-      feeStructure: {
-        developmentFee: {
-          total: totalDevFee,
-          paid: totalPaidDev,
-          remaining: Math.max(0, totalDevFee - totalPaidDev)
-        },
-        busFee: {
-          original: originalBusFee,
-          discount: busFeeDiscount,
-          total: discountedBusFee,
-          paid: totalPaidBus,
-          remaining: Math.max(0, discountedBusFee - totalPaidBus)
-        },
-        specialFee: {
-          paid: totalPaidSpecial
-        },
-        grandTotal: {
-          required: totalDevFee + discountedBusFee,
-          paid: totalPaidAll,
-          remaining: Math.max(0, (totalDevFee + discountedBusFee) - (totalPaidDev + totalPaidBus))
-        }
-      }
-    };
-  };
-
   const getFilteredPayments = () => {
     let filteredPayments = classPayments;
 
