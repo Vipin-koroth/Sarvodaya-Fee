@@ -361,6 +361,7 @@ const Reports: React.FC = () => {
   const monthlyData = getMonthlyReport();
   const receiptWiseData = getReceiptWiseReport();
   const classMonthlyCollectionData = getClassMonthlyCollectionReport();
+  const feeNotPaidData = getFeeNotPaidReport();
 
   return (
     <div className="space-y-6">
