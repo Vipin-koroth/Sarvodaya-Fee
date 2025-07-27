@@ -48,6 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'My Students', icon: UserCheck },
     { id: 'payments', label: 'Add Payment', icon: CreditCard },
+    { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'print-receipts', label: 'Print Receipts', icon: Printer },
     { id: 'password', label: 'Change Password', icon: Lock },
   ];
