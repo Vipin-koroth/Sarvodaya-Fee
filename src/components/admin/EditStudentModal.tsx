@@ -17,7 +17,8 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose })
     division: student.division,
     busStop: student.busStop,
     busNumber: student.busNumber,
-    tripNumber: student.tripNumber
+    tripNumber: student.tripNumber,
+    busFeeDiscount: student.busFeeDiscount || 0
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -178,6 +179,27 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose })
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bus Fee Discount (₹)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+              <input
+                type="number"
+                name="busFeeDiscount"
+                value={formData.busFeeDiscount}
+                onChange={handleChange}
+                className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min="0"
+                placeholder="0"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Discount amount to be deducted from total bus fee
+            </p>
           </div>
 
           <div className="flex space-x-3 pt-4">

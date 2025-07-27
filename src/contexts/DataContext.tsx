@@ -13,6 +13,7 @@ export interface Student {
   busStop: string;
   busNumber: string;
   tripNumber: string;
+  busFeeDiscount: number;
 }
 
 export interface Payment {
@@ -324,6 +325,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     busStop: student.bus_stop,
     busNumber: student.bus_number,
     tripNumber: student.trip_number,
+    busFeeDiscount: student.bus_fee_discount || 0,
   });
 
   const transformStudentToSupabase = (student: Omit<Student, 'id'>): Omit<SupabaseStudent, 'id' | 'created_at'> => ({
@@ -335,6 +337,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     bus_stop: student.busStop,
     bus_number: student.busNumber,
     trip_number: student.tripNumber,
+    bus_fee_discount: student.busFeeDiscount || 0,
   });
 
   const transformSupabasePayment = (payment: SupabasePayment): Payment => ({
@@ -378,6 +381,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const totalDevFee = feeConfig.developmentFees[classKey] || 0;
     const totalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const discountedBusFee = Math.max(0, totalBusFee - (student.busFeeDiscount || 0));
 
     const studentPayments = payments.filter(p => p.studentId === studentId);
     const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
@@ -385,7 +389,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return {
       devBalance: totalDevFee - paidDevFee,
-      busBalance: totalBusFee - paidBusFee
+      busBalance: discountedBusFee - paidBusFee
     };
   };
 

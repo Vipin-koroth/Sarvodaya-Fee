@@ -20,6 +20,7 @@ export interface Student {
   bus_stop: string
   bus_number: string
   trip_number: string
+  bus_fee_discount: number
   created_at?: string
 }
 

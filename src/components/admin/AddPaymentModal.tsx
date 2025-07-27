@@ -64,7 +64,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
       
       // Auto-populate bus fee based on bus stop
       const totalBusFee = feeConfig.busStops[selectedStudentData.busStop] || 0;
-      const remainingBusFee = Math.max(0, totalBusFee - paid.busFee);
+      const discountedBusFee = Math.max(0, totalBusFee - (selectedStudentData.busFeeDiscount || 0));
+      const remainingBusFee = Math.max(0, discountedBusFee - paid.busFee);
       
       setFormData(prev => ({
         ...prev,
@@ -146,7 +147,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
         const totalRequired = feeConfig.developmentFees[feeKey] || 0;
         maxAmount = Math.max(0, totalRequired - paidAmounts.developmentFee);
       } else if (name === 'busFee') {
-        const totalRequired = feeConfig.busStops[selectedStudentData?.busStop || ''] || 0;
+        const totalBusFee = feeConfig.busStops[selectedStudentData?.busStop || ''] || 0;
+        const totalRequired = Math.max(0, totalBusFee - (selectedStudentData?.busFeeDiscount || 0));
         maxAmount = Math.max(0, totalRequired - paidAmounts.busFee);
       } else if (name === 'specialFee') {
         maxAmount = 999999; // No limit for special fees
@@ -176,7 +178,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
       ? `${selectedStudentData.class}-${selectedStudentData.division}` 
       : selectedStudentData.class;
     const totalDevelopmentRequired = feeConfig.developmentFees[feeKey] || 0;
-    const totalBusRequired = feeConfig.busStops[selectedStudentData.busStop] || 0;
+    const totalBusFeeOriginal = feeConfig.busStops[selectedStudentData.busStop] || 0;
+    const totalBusRequired = Math.max(0, totalBusFeeOriginal - (selectedStudentData.busFeeDiscount || 0));
     
     return {
       development: {
