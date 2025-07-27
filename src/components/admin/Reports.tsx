@@ -351,6 +351,29 @@ const Reports: React.FC = () => {
         headers = ['Date', 'Amount'];
         rows = Object.entries(data.dailyBreakdown).map(([date, amount]) => [date, amount.toString()]);
         break;
+      case 'fee-unpaid':
+        headers = ['Class', 'Student Name', 'Admission No', 'Mobile', 'Bus Stop', 'Dev Fee Required', 'Dev Fee Paid', 'Dev Balance', 'Bus Fee Required', 'Bus Fee Paid', 'Bus Balance', 'Total Balance', 'Last Payment'];
+        rows = [];
+        Object.entries(data).forEach(([classKey, classData]: [string, any]) => {
+          classData.students.forEach((student: any) => {
+            rows.push([
+              classKey,
+              student.name,
+              student.admissionNo,
+              student.mobile,
+              student.busStop,
+              student.totalDevRequired.toString(),
+              student.paidDev.toString(),
+              student.devBalance.toString(),
+              student.totalBusRequired.toString(),
+              student.paidBus.toString(),
+              student.busBalance.toString(),
+              student.totalBalance.toString(),
+              student.lastPaymentDate ? new Date(student.lastPaymentDate).toLocaleDateString('en-GB') : 'Never'
+            ]);
+          });
+        });
+        break;
     }
 
     return [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -361,6 +384,64 @@ const Reports: React.FC = () => {
   const monthlyData = getMonthlyReport();
   const receiptWiseData = getReceiptWiseReport();
   const classMonthlyCollectionData = getClassMonthlyCollectionReport();
+  const feeUnpaidStudentsData = getFeeUnpaidStudentsReport();
+
+  // Fee unpaid students report data
+  const getFeeUnpaidStudentsReport = () => {
+    const report: Record<string, any> = {};
+    
+    students.forEach(student => {
+      const balance = getStudentBalance(student.id);
+      
+      // Only include students with outstanding balances
+      if (balance.devBalance > 0 || balance.busBalance > 0) {
+        const classKey = `${student.class}-${student.division}`;
+        
+        if (!report[classKey]) {
+          report[classKey] = {
+            className: classKey,
+            students: []
+          };
+        }
+        
+        // Get fee configuration for this student
+        const feeKey = (['11', '12'].includes(student.class)) 
+          ? `${student.class}-${student.division}` 
+          : student.class;
+        const totalDevRequired = feeConfig.developmentFees[feeKey] || 0;
+        const totalBusRequired = feeConfig.busStops[student.busStop] || 0;
+        
+        // Calculate paid amounts
+        const studentPayments = payments.filter(p => p.studentId === student.id);
+        const paidDev = studentPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);
+        const paidBus = studentPayments.reduce((sum, p) => sum + (p.busFee || 0), 0);
+        
+        // Get last payment date
+        const lastPayment = studentPayments.length > 0 
+          ? studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())[0]
+          : null;
+        
+        report[classKey].students.push({
+          ...student,
+          totalDevRequired,
+          totalBusRequired,
+          paidDev,
+          paidBus,
+          devBalance: balance.devBalance,
+          busBalance: balance.busBalance,
+          totalBalance: balance.devBalance + balance.busBalance,
+          lastPaymentDate: lastPayment?.paymentDate || null
+        });
+      }
+    });
+    
+    // Sort students within each class by total balance (highest first)
+    Object.values(report).forEach((classData: any) => {
+      classData.students.sort((a: any, b: any) => b.totalBalance - a.totalBalance);
+    });
+    
+    return report;
+  };
 
   return (
     <div className="space-y-6">
@@ -442,6 +523,19 @@ const Reports: React.FC = () => {
             <TrendingUp className="h-8 w-8 mx-auto mb-2" />
             <div className="font-medium">Class Monthly Collection</div>
             <div className="text-sm text-gray-600">Students with monthly collections by fee type</div>
+          </button>
+          
+          <button
+            onClick={() => setReportType('fee-unpaid')}
+            className={`p-4 rounded-lg border-2 transition-colors ${
+              reportType === 'fee-unpaid' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+            <div className="font-medium">Fee Unpaid Students</div>
+            <div className="text-sm text-gray-600">Students with outstanding fee balances</div>
           </button>
         </div>
       </div>
@@ -918,6 +1012,138 @@ const Reports: React.FC = () => {
           {Object.keys(feeNotPaidData).length > 0 ? (
             <div className="space-y-8">
               {Object.entries(feeNotPaidData).map(([classKey, classData]: [string, any]) => (
+                <div key={classKey} className="border border-gray-200 rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Class {classData.className}</h4>
+                    <div className="text-sm text-gray-600">
+                      {classData.students.length} students with pending fees
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student Details</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Development Fee</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bus Fee</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Balance</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Payment</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {classData.students.map((student: any) => (
+                          <tr key={student.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                              <div className="text-sm text-gray-500">Adm: {student.admissionNo}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{student.mobile}</div>
+                              <div className="text-sm text-gray-500">{student.busStop}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                Required: ₹{student.totalDevRequired}
+                              </div>
+                              <div className="text-sm text-green-600">
+                                Paid: ₹{student.paidDev}
+                              </div>
+                              <div className="text-sm font-semibold text-red-600">
+                                Balance: ₹{student.devBalance}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                Required: ₹{student.totalBusRequired}
+                              </div>
+                              <div className="text-sm text-green-600">
+                                Paid: ₹{student.paidBus}
+                              </div>
+                              <div className="text-sm font-semibold text-red-600">
+                                Balance: ₹{student.busBalance}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-lg font-bold text-red-600">
+                                ₹{student.totalBalance.toLocaleString()}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {student.lastPaymentDate 
+                                ? new Date(student.lastPaymentDate).toLocaleDateString('en-GB')
+                                : 'Never'
+                              }
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Users className="mx-auto h-12 w-12 text-green-400" />
+              <h3 className="mt-2 text-sm font-medium text-green-900">All Fees Paid!</h3>
+              <p className="mt-1 text-sm text-green-600">No students have pending fee payments.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {reportType === 'fee-unpaid' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Fee Unpaid Students Report</h3>
+            <button
+              onClick={() => downloadReport(feeUnpaidStudentsData, 'fee_unpaid_students')}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download CSV</span>
+            </button>
+          </div>
+          
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-red-50 rounded-lg p-4">
+              <div className="text-red-600 text-sm font-medium">Total Students with Pending Fees</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => sum + classData.students.length, 0)}
+              </div>
+            </div>
+            <div className="bg-orange-50 rounded-lg p-4">
+              <div className="text-orange-600 text-sm font-medium">Total Development Balance</div>
+              <div className="text-2xl font-bold text-gray-900">
+                ₹{Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => 
+                  sum + classData.students.reduce((classSum: number, student: any) => classSum + student.devBalance, 0), 0
+                ).toLocaleString()}
+              </div>
+            </div>
+            <div className="bg-yellow-50 rounded-lg p-4">
+              <div className="text-yellow-600 text-sm font-medium">Total Bus Balance</div>
+              <div className="text-2xl font-bold text-gray-900">
+                ₹{Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => 
+                  sum + classData.students.reduce((classSum: number, student: any) => classSum + student.busBalance, 0), 0
+                ).toLocaleString()}
+              </div>
+            </div>
+            <div className="bg-red-50 rounded-lg p-4">
+              <div className="text-red-600 text-sm font-medium">Total Outstanding Amount</div>
+              <div className="text-2xl font-bold text-gray-900">
+                ₹{Object.values(feeUnpaidStudentsData).reduce((sum: number, classData: any) => 
+                  sum + classData.students.reduce((classSum: number, student: any) => classSum + student.totalBalance, 0), 0
+                ).toLocaleString()}
+              </div>
+            </div>
+          </div>
+          
+          {Object.keys(feeUnpaidStudentsData).length > 0 ? (
+            <div className="space-y-8">
+              {Object.entries(feeUnpaidStudentsData).map(([classKey, classData]: [string, any]) => (
                 <div key={classKey} className="border border-gray-200 rounded-lg p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="text-lg font-semibold text-gray-900">Class {classData.className}</h4>
