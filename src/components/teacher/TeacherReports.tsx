@@ -72,106 +72,6 @@ const TeacherReports: React.FC = () => {
     };
   };
 
-  // Get student payment details with proper discount calculation
-  const getStudentPaymentDetails = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
-    if (!student) return null;
-
-    const studentPayments = payments.filter(p => p.studentId === studentId);
-    
-    // Calculate fee structure with discount
-    const classKey = (['11', '12'].includes(student.class)) 
-      ? `${student.class}-${student.division}` 
-      : student.class;
-    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-    const busFeeDiscount = student.busFeeDiscount || 0;
-    const discountedBusFee = Math.max(0, originalBusFee - busFeeDiscount);
-    
-    // Calculate totals
-    const totalPaidDev = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
-    const totalPaidBus = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
-    const totalPaidSpecial = studentPayments.reduce((sum, p) => sum + p.specialFee, 0);
-    const totalPaidAll = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
-    
-    return {
-      student,
-      payments: studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()),
-      feeStructure: {
-        developmentFee: {
-          total: totalDevFee,
-          paid: totalPaidDev,
-          remaining: Math.max(0, totalDevFee - totalPaidDev)
-        },
-        busFee: {
-          original: originalBusFee,
-          discount: busFeeDiscount,
-          total: discountedBusFee,
-          paid: totalPaidBus,
-          remaining: Math.max(0, discountedBusFee - totalPaidBus)
-        },
-        specialFee: {
-          paid: totalPaidSpecial
-        },
-        grandTotal: {
-          required: totalDevFee + discountedBusFee,
-          paid: totalPaidAll,
-          remaining: Math.max(0, (totalDevFee + discountedBusFee) - (totalPaidDev + totalPaidBus))
-        }
-      }
-    };
-  };
-
-  // Get student payment details with proper discount calculation
-  const getStudentPaymentDetails = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
-    if (!student) return null;
-
-    const studentPayments = payments.filter(p => p.studentId === studentId);
-    
-    // Calculate fee structure with discount
-    const classKey = (['11', '12'].includes(student.class)) 
-      ? `${student.class}-${student.division}` 
-      : student.class;
-    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-    const busFeeDiscount = student.busFeeDiscount || 0;
-    const discountedBusFee = Math.max(0, originalBusFee - busFeeDiscount);
-    
-    // Calculate totals
-    const totalPaidDev = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
-    const totalPaidBus = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
-    const totalPaidSpecial = studentPayments.reduce((sum, p) => sum + p.specialFee, 0);
-    const totalPaidAll = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
-    
-    return {
-      student,
-      payments: studentPayments.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()),
-      feeStructure: {
-        developmentFee: {
-          total: totalDevFee,
-          paid: totalPaidDev,
-          remaining: Math.max(0, totalDevFee - totalPaidDev)
-        },
-        busFee: {
-          original: originalBusFee,
-          discount: busFeeDiscount,
-          total: discountedBusFee,
-          paid: totalPaidBus,
-          remaining: Math.max(0, discountedBusFee - totalPaidBus)
-        },
-        specialFee: {
-          paid: totalPaidSpecial
-        },
-        grandTotal: {
-          required: totalDevFee + discountedBusFee,
-          paid: totalPaidAll,
-          remaining: Math.max(0, (totalDevFee + discountedBusFee) - (totalPaidDev + totalPaidBus))
-        }
-      }
-    };
-  };
-
   const getFilteredPayments = () => {
     let filteredPayments = classPayments;
 
@@ -194,23 +94,6 @@ const TeacherReports: React.FC = () => {
     return filteredPayments;
   };
 
-  // Get student payment details
-  const getStudentPaymentDetails = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
-    if (!student) return null;
-
-    const studentPayments = payments.filter(p => p.studentId === studentId);
-    
-    // Calculate fee structure
-    const classKey = (['11', '12'].includes(student.class)) 
-      ? `${student.class}-${student.division}` 
-      : student.class;
-    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-    const busFeeDiscount = student.busFeeDiscount || 0;
-    const discountedBusFee = Math.max(0, originalBusFee - busFeeDiscount);
-    
-    // Calculate totals
   // Student Details Modal Component
   const StudentDetailsModal: React.FC<{ studentId: string; onClose: () => void }> = ({ studentId, onClose }) => {
     const details = getStudentPaymentDetails(studentId);
@@ -407,6 +290,7 @@ const TeacherReports: React.FC = () => {
       </div>
     );
   };
+
   const ClassWiseReport: React.FC = () => {
     const filteredPayments = getFilteredPayments();
     const totalCollection = filteredPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
