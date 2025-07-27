@@ -380,8 +380,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       : student.class;
 
     const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-    const totalBusFee = feeConfig.busStops[student.busStop] || 0;
-    const discountedBusFee = Math.max(0, totalBusFee - (student.busFeeDiscount || 0));
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const discountedBusFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
 
     const studentPayments = payments.filter(p => p.studentId === studentId);
     const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
@@ -389,7 +389,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return {
       devBalance: totalDevFee - paidDevFee,
-      busBalance: discountedBusFee - paidBusFee
+      busBalance: Math.max(0, discountedBusFee - paidBusFee)
     };
   };
 

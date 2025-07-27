@@ -46,7 +46,8 @@ const ClassReceiptPrint: React.FC = () => {
       : student.class;
 
     const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-    const totalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const totalBusFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
 
     const studentPayments = payments.filter(p => p.studentId === studentId);
     const paidDevFee = studentPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);

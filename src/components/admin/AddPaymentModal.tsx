@@ -63,8 +63,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
       const remainingDevelopmentFee = Math.max(0, totalDevelopmentFee - paid.developmentFee);
       
       // Auto-populate bus fee based on bus stop
-      const totalBusFee = feeConfig.busStops[selectedStudentData.busStop] || 0;
-      const discountedBusFee = Math.max(0, totalBusFee - (selectedStudentData.busFeeDiscount || 0));
+      const originalBusFee = feeConfig.busStops[selectedStudentData.busStop] || 0;
+      const discountedBusFee = Math.max(0, originalBusFee - (selectedStudentData.busFeeDiscount || 0));
       const remainingBusFee = Math.max(0, discountedBusFee - paid.busFee);
       
       setFormData(prev => ({
@@ -147,8 +147,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
         const totalRequired = feeConfig.developmentFees[feeKey] || 0;
         maxAmount = Math.max(0, totalRequired - paidAmounts.developmentFee);
       } else if (name === 'busFee') {
-        const totalBusFee = feeConfig.busStops[selectedStudentData?.busStop || ''] || 0;
-        const totalRequired = Math.max(0, totalBusFee - (selectedStudentData?.busFeeDiscount || 0));
+        const originalBusFee = feeConfig.busStops[selectedStudentData?.busStop || ''] || 0;
+        const totalRequired = Math.max(0, originalBusFee - (selectedStudentData?.busFeeDiscount || 0));
         maxAmount = Math.max(0, totalRequired - paidAmounts.busFee);
       } else if (name === 'specialFee') {
         maxAmount = 999999; // No limit for special fees
@@ -287,6 +287,14 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
                     <div className="font-medium text-yellow-800">Bus Fee</div>
                     <div className="text-yellow-700">
                       Original Amount: ₹{feeConfig.busStops[selectedStudentData.busStop] || 0}
+                    </div>
+                    {selectedStudentData.busFeeDiscount > 0 && (
+                      <div className="text-yellow-700">
+                        Discount Applied: -₹{selectedStudentData.busFeeDiscount}
+                      </div>
+                    )}
+                    <div className="text-yellow-700">
+                      After Discount: ₹{feeStatus.bus.total}
                     </div>
                     {selectedStudentData.busFeeDiscount > 0 && (
                       <div className="text-yellow-700">

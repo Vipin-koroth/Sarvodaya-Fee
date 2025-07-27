@@ -39,7 +39,8 @@ const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ payment, onClose }) => {
       ? `${student.class}-${student.division}` 
       : student.class;
     const totalDevelopmentRequired = feeConfig.developmentFees[feeKey] || 0;
-    const totalBusRequired = feeConfig.busStops[student.busStop] || 0;
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const totalBusRequired = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
     
     return {
       developmentPayments,
