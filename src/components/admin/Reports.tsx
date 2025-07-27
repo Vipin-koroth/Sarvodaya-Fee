@@ -255,6 +255,8 @@ const Reports: React.FC = () => {
   const getReceiptWiseReport = () => {
     let filteredPayments = payments;
 
+        case 'receipt-wise':
+          return <ReceiptWiseReport />;
     // Apply date filter
     if (dateFilter === 'single') {
       filteredPayments = payments.filter(payment => 
@@ -279,6 +281,48 @@ const Reports: React.FC = () => {
     );
   };
 
+  const ReceiptWiseReport: React.FC = () => {
+    const downloadReceiptWiseCSV = () => {
+      if (payments.length === 0) {
+        alert('No payment data available');
+        return;
+      }
+
+      const headers = [
+        'Receipt ID', 'Receipt Date', 'Student Name', 'Admission No', 'Class', 'Division',
+        'Mobile', 'Bus Stop', 'Development Fee', 'Bus Fee', 'Special Fee', 'Special Fee Type',
+        'Total Amount', 'Added By'
+      ];
+      
+      const csvData = payments.map(payment => {
+        const student = students.find(s => s.id === payment.studentId);
+        return [
+          payment.id.slice(-6), // Receipt number
+          new Date(payment.paymentDate).toLocaleDateString('en-GB'),
+          payment.studentName,
+          payment.admissionNo,
+          payment.class,
+          payment.division,
+          student?.mobile || '',
+          student?.busStop || '',
+          payment.developmentFee,
+          payment.busFee,
+          payment.specialFee,
+          payment.specialFeeType || '',
+          payment.totalAmount,
+          payment.addedBy
+        ];
+      });
+
+      const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt_wise_report_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
   const getStudentBalance = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return { devBalance: 0, busBalance: 0 };

@@ -29,8 +29,8 @@ export class EmailService {
         to_email: data.to_email,
         subject: data.subject,
         message: data.message,
-        students_csv: data.students_csv,
-        payments_csv: data.payments_csv,
+        receipt_wise_csv: data.receipt_wise_csv,
+        class_monthly_csv: data.class_monthly_csv,
         from_name: 'Sarvodaya School Management System',
         reply_to: 'noreply@sarvodayaschool.edu'
       };
