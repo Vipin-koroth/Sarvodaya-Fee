@@ -379,11 +379,6 @@ const Reports: React.FC = () => {
     
     Object.entries(reportData).forEach(([classKey, classData]: [string, any]) => {
       classData.students.forEach((student: any) => {
-        // Skip students with zero total amount
-        if (student.totalCollected === 0) {
-          return;
-        }
-        
         // Combined row
         const combinedRow = [
           classKey,
@@ -1019,43 +1014,55 @@ const Reports: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {classData.students.map((student: any) => (
-                          <tr key={student.id}>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {student.name}
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {student.admissionNo}
-                            </td>
-                            {classData.allMonths.map((month: string) => (
-                              <td key={month} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {student.monthlyCollections[month]?.total > 0 ? (
-                                  <div className="space-y-1">
-                                    <div className="font-semibold text-green-600">
-                                      ₹{student.monthlyCollections[month].total}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {student.monthlyCollections[month].developmentFee > 0 && (
-                                        <div>Dev: ₹{student.monthlyCollections[month].developmentFee}</div>
-                                      )}
-                                      {student.monthlyCollections[month].busFee > 0 && (
-                                        <div>Bus: ₹{student.monthlyCollections[month].busFee}</div>
-                                      )}
-                                      {student.monthlyCollections[month].specialFee > 0 && (
-                                        <div>Spl: ₹{student.monthlyCollections[month].specialFee}</div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
+                        {classData.students.map((student: any) => {
+                          const monthlyAmounts = classData.allMonths.map((month: string) => 
+                            student.monthlyCollections[month]?.total || 0
+                          );
+                          const totalAmount = monthlyAmounts.reduce((sum, amount) => sum + amount, 0);
+                          
+                          // Skip students with zero total amount
+                          if (totalAmount === 0) {
+                            return null;
+                          }
+                          
+                          return (
+                            <tr key={student.id}>
+                              <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {student.name}
                               </td>
-                            ))}
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                              ₹{student.totalCollected.toLocaleString()}
-                            </td>
-                          </tr>
-                        ))}
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {student.admissionNo}
+                              </td>
+                              {classData.allMonths.map((month: string) => (
+                                <td key={month} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {student.monthlyCollections[month]?.total > 0 ? (
+                                    <div className="space-y-1">
+                                      <div className="font-semibold text-green-600">
+                                        ₹{student.monthlyCollections[month].total}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {student.monthlyCollections[month].developmentFee > 0 && (
+                                          <div>Dev: ₹{student.monthlyCollections[month].developmentFee}</div>
+                                        )}
+                                        {student.monthlyCollections[month].busFee > 0 && (
+                                          <div>Bus: ₹{student.monthlyCollections[month].busFee}</div>
+                                        )}
+                                        {student.monthlyCollections[month].specialFee > 0 && (
+                                          <div>Spl: ₹{student.monthlyCollections[month].specialFee}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </td>
+                              ))}
+                              <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                                ₹{student.totalCollected.toLocaleString()}
+                              </td>
+                            </tr>
+                          );
+                        }).filter(Boolean)}
                       </tbody>
                     </table>
                   </div>
