@@ -255,6 +255,11 @@ This is an automated weekly report from your school management system.
         
         const totalAmount = monthlyAmounts.reduce((sum, amount) => sum + amount, 0);
         
+        // Skip students with zero total amount
+        if (totalAmount === 0) {
+          return;
+        }
+        
         csvData.push([
           classNum,
           division,
