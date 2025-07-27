@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt } from 'lucide-react';
+import { FileText, Download, Users, Bus, TrendingUp, Calendar, Receipt, AlertTriangle } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 const Reports: React.FC = () => {
