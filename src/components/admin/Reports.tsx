@@ -90,6 +90,63 @@ const Reports: React.FC = () => {
     };
   };
 
+  // Class monthly collection report
+  const getClassMonthlyCollectionReport = () => {
+    const report: Record<string, any> = {};
+    
+    // Get all months from payments
+    const allMonths = [...new Set(payments.map(p => 
+      new Date(p.paymentDate).toISOString().slice(0, 7)
+    ))].sort();
+    
+    // Group students by class
+    for (let classNum = 1; classNum <= 12; classNum++) {
+      for (const division of ['A', 'B', 'C', 'D', 'E']) {
+        const classKey = `${classNum}-${division}`;
+        const classStudents = students.filter(s => 
+          s.class === classNum.toString() && s.division === division
+        );
+        
+        if (classStudents.length > 0) {
+          report[classKey] = {
+            students: classStudents.map(student => {
+              const studentPayments = payments.filter(p => p.studentId === student.id);
+              
+              // Calculate monthly collections
+              const monthlyCollections: Record<string, {
+                developmentFee: number;
+                busFee: number;
+                specialFee: number;
+                total: number;
+              }> = {};
+              
+              allMonths.forEach(month => {
+                const monthPayments = studentPayments.filter(p => 
+                  new Date(p.paymentDate).toISOString().slice(0, 7) === month
+                );
+                
+                monthlyCollections[month] = {
+                  developmentFee: monthPayments.reduce((sum, p) => sum + p.developmentFee, 0),
+                  busFee: monthPayments.reduce((sum, p) => sum + p.busFee, 0),
+                  specialFee: monthPayments.reduce((sum, p) => sum + p.specialFee, 0),
+                  total: monthPayments.reduce((sum, p) => sum + p.totalAmount, 0)
+                };
+              });
+              
+              return {
+                ...student,
+                monthlyCollections,
+                totalCollected: studentPayments.reduce((sum, p) => sum + p.totalAmount, 0)
+              };
+            }),
+            allMonths
+          };
+        }
+      }
+    }
+    
+    return report;
+  };
   // Receipt-wise report data
   const getReceiptWiseReport = () => {
     let filteredPayments = payments;
@@ -149,6 +206,99 @@ const Reports: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const downloadClassMonthlyReport = (reportData: any) => {
+    // Create separate CSV files for each fee type
+    const allMonths = Object.values(reportData)[0]?.allMonths || [];
+    
+    // Combined report with all fees
+    const combinedHeaders = ['Class', 'Student Name', 'Admission No', ...allMonths.map(month => `${month} Total`), 'Grand Total'];
+    const combinedRows: string[][] = [];
+    
+    // Development fee report
+    const devHeaders = ['Class', 'Student Name', 'Admission No', ...allMonths.map(month => `${month} Dev Fee`), 'Total Dev Fee'];
+    const devRows: string[][] = [];
+    
+    // Bus fee report
+    const busHeaders = ['Class', 'Student Name', 'Admission No', ...allMonths.map(month => `${month} Bus Fee`), 'Total Bus Fee'];
+    const busRows: string[][] = [];
+    
+    // Special fee report
+    const splHeaders = ['Class', 'Student Name', 'Admission No', ...allMonths.map(month => `${month} Special Fee`), 'Total Special Fee'];
+    const splRows: string[][] = [];
+    
+    Object.entries(reportData).forEach(([classKey, classData]: [string, any]) => {
+      classData.students.forEach((student: any) => {
+        // Combined row
+        const combinedRow = [
+          classKey,
+          student.name,
+          student.admissionNo,
+          ...allMonths.map(month => student.monthlyCollections[month]?.total || 0),
+          student.totalCollected
+        ];
+        combinedRows.push(combinedRow.map(String));
+        
+        // Development fee row
+        const devRow = [
+          classKey,
+          student.name,
+          student.admissionNo,
+          ...allMonths.map(month => student.monthlyCollections[month]?.developmentFee || 0),
+          allMonths.reduce((sum, month) => sum + (student.monthlyCollections[month]?.developmentFee || 0), 0)
+        ];
+        devRows.push(devRow.map(String));
+        
+        // Bus fee row
+        const busRow = [
+          classKey,
+          student.name,
+          student.admissionNo,
+          ...allMonths.map(month => student.monthlyCollections[month]?.busFee || 0),
+          allMonths.reduce((sum, month) => sum + (student.monthlyCollections[month]?.busFee || 0), 0)
+        ];
+        busRows.push(busRow.map(String));
+        
+        // Special fee row
+        const splRow = [
+          classKey,
+          student.name,
+          student.admissionNo,
+          ...allMonths.map(month => student.monthlyCollections[month]?.specialFee || 0),
+          allMonths.reduce((sum, month) => sum + (student.monthlyCollections[month]?.specialFee || 0), 0)
+        ];
+        splRows.push(splRow.map(String));
+      });
+    });
+    
+    // Create and download CSV files
+    const timestamp = new Date().toISOString().slice(0, 10);
+    
+    // Combined report
+    const combinedCSV = [combinedHeaders, ...combinedRows].map(row => row.join(',')).join('\n');
+    downloadCSVFile(combinedCSV, `class_monthly_collection_combined_${timestamp}.csv`);
+    
+    // Development fee report
+    const devCSV = [devHeaders, ...devRows].map(row => row.join(',')).join('\n');
+    downloadCSVFile(devCSV, `class_monthly_collection_development_fee_${timestamp}.csv`);
+    
+    // Bus fee report
+    const busCSV = [busHeaders, ...busRows].map(row => row.join(',')).join('\n');
+    downloadCSVFile(busCSV, `class_monthly_collection_bus_fee_${timestamp}.csv`);
+    
+    // Special fee report
+    const splCSV = [splHeaders, ...splRows].map(row => row.join(',')).join('\n');
+    downloadCSVFile(splCSV, `class_monthly_collection_special_fee_${timestamp}.csv`);
+  };
+  
+  const downloadCSVFile = (csvContent: string, filename: string) => {
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   const generateCSV = (data: any, type: string) => {
     let headers: string[] = [];
     let rows: string[][] = [];
@@ -210,6 +360,7 @@ const Reports: React.FC = () => {
   const busStopData = getBusStopReport();
   const monthlyData = getMonthlyReport();
   const receiptWiseData = getReceiptWiseReport();
+  const classMonthlyCollectionData = getClassMonthlyCollectionReport();
 
   return (
     <div className="space-y-6">
@@ -278,6 +429,19 @@ const Reports: React.FC = () => {
             <Calendar className="h-8 w-8 mx-auto mb-2" />
             <div className="font-medium">Monthly Report</div>
             <div className="text-sm text-gray-600">Collection summary by month</div>
+          </button>
+          
+          <button
+            onClick={() => setReportType('class-monthly-collection')}
+            className={`p-4 rounded-lg border-2 transition-colors ${
+              reportType === 'class-monthly-collection' 
+                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <TrendingUp className="h-8 w-8 mx-auto mb-2" />
+            <div className="font-medium">Class Monthly Collection</div>
+            <div className="text-sm text-gray-600">Students with monthly collections by fee type</div>
           </button>
         </div>
       </div>
@@ -603,6 +767,104 @@ const Reports: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {reportType === 'class-monthly-collection' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Class-wise Monthly Collection Report</h3>
+            <button
+              onClick={() => downloadClassMonthlyReport(classMonthlyCollectionData)}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download All Reports</span>
+            </button>
+          </div>
+          
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Report Information</h4>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>• <strong>Combined Report:</strong> All students with total monthly collections</p>
+              <p>• <strong>Development Fee Report:</strong> Monthly development fee collections per student</p>
+              <p>• <strong>Bus Fee Report:</strong> Monthly bus fee collections per student</p>
+              <p>• <strong>Special Fee Report:</strong> Monthly special fee collections per student</p>
+              <p>• <strong>Format:</strong> Each class shows students with their monthly payment breakdown</p>
+            </div>
+          </div>
+          
+          {Object.keys(classMonthlyCollectionData).length > 0 ? (
+            <div className="space-y-8">
+              {Object.entries(classMonthlyCollectionData).map(([classKey, classData]: [string, any]) => (
+                <div key={classKey} className="border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Class {classKey}</h4>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Admission No</th>
+                          {classData.allMonths.map((month: string) => (
+                            <th key={month} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              {new Date(month + '-01').toLocaleDateString('en-GB', { year: 'numeric', month: 'short' })}
+                            </th>
+                          ))}
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {classData.students.map((student: any) => (
+                          <tr key={student.id}>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {student.name}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {student.admissionNo}
+                            </td>
+                            {classData.allMonths.map((month: string) => (
+                              <td key={month} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {student.monthlyCollections[month]?.total > 0 ? (
+                                  <div className="space-y-1">
+                                    <div className="font-semibold text-green-600">
+                                      ₹{student.monthlyCollections[month].total}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {student.monthlyCollections[month].developmentFee > 0 && (
+                                        <div>Dev: ₹{student.monthlyCollections[month].developmentFee}</div>
+                                      )}
+                                      {student.monthlyCollections[month].busFee > 0 && (
+                                        <div>Bus: ₹{student.monthlyCollections[month].busFee}</div>
+                                      )}
+                                      {student.monthlyCollections[month].specialFee > 0 && (
+                                        <div>Spl: ₹{student.monthlyCollections[month].specialFee}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                            ))}
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                              ₹{student.totalCollected.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <TrendingUp className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No data available</h3>
+              <p className="mt-1 text-sm text-gray-500">No students or payments found to generate the report.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
