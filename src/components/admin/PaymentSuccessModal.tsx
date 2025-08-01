@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, Receipt, X, MessageCircle } from 'lucide-react';
-import { Payment } from '../../contexts/DataContext';
+import { Payment, useData } from '../../contexts/DataContext';
 
 interface PaymentSuccessModalProps {
   payment: Payment;
@@ -13,11 +13,38 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   onClose, 
   onPrintReceipt 
 }) => {
+  const { students, feeConfig, payments } = useData();
+
+  // Get student balance information
+  const getStudentBalance = () => {
+    const student = students.find(s => s.id === payment.studentId);
+    if (!student) return { devBalance: 0, busBalance: 0 };
+
+    const classKey = (['11', '12'].includes(student.class)) 
+      ? `${student.class}-${student.division}` 
+      : student.class;
+
+    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
+    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+    const totalBusFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
+
+    const studentPayments = payments.filter(p => p.studentId === student.id);
+    const paidDevFee = studentPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);
+    const paidBusFee = studentPayments.reduce((sum, p) => sum + (p.busFee || 0), 0);
+
+    return {
+      devBalance: Math.max(0, totalDevFee - paidDevFee),
+      busBalance: Math.max(0, totalBusFee - paidBusFee)
+    };
+  };
+
   const handlePrintReceipt = () => {
     onPrintReceipt(payment);
   };
 
   const sendViaWhatsAppWeb = () => {
+    const balanceInfo = getStudentBalance();
+    
     // Format receipt details for WhatsApp
     const receiptText = `*SARVODAYA HIGHER SECONDARY SCHOOL*
 *Fee Payment Receipt*
@@ -32,6 +59,7 @@ Date: ${new Date(payment.paymentDate).toLocaleDateString()}
 ${payment.developmentFee > 0 ? `Development Fee: ₹${payment.developmentFee}\n` : ''}${payment.busFee > 0 ? `Bus Fee: ₹${payment.busFee}\n` : ''}${payment.specialFee > 0 ? `${payment.specialFeeType || 'Other Fee'}: ₹${payment.specialFee}\n` : ''}
 *TOTAL PAID: ₹${payment.totalAmount}*
 
+${(balanceInfo.devBalance > 0 || balanceInfo.busBalance > 0) ? `📊 *Remaining Balance:*\n${balanceInfo.devBalance > 0 ? `Development: ₹${balanceInfo.devBalance}\n` : ''}${balanceInfo.busBalance > 0 ? `Bus Fee: ₹${balanceInfo.busBalance}\n` : ''}` : '✅ *All fees paid in full*\n'}
 Thank you for your payment! 🙏
 Keep this receipt for your records.
 
