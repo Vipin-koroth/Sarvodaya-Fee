@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, Receipt, X, MessageCircle } from 'lucide-react';
-import { Payment, useData } from '../../contexts/DataContext';
+import { Payment } from '../../contexts/DataContext';
 
 interface PaymentSuccessModalProps {
   payment: Payment;
@@ -13,39 +13,11 @@ const PaymentSuccessModal: React.FC<PaymentSuccessModalProps> = ({
   onClose, 
   onPrintReceipt 
 }) => {
-  const { students, payments, feeConfig } = useData();
-
-  // Calculate remaining balance for the student
-  const getStudentBalance = () => {
-    const student = students.find(s => s.id === payment.studentId);
-    if (!student) return { devBalance: 0, busBalance: 0 };
-
-    const classKey = (['11', '12'].includes(student.class)) 
-      ? `${student.class}-${student.division}` 
-      : student.class;
-
-    const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-    const discountedBusFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
-
-    const studentPayments = payments.filter(p => p.studentId === payment.studentId);
-    const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
-    const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
-
-    return {
-      devBalance: Math.max(0, totalDevFee - paidDevFee),
-      busBalance: Math.max(0, discountedBusFee - paidBusFee)
-    };
-  };
-
   const handlePrintReceipt = () => {
     onPrintReceipt(payment);
   };
 
   const sendViaWhatsAppWeb = () => {
-    const balanceInfo = getStudentBalance();
-    const hasRemainingBalance = balanceInfo.devBalance > 0 || balanceInfo.busBalance > 0;
-
     // Format receipt details for WhatsApp
     const receiptText = `*SARVODAYA HIGHER SECONDARY SCHOOL*
 *Fee Payment Receipt*

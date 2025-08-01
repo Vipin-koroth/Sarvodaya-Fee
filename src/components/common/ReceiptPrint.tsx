@@ -56,10 +56,6 @@ const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ payment, onClose }) => {
     const student = students.find(s => s.id === payment.studentId);
     if (!student) return;
     
-    // Get current balance information
-    const balanceInfo = paymentDetails;
-    const hasRemainingBalance = balanceInfo.developmentBalance > 0 || balanceInfo.busBalance > 0;
-
     // Format receipt details for WhatsApp
     const receiptText = `*SARVODAYA HIGHER SECONDARY SCHOOL*
 *Fee Payment Receipt*
@@ -75,7 +71,7 @@ Receipt #: ${payment.id.slice(-6)}
 ${payment.developmentFee > 0 ? `Development Fee: ₹${payment.developmentFee}\n` : ''}${payment.busFee > 0 ? `Bus Fee: ₹${payment.busFee}\n` : ''}${payment.specialFee > 0 ? `${payment.specialFeeType || 'Other Fee'}: ₹${payment.specialFee}\n` : ''}
 *TOTAL PAID: ₹${payment.totalAmount}*
 
-${hasRemainingBalance ? `📊 *Remaining Balance:*\n${balanceInfo.developmentBalance > 0 ? `Development: ₹${balanceInfo.developmentBalance}\n` : ''}${balanceInfo.busBalance > 0 ? `Bus Fee: ₹${balanceInfo.busBalance}\n` : ''}` : '✅ *All fees paid in full*\n'}
+${(paymentDetails.developmentBalance > 0 || paymentDetails.busBalance > 0) ? `📊 *Remaining Balance:*\n${paymentDetails.developmentBalance > 0 ? `Development: ₹${paymentDetails.developmentBalance}\n` : ''}${paymentDetails.busBalance > 0 ? `Bus Fee: ₹${paymentDetails.busBalance}\n` : ''}` : '✅ *All fees paid in full*\n'}
 Thank you for your payment! 🙏
 Keep this receipt for your records.
 
