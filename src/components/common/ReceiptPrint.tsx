@@ -308,22 +308,22 @@ Keep this receipt for your records.
                   </div>
                   
                   {/* Header */}
-                  <div style={{ textAlign: 'center', marginBottom: '3mm' }}>
-                    <div style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '1mm' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '2mm' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '0.5mm' }}>
                       Sarvodaya
                     </div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '1mm' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '0.5mm' }}>
                       Higher Secondary School
                     </div>
-                    <div style={{ fontSize: '16px', marginBottom: '1mm' }}>
+                    <div style={{ fontSize: '14px', marginBottom: '0.5mm' }}>
                       Eachome
                     </div>
-                    <div style={{ fontSize: '12px', textDecoration: 'underline', fontWeight: 'bold' }}>
+                    <div style={{ fontSize: '11px', textDecoration: 'underline', fontWeight: 'bold' }}>
                       Fee Payment Receipt
                     </div>
                   </div>
                   
-                  <hr style={{ border: '0.5px solid #000', margin: '2mm 0' }} />
+                  <hr style={{ border: '0.5px solid #000', margin: '1.5mm 0' }} />
                   
                   {/* Student Details */}
                   <div style={{ marginBottom: '2mm' }}>

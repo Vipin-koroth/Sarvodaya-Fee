@@ -114,10 +114,10 @@ const BulkPrintBills: React.FC = () => {
             .school-logo { text-align: center; margin-bottom: 3mm; }
             .school-logo img { width: 20mm; height: 20mm; object-fit: contain; margin: 0 auto; display: block; }
             .receipt-header { text-align: center; margin-bottom: 3mm; }
-            .receipt-header .school-name { font-size: 22px; font-weight: bold; margin-bottom: 1mm; }
-            .receipt-header .school-subtitle { font-size: 20px; font-weight: bold; margin-bottom: 1mm; }
-            .receipt-header .location { font-size: 16px; margin-bottom: 1mm; }
-            .receipt-header .receipt-title { font-size: 12px; margin-top: 1mm; font-weight: bold; text-decoration: underline; }
+            .receipt-header .school-name { font-size: 20px; font-weight: bold; margin-bottom: 0.5mm; }
+            .receipt-header .school-subtitle { font-size: 18px; font-weight: bold; margin-bottom: 0.5mm; }
+            .receipt-header .location { font-size: 14px; margin-bottom: 0.5mm; }
+            .receipt-header .receipt-title { font-size: 11px; margin-top: 0.5mm; font-weight: bold; text-decoration: underline; }
             .student-details { margin-bottom: 2mm; font-size: 12px; }
             .student-details table { width: 100%; }
             .student-details td { padding-bottom: 1px; }
@@ -132,7 +132,7 @@ const BulkPrintBills: React.FC = () => {
             .balance-title { font-weight: bold; margin-bottom: 2mm; }
             .total-amount { font-weight: bold; text-align: center; padding: 1mm 0; margin: 1mm 0; font-size: 16px; }
             .footer { text-align: center; margin-top: 1mm; font-size: 10px; font-style: italic; }
-            hr { border: 0.5px solid #000; margin: 2mm 0; }
+            hr { border: 0.5px solid #000; margin: 1.5mm 0; }
             .dotted-line { border-top: 0.5px dotted #000; margin: 2mm 0; }
           </style>
         </head>
