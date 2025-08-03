@@ -459,8 +459,7 @@ const Reports: React.FC = () => {
     switch (type) {
       case 'receipt-wise':
         headers = ['Receipt ID', 'Date', 'Student Name', 'Admission No', 'Class', 'Development Fee', 'Bus Fee', 'Special Fee', 'Special Fee Type', 'Total Amount', 'Added By', 'Dev Balance', 'Bus Balance'];
-          const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-          const busFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
+        rows = data.map((payment: any) => {
           const student = students.find(s => s.id === payment.studentId);
           const balance = getStudentBalance(payment.studentId);
           return [
@@ -981,8 +980,7 @@ const Reports: React.FC = () => {
             >
               <Download className="h-4 w-4" />
               <span>Download All Reports</span>
-                    const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-                    const busFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
+            </button>
           </div>
           
           <div className="mb-6 p-4 bg-blue-50 rounded-lg">
