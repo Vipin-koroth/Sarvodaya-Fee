@@ -36,7 +36,8 @@ const Reports: React.FC = () => {
               : student.class;
             
             const totalDevRequired = feeConfig.developmentFees[feeKey] || 0;
-            const totalBusRequired = feeConfig.busStops[student.busStop] || 0;
+            const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+            const totalBusRequired = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
             const totalRequired = totalDevRequired + totalBusRequired;
             
             return {
@@ -217,7 +218,8 @@ const Reports: React.FC = () => {
               : student.class;
             
             const totalDevRequired = feeConfig.developmentFees[feeKey] || 0;
-            const totalBusRequired = feeConfig.busStops[student.busStop] || 0;
+            const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+            const totalBusRequired = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
             const paidDev = studentPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);
             const paidBus = studentPayments.reduce((sum, p) => sum + (p.busFee || 0), 0);
             
