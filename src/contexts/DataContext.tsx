@@ -808,54 +808,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const clearPaymentsData = async () => {
-    try {
-      // Check if using Supabase
-      const isSupabaseConfigured = !!(
-        import.meta.env.VITE_SUPABASE_URL && 
-        import.meta.env.VITE_SUPABASE_ANON_KEY &&
-        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
-        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
-      );
-
-      if (isSupabaseConfigured) {
-        // Clear from Supabase in batches to handle large datasets
-        const { supabase } = await import('../../lib/supabase');
-        
-        // Delete in batches to avoid timeout
-        let hasMore = true;
-        while (hasMore) {
-          const { data: paymentsToDelete, error: fetchError } = await supabase
-            .from('payments')
-            .select('id')
-            .limit(1000);
-          
-          if (fetchError) {
-            console.error('Error fetching payments for deletion:', fetchError);
-            throw fetchError;
-          }
-          
-          if (paymentsToDelete && paymentsToDelete.length > 0) {
-            const ids = paymentsToDelete.map(p => p.id);
-            const { error: deleteError } = await supabase
-              .from('payments')
-              .delete()
-              .in('id', ids);
-            
-            if (deleteError) {
-              console.error('Error deleting payments batch:', deleteError);
-              throw deleteError;
-            }
-            
-            hasMore = paymentsToDelete.length === 1000;
-          } else {
-            hasMore = false;
-          }
-        }
-        
-        console.log('Payments cleared from Supabase successfully');
-      } else {
-
   const updateFeeConfig = async (config: Partial<FeeConfiguration>) => {
     if (useSupabase) {
       const updates: Omit<FeeConfig, 'id' | 'created_at' | 'updated_at'>[] = [];
