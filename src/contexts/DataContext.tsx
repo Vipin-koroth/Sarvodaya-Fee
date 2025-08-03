@@ -187,23 +187,59 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Supabase data loading functions
   const loadStudentsFromSupabase = async () => {
-    const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Load all students without limit using pagination
+    let allStudents: SupabaseStudent[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (error) throw error;
-    setStudents(data?.map(transformSupabaseStudent) || []);
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        allStudents = [...allStudents, ...data];
+        from += pageSize;
+        hasMore = data.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    setStudents(allStudents.map(transformSupabaseStudent));
   };
 
   const loadPaymentsFromSupabase = async () => {
-    const { data, error } = await supabase
-      .from('payments')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Load all payments without limit using pagination
+    let allPayments: SupabasePayment[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (error) throw error;
-    setPayments(data?.map(transformSupabasePayment) || []);
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        allPayments = [...allPayments, ...data];
+        from += pageSize;
+        hasMore = data.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    setPayments(allPayments.map(transformSupabasePayment));
   };
 
   const loadFeeConfigFromSupabase = async () => {
@@ -497,20 +533,41 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const importStudents = async (newStudents: Omit<Student, 'id'>[]) => {
     if (useSupabase) {
-      // Get existing admission numbers
-      const { data: existingStudents, error: fetchError } = await supabase
-        .from('students')
-        .select('admission_no');
+      // Get existing admission numbers with pagination
+      let allExistingStudents: { admission_no: string }[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: existingStudents, error: fetchError } = await supabase
+          .from('students')
+          .select('admission_no')
+          .range(from, from + pageSize - 1);
+        
+        if (fetchError) throw fetchError;
+        
+        if (existingStudents && existingStudents.length > 0) {
+          allExistingStudents = [...allExistingStudents, ...existingStudents];
+          from += pageSize;
+          hasMore = existingStudents.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
       
-      if (fetchError) throw fetchError;
-      
-      const existingAdmissionNos = new Set(existingStudents?.map(s => s.admission_no) || []);
+      const existingAdmissionNos = new Set(allExistingStudents.map(s => s.admission_no));
       
       let successCount = 0;
       let skipCount = 0;
       const errors: string[] = [];
       
-      for (const student of newStudents) {
+      // Process students in batches to avoid timeout
+      const batchSize = 100;
+      for (let i = 0; i < newStudents.length; i += batchSize) {
+        const batch = newStudents.slice(i, i + batchSize);
+        
+        for (const student of batch) {
         // Validate all required fields are present and not empty
         const admissionNo = student.admissionNo?.trim();
         const name = student.name?.trim();
@@ -566,6 +623,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (err) {
           errors.push(`Failed to add ${student.name} (${student.admissionNo}): ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+        }
+        
+        // Add small delay between batches to prevent overwhelming the database
+        if (i + batchSize < newStudents.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
       
