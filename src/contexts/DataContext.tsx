@@ -488,6 +488,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (studentData.busStop) updateData.bus_stop = studentData.busStop;
       if (studentData.busNumber) updateData.bus_number = studentData.busNumber;
       if (studentData.tripNumber) updateData.trip_number = studentData.tripNumber;
+      if (studentData.busFeeDiscount !== undefined) updateData.bus_fee_discount = studentData.busFeeDiscount;
 
       const { data, error } = await supabase
         .from('students')
@@ -765,6 +766,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (paymentData.addedBy) updateData.added_by = paymentData.addedBy;
       if (paymentData.class) updateData.class = paymentData.class;
       if (paymentData.division) updateData.division = paymentData.division;
+      if (paymentData.paymentDate) updateData.payment_date = paymentData.paymentDate;
 
       const { data, error } = await supabase
         .from('payments')

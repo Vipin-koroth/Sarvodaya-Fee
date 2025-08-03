@@ -25,7 +25,17 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateStudent(student.id, formData);
+    updateStudent(student.id, {
+      admissionNo: formData.admissionNo,
+      name: formData.name,
+      mobile: formData.mobile,
+      class: formData.class,
+      division: formData.division,
+      busStop: formData.busStop,
+      busNumber: formData.busNumber,
+      tripNumber: formData.tripNumber,
+      busFeeDiscount: formData.busFeeDiscount
+    });
     onClose();
   };
 
