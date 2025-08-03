@@ -291,7 +291,8 @@ const Reports: React.FC = () => {
         'Mobile', 'Bus Stop', 'Development Fee', 'Bus Fee', 'Special Fee', 'Special Fee Type',
         'Total Amount', 'Added By'
       ];
-      
+        const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+        const busFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
       const csvData = payments.map(payment => {
         const student = students.find(s => s.id === payment.studentId);
         return [
@@ -765,7 +766,8 @@ const Reports: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Added By</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                  const originalBusFee = feeConfig.busStops[student.busStop] || 0;
+                  const busFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
                 {receiptWiseData.map((payment) => {
                   const balance = getStudentBalance(payment.studentId);
                   return (
