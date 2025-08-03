@@ -213,6 +213,24 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose })
               <p className="text-xs text-gray-500 mt-1">
                 Discount amount to be deducted from total bus fee
               </p>
+              {formData.busStop && feeConfig.busStops[formData.busStop] && (
+                <div className="mt-2 p-2 bg-yellow-50 rounded text-xs">
+                  <div className="text-yellow-800">
+                    <strong>Bus Fee Calculation:</strong>
+                  </div>
+                  <div className="text-yellow-700 mt-1">
+                    Original Bus Fee: ₹{feeConfig.busStops[formData.busStop]}
+                  </div>
+                  {formData.busFeeDiscount > 0 && (
+                    <div className="text-yellow-700">
+                      Discount Applied: -₹{formData.busFeeDiscount}
+                    </div>
+                  )}
+                  <div className="text-yellow-700 font-medium">
+                    Final Bus Fee: ₹{Math.max(0, feeConfig.busStops[formData.busStop] - formData.busFeeDiscount)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
