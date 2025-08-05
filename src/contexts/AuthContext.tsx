@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'teacher';
+  role: 'admin' | 'teacher' | 'clerk';
   class?: string;
   division?: string;
 }
@@ -14,7 +14,7 @@ interface AuthContextType {
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   resetUserPassword: (username: string, newPassword: string) => Promise<boolean>;
-  getAllUsers: () => Array<{ username: string; role: 'admin' | 'teacher'; class?: string; division?: string }>;
+  getAllUsers: () => Array<{ username: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }>;
   loading: boolean;
 }
 
@@ -69,8 +69,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Initialize default users if not exists
     if (!storedUsers.admin) {
-      const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher'; class?: string; division?: string }> = {
-        admin: { password: 'admin', role: 'admin' }
+      const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }> = {
+        admin: { password: 'admin', role: 'admin' },
+        clerk: { password: 'admin', role: 'clerk' }
       };
 
       // Generate class teacher accounts

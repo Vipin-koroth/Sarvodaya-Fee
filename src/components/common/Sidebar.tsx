@@ -20,7 +20,7 @@ import {
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  userRole: 'admin' | 'teacher';
+  userRole: 'admin' | 'teacher' | 'clerk';
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
 }
@@ -36,13 +36,25 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
-    { id: 'fees', label: 'Fee Configuration', icon: Settings },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
+    { id: 'password', label: 'Change Password', icon: Lock },
+  ];
+
+  const clerkMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'students', label: 'Students', icon: Users },
+    { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
+    { id: 'password', label: 'Change Password', icon: Lock },
+  ];
+
+  const adminOnlyItems = [
+    { id: 'fees', label: 'Fee Configuration', icon: Settings },
     { id: 'sms-config', label: 'SMS Configuration', icon: MessageSquare },
     { id: 'data-management', label: 'Data Management', icon: Settings },
     { id: 'user-management', label: 'User Management', icon: Shield },
-    { id: 'password', label: 'Change Password', icon: Lock },
   ];
 
   const teacherMenuItems = [
@@ -54,7 +66,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'password', label: 'Change Password', icon: Lock },
   ];
 
-  const menuItems = userRole === 'admin' ? adminMenuItems : teacherMenuItems;
+  let menuItems;
+  if (userRole === 'admin') {
+    menuItems = [...adminMenuItems, ...adminOnlyItems];
+  } else if (userRole === 'clerk') {
+    menuItems = clerkMenuItems;
+  } else {
+    menuItems = teacherMenuItems;
+  }
 
   const handleMenuItemClick = (itemId: string) => {
     setActiveTab(itemId);

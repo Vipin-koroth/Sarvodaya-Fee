@@ -45,6 +45,8 @@ const UserManagement: React.FC = () => {
   const getUserDisplayName = (user: any) => {
     if (user.role === 'admin') {
       return 'Administrator';
+    } else if (user.role === 'clerk') {
+      return 'Clerk';
     }
     return `Class ${user.class}-${user.division} Teacher`;
   };

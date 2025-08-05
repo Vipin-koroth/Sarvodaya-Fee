@@ -28,7 +28,7 @@ const AdminDashboard: React.FC = () => {
       case 'payments':
         return <PaymentManagement />;
       case 'fees':
-        return <FeeConfiguration />;
+        return user?.role === 'admin' ? <FeeConfiguration /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'reports':
         return <Reports />;
       case 'receipt-wise-report':
@@ -36,11 +36,11 @@ const AdminDashboard: React.FC = () => {
       case 'print-receipt':
         return <PrintReceipt />;
       case 'sms-config':
-        return <SMSConfiguration />;
+        return user?.role === 'admin' ? <SMSConfiguration /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'data-management':
-        return <DataManagement />;
+        return user?.role === 'admin' ? <DataManagement /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'user-management':
-        return <UserManagement />;
+        return user?.role === 'admin' ? <UserManagement /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'receipt-wise-report':
         return <ReceiptWiseReport />;
       case 'password':
@@ -55,7 +55,7 @@ const AdminDashboard: React.FC = () => {
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        userRole="admin"
+        userRole={user?.role === 'admin' ? 'admin' : 'clerk'}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />

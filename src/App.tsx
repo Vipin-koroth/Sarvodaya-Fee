@@ -30,7 +30,7 @@ function AppContent() {
             element={
               user ? (
                 <DataProvider>
-                  {user.role === 'admin' ? <AdminDashboard /> : <TeacherDashboard />}
+                  {(user.role === 'admin' || user.role === 'clerk') ? <AdminDashboard /> : <TeacherDashboard />}
                 </DataProvider>
               ) : (
                 <Navigate to="/login" />
