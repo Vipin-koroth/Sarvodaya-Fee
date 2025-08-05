@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { FileText, Download, Calendar, Users, TrendingUp, Bus, Eye, X } from 'lucide-react';
+import { FileText, Download, Calendar, Users, TrendingUp, Bus, Eye, X, Receipt } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import ReceiptWiseReport from './ReceiptWiseReport';
 
 const Reports: React.FC = () => {
   const { students, payments, feeConfig } = useData();
@@ -1391,6 +1392,19 @@ const Reports: React.FC = () => {
           </button>
           
           <button
+            onClick={() => setActiveReport('receipt-wise')}
+            className={`p-4 rounded-lg border-2 transition-colors ${
+              activeReport === 'receipt-wise'
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <Receipt className="h-8 w-8 mx-auto mb-2" />
+            <div className="font-medium">Receipt-wise Report</div>
+            <div className="text-sm text-gray-600">Detailed receipt-wise payments</div>
+          </button>
+          
+          <button
             onClick={() => setActiveReport('fee-not-paid')}
             className={`p-4 rounded-lg border-2 transition-colors ${
               activeReport === 'fee-not-paid'
@@ -1510,6 +1524,7 @@ const Reports: React.FC = () => {
       {activeReport === 'class-wise' && <ClassWiseReport />}
       {activeReport === 'bus-stop-wise' && <BusStopWiseReport />}
       {activeReport === 'monthly-collection' && <MonthlyCollectionReport />}
+      {activeReport === 'receipt-wise' && <ReceiptWiseReport />}
       {activeReport === 'fee-not-paid' && <FeeNotPaidStudentsReport />}
       {activeReport === 'no-payment' && <NoPaymentStudentsReport />}
 

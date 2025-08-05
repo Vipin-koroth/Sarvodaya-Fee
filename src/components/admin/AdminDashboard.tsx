@@ -31,6 +31,8 @@ const AdminDashboard: React.FC = () => {
         return <FeeConfiguration />;
       case 'reports':
         return <Reports />;
+      case 'receipt-wise-report':
+        return <ReceiptWiseReport />;
       case 'print-receipt':
         return <PrintReceipt />;
       case 'sms-config':
