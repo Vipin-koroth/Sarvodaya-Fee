@@ -686,167 +686,291 @@ const Reports: React.FC = () => {
   const BusStopWiseReport: React.FC = () => {
     const filteredPayments = getFilteredPayments();
     
-    // Group payments by bus stop
-    const busStopPayments = filteredPayments.reduce((acc, payment) => {
-      const student = students.find(s => s.id === payment.studentId);
-      const busStop = student?.busStop || 'Unknown';
+    // Group students by bus stop and organize by class
+    const busStopData = students.reduce((acc, student) => {
+      const stopName = student.busStop;
+      const classKey = `${student.class}-${student.division}`;
       
-      if (!acc[busStop]) {
-        acc[busStop] = [];
+      if (!acc[stopName]) {
+        acc[stopName] = {
+          totalStudents: 0,
+          totalCollection: 0,
+          busNumber: student.busNumber,
+          tripNumber: student.tripNumber,
+          classes: {}
+        };
       }
-      acc[busStop].push(payment);
+      
+      if (!acc[stopName].classes[classKey]) {
+        acc[stopName].classes[classKey] = {
+          students: [],
+          totalCollection: 0,
+          totalPayments: 0
+        };
+      }
+      
+      // Add student to class group
+      const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
+      const studentTotalCollection = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+      
+      acc[stopName].classes[classKey].students.push({
+        ...student,
+        totalCollection: studentTotalCollection,
+        paymentCount: studentPayments.length
+      });
+      
+      acc[stopName].classes[classKey].totalCollection += studentTotalCollection;
+      acc[stopName].classes[classKey].totalPayments += studentPayments.length;
+      acc[stopName].totalStudents += 1;
+      acc[stopName].totalCollection += studentTotalCollection;
+      
       return acc;
-    }, {} as Record<string, typeof filteredPayments>);
+    }, {} as Record<string, {
+      totalStudents: number;
+      totalCollection: number;
+      busNumber: string;
+      tripNumber: string;
+      classes: Record<string, {
+        students: Array<Student & { totalCollection: number; paymentCount: number }>;
+        totalCollection: number;
+        totalPayments: number;
+      }>;
+    }>);
 
     const downloadCSV = () => {
       const headers = [
-        'Bus Stop', 'Student Name', 'Admission No', 'Class', 'Division', 'Bus Number', 'Trip Number',
-        'Development Fee', 'Bus Fee', 'Special Fee', 'Total Amount', 'Payment Date'
+        'Bus Stop', 'Bus Number', 'Trip Number', 'Class', 'Division', 
+        'Student Name', 'Admission No', 'Mobile', 'Total Collection', 'Payment Count'
       ];
       
       const csvData: string[][] = [];
-      Object.entries(busStopPayments).forEach(([busStop, payments]) => {
-        payments.forEach(payment => {
-          const student = students.find(s => s.id === payment.studentId);
-          csvData.push([
-            busStop,
-            payment.studentName,
-            payment.admissionNo,
-            payment.class,
-            payment.division,
-            student?.busNumber || '',
-            student?.tripNumber || '',
-            payment.developmentFee.toString(),
-            payment.busFee.toString(),
-            payment.specialFee.toString(),
-            payment.totalAmount.toString(),
-            new Date(payment.paymentDate).toLocaleDateString('en-GB')
-          ]);
+      
+      Object.entries(busStopData).forEach(([stopName, stopData]) => {
+        Object.entries(stopData.classes).forEach(([classKey, classData]) => {
+          const [classNum, division] = classKey.split('-');
+          classData.students.forEach(student => {
+            csvData.push([
+              stopName,
+              stopData.busNumber,
+              stopData.tripNumber,
+              classNum,
+              division,
+              student.name,
+              student.admissionNo,
+              student.mobile,
+              student.totalCollection.toString(),
+              student.paymentCount.toString()
+            ]);
+          });
         });
       });
-
+      
       const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `bus_stop_wise_report_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `bus_stop_wise_students_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     };
 
+    // Sort bus stops by name
+    const sortedBusStops = Object.entries(busStopData).sort(([a], [b]) => a.localeCompare(b));
+
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Bus Stop-wise Report</h3>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <Bus className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-blue-600">Total Bus Stops</p>
+                <p className="text-2xl font-bold text-gray-900">{Object.keys(busStopData).length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-green-600">Total Students</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {Object.values(busStopData).reduce((sum, stop) => sum + stop.totalStudents, 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-purple-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-purple-600">Total Collection</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ₹{Object.values(busStopData).reduce((sum, stop) => sum + stop.totalCollection, 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-orange-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <FileText className="h-8 w-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-orange-600">Active Classes</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {new Set(students.map(s => `${s.class}-${s.division}`)).size}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Download Button */}
+        <div className="flex justify-end">
           <button
             onClick={downloadCSV}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Download className="h-4 w-4" />
-            <span>Download CSV</span>
+            <span>Download CSV Report</span>
           </button>
         </div>
 
-        {Object.entries(busStopPayments).map(([busStop, payments]) => {
-          const totalAmount = payments.reduce((sum, p) => sum + p.totalAmount, 0);
-          const busFeeTotal = payments.reduce((sum, p) => sum + p.busFee, 0);
-          
-          return (
-            <div key={busStop} className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-lg font-semibold text-gray-900">{busStop}</h4>
-                  <div className="text-sm text-gray-600">
-                    {payments.length} payments • ₹{totalAmount.toLocaleString()} total • ₹{busFeeTotal.toLocaleString()} bus fees
+        {/* Bus Stop Details */}
+        <div className="space-y-6">
+          {sortedBusStops.map(([stopName, stopData]) => (
+            <div key={stopName} className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <div className="flex items-center justify-between text-white">
+                  <div>
+                    <h3 className="text-xl font-bold">{stopName}</h3>
+                    <p className="text-blue-100">
+                      Bus {stopData.busNumber} • Trip {stopData.tripNumber}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold">{stopData.totalStudents}</div>
+                    <div className="text-blue-100">Students</div>
                   </div>
                 </div>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Bus Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Development Fee
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Bus Fee
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {payments.map((payment) => {
-                      const student = students.find(s => s.id === payment.studentId);
+              <div className="p-6">
+                {/* Stop Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-gray-50 rounded-lg p-4 text-center">
+                    <div className="text-lg font-bold text-gray-900">{stopData.totalStudents}</div>
+                    <div className="text-sm text-gray-600">Total Students</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 text-center">
+                    <div className="text-lg font-bold text-green-600">₹{stopData.totalCollection.toLocaleString()}</div>
+                    <div className="text-sm text-gray-600">Total Collection</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 text-center">
+                    <div className="text-lg font-bold text-blue-600">{Object.keys(stopData.classes).length}</div>
+                    <div className="text-sm text-gray-600">Classes</div>
+                  </div>
+                </div>
+                
+                {/* Classes in this stop */}
+                <div className="space-y-4">
+                  {Object.entries(stopData.classes)
+                    .sort(([a], [b]) => {
+                      const [classA, divA] = a.split('-');
+                      const [classB, divB] = b.split('-');
+                      const classNumA = parseInt(classA);
+                      const classNumB = parseInt(classB);
+                      if (classNumA !== classNumB) return classNumA - classNumB;
+                      return divA.localeCompare(divB);
+                    })
+                    .map(([classKey, classData]) => {
+                      const [classNum, division] = classKey.split('-');
                       return (
-                        <tr key={payment.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{payment.studentName}</div>
-                              <div className="text-sm text-gray-500">
-                                {payment.admissionNo} • Class {payment.class}-{payment.division}
+                        <div key={classKey} className="border border-gray-200 rounded-lg overflow-hidden">
+                          <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-gray-900">
+                                Class {classNum}-{division}
+                              </h4>
+                              <div className="flex items-center space-x-4 text-sm">
+                                <span className="text-gray-600">
+                                  {classData.students.length} students
+                                </span>
+                                <span className="text-green-600 font-medium">
+                                  ₹{classData.totalCollection.toLocaleString()}
+                                </span>
                               </div>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              Bus {student?.busNumber} • Trip {student?.tripNumber}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₹{payment.developmentFee}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₹{payment.busFee}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-semibold text-green-600">
-                              ₹{payment.totalAmount}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => setSelectedStudentForDetails(payment.studentId)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="View Student Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
+                          </div>
+                          
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Student Details
+                                  </th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Mobile
+                                  </th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Total Collection
+                                  </th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Payments
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {classData.students
+                                  .sort((a, b) => a.name.localeCompare(b.name))
+                                  .map((student) => (
+                                    <tr key={student.id} className="hover:bg-gray-50">
+                                      <td className="px-4 py-4 whitespace-nowrap">
+                                        <div>
+                                          <div className="text-sm font-medium text-gray-900">
+                                            {student.name}
+                                          </div>
+                                          <div className="text-sm text-gray-500">
+                                            {student.admissionNo}
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {student.mobile}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap">
+                                        <span className="text-sm font-semibold text-green-600">
+                                          ₹{student.totalCollection.toLocaleString()}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {student.paymentCount} payments
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
+                </div>
               </div>
             </div>
-          );
-        })}
-
-        {Object.keys(busStopPayments).length === 0 && (
+          ))}
+        </div>
+        
+        {Object.keys(busStopData).length === 0 && (
           <div className="text-center py-12">
             <Bus className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No bus stop data found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              No payments match your selected criteria.
+              No students found for the selected criteria.
             </p>
           </div>
         )}
