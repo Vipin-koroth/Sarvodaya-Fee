@@ -12,6 +12,7 @@ import PrintReceipt from './BulkPrintBills';
 import SMSConfiguration from './SMSConfiguration';
 import DataManagement from './DataManagement';
 import UserManagement from './UserManagement';
+import ReceiptWiseReport from './ReceiptWiseReport';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -38,6 +39,8 @@ const AdminDashboard: React.FC = () => {
         return <DataManagement />;
       case 'user-management':
         return <UserManagement />;
+      case 'receipt-wise-report':
+        return <ReceiptWiseReport />;
       case 'password':
         return <ChangePassword />;
       default:
