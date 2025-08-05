@@ -39,7 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'fees', label: 'Fee Configuration', icon: Settings },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
-    { id: 'receipt-wise-report', label: 'Receipt-wise Report', icon: Receipt },
+    { id: 'receipt-wise-report', label: 'Receipt-wise Payment Report', icon: Receipt },
     { id: 'sms-config', label: 'SMS Configuration', icon: MessageSquare },
     { id: 'data-management', label: 'Data Management', icon: Settings },
     { id: 'user-management', label: 'User Management', icon: Shield },
