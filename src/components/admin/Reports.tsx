@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Calendar, Users, TrendingUp, Bus, Eye, X, Receipt } from 'lucide-react';
+import { FileText, Download, Calendar, Users, TrendingUp, Bus, Eye, X, Receipt, AlertTriangle } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import ReceiptWiseReport from './ReceiptWiseReport';
 
@@ -1143,44 +1143,34 @@ const Reports: React.FC = () => {
   };
 
   const FeeNotPaidStudentsReport: React.FC = () => {
-    const studentsWithBalance = students.filter(student => {
-      const classKey = (['11', '12'].includes(student.class)) 
-        ? `${student.class}-${student.division}` 
-        : student.class;
-      const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-      const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-      const busFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
-      
-      const studentPayments = payments.filter(p => p.studentId === student.id);
-      const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
-      const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
-      
-      const devBalance = Math.max(0, totalDevFee - paidDevFee);
-      const busBalance = Math.max(0, busFee - paidBusFee);
-      
-      return devBalance > 0 || busBalance > 0;
-    });
-
     const downloadCSV = () => {
       const headers = [
         'Student Name', 'Admission No', 'Class', 'Division', 'Mobile', 'Bus Stop',
-        'Development Fee Due', 'Bus Fee Due', 'Total Outstanding'
+        'Development Fee Required', 'Development Fee Paid', 'Development Balance',
+        'Bus Fee Required', 'Bus Fee Discount', 'Bus Fee After Discount', 'Bus Fee Paid', 'Bus Balance',
+        'Total Required', 'Total Paid', 'Total Balance', 'Payment Count'
       ];
       
-      const csvData = studentsWithBalance.map(student => {
-        const classKey = (['11', '12'].includes(student.class)) 
-          ? `${student.class}-${student.division}` 
-          : student.class;
-        const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-        const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-        const busFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
-        
+      const csvData = students.map(student => {
         const studentPayments = payments.filter(p => p.studentId === student.id);
+        const totalPaid = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
         const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
         const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
         
-        const devBalance = Math.max(0, totalDevFee - paidDevFee);
-        const busBalance = Math.max(0, busFee - paidBusFee);
+        // Calculate required fees
+        const classKey = (['11', '12'].includes(student.class)) 
+          ? `${student.class}-${student.division}` 
+          : student.class;
+        const devFeeRequired = feeConfig.developmentFees[classKey] || 0;
+        const busFeeOriginal = feeConfig.busStops[student.busStop] || 0;
+        const busFeeDiscount = student.busFeeDiscount || 0;
+        const busFeeRequired = Math.max(0, busFeeOriginal - busFeeDiscount);
+        const totalRequired = devFeeRequired + busFeeRequired;
+        
+        // Calculate balances
+        const devBalance = Math.max(0, devFeeRequired - paidDevFee);
+        const busBalance = Math.max(0, busFeeRequired - paidBusFee);
+        const totalBalance = Math.max(0, totalRequired - totalPaid);
         
         return [
           student.name,
@@ -1189,12 +1179,21 @@ const Reports: React.FC = () => {
           student.division,
           student.mobile,
           student.busStop,
+          devFeeRequired,
+          paidDevFee,
           devBalance,
+          busFeeOriginal,
+          busFeeDiscount,
+          busFeeRequired,
+          paidBusFee,
           busBalance,
-          devBalance + busBalance
+          totalRequired,
+          totalPaid,
+          totalBalance,
+          studentPayments.length
         ];
       });
-
+      
       const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -1205,10 +1204,98 @@ const Reports: React.FC = () => {
       URL.revokeObjectURL(url);
     };
 
+    // Calculate statistics for all students
+    const studentsWithBalances = students.map(student => {
+      const studentPayments = payments.filter(p => p.studentId === student.id);
+      const totalPaid = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+      const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
+      const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
+      
+      // Calculate required fees
+      const classKey = (['11', '12'].includes(student.class)) 
+        ? `${student.class}-${student.division}` 
+        : student.class;
+      const devFeeRequired = feeConfig.developmentFees[classKey] || 0;
+      const busFeeOriginal = feeConfig.busStops[student.busStop] || 0;
+      const busFeeDiscount = student.busFeeDiscount || 0;
+      const busFeeRequired = Math.max(0, busFeeOriginal - busFeeDiscount);
+      const totalRequired = devFeeRequired + busFeeRequired;
+      
+      // Calculate balances
+      const devBalance = Math.max(0, devFeeRequired - paidDevFee);
+      const busBalance = Math.max(0, busFeeRequired - paidBusFee);
+      const totalBalance = Math.max(0, totalRequired - totalPaid);
+      
+      return {
+        ...student,
+        paymentCount: studentPayments.length,
+        totalPaid,
+        paidDevFee,
+        paidBusFee,
+        devFeeRequired,
+        busFeeOriginal,
+        busFeeDiscount,
+        busFeeRequired,
+        totalRequired,
+        devBalance,
+        busBalance,
+        totalBalance,
+        hasBalance: totalBalance > 0
+      };
+    });
+
+    // Filter students with outstanding balances
+    const studentsWithOutstandingBalance = studentsWithBalances.filter(student => student.hasBalance);
+    const studentsWithNoPayments = studentsWithBalances.filter(student => student.paymentCount === 0);
+    const totalOutstandingAmount = studentsWithOutstandingBalance.reduce((sum, student) => sum + student.totalBalance, 0);
+
     return (
       <div className="space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-red-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-red-600">Students with Balance</p>
+                <p className="text-2xl font-bold text-gray-900">{studentsWithOutstandingBalance.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-orange-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-8 w-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-orange-600">No Payments Made</p>
+                <p className="text-2xl font-bold text-gray-900">{studentsWithNoPayments.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-yellow-600">Total Outstanding</p>
+                <p className="text-2xl font-bold text-gray-900">₹{totalOutstandingAmount.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center">
+              <FileText className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-blue-600">Total Students</p>
+                <p className="text-2xl font-bold text-gray-900">{students.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Fee Not Paid Students</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Students with Outstanding Balance</h3>
           <button
             onClick={downloadCSV}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -1218,6 +1305,7 @@ const Reports: React.FC = () => {
           </button>
         </div>
 
+        {/* Students with Outstanding Balance Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -1227,92 +1315,121 @@ const Reports: React.FC = () => {
                     Student Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Development Fee
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bus Fee
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Balance
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Development Fee Due
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Bus Fee Due
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Outstanding
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Payment Status
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {studentsWithBalance.map((student) => {
-                  const classKey = (['11', '12'].includes(student.class)) 
-                    ? `${student.class}-${student.division}` 
-                    : student.class;
-                  const totalDevFee = feeConfig.developmentFees[classKey] || 0;
-                  const originalBusFee = feeConfig.busStops[student.busStop] || 0;
-                  const busFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
-                  
-                  const studentPayments = payments.filter(p => p.studentId === student.id);
-                  const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
-                  const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
-                  
-                  const devBalance = Math.max(0, totalDevFee - paidDevFee);
-                  const busBalance = Math.max(0, busFee - paidBusFee);
-                  
-                  return (
-                    <tr key={student.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {student.admissionNo} • Class {student.class}-{student.division}
-                          </div>
-                          <div className="text-sm text-gray-500">{student.busStop}</div>
+                {studentsWithOutstandingBalance.map(student => (
+                  <tr key={student.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {student.admissionNo} • Class {student.class}-{student.division}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {student.mobile}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-sm font-medium ${devBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {devBalance > 0 ? `₹${devBalance}` : 'Paid'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-sm font-medium ${busBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {busBalance > 0 ? `₹${busBalance}` : 'Paid'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-red-600">
-                          ₹{devBalance + busBalance}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => setSelectedStudentForDetails(student.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="View Student Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <div className="text-sm text-gray-500">
+                          Bus Stop: {student.busStop}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        <div className="text-gray-900">Required: ₹{student.devFeeRequired}</div>
+                        <div className="text-green-600">Paid: ₹{student.paidDevFee}</div>
+                        <div className="font-semibold text-red-600">Balance: ₹{student.devBalance}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        <div className="text-gray-900">Original: ₹{student.busFeeOriginal}</div>
+                        {student.busFeeDiscount > 0 && (
+                          <div className="text-orange-600">Discount: -₹{student.busFeeDiscount}</div>
+                        )}
+                        <div className="text-gray-700">After Discount: ₹{student.busFeeRequired}</div>
+                        <div className="text-green-600">Paid: ₹{student.paidBusFee}</div>
+                        <div className="font-semibold text-red-600">Balance: ₹{student.busBalance}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-lg font-bold text-red-600">
+                        ₹{student.totalBalance}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        of ₹{student.totalRequired} required
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{student.mobile}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        {student.paymentCount === 0 ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                            No Payments
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            {student.paymentCount} Payment{student.paymentCount > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Paid: ₹{student.totalPaid}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
           
-          {studentsWithBalance.length === 0 && (
+          {studentsWithOutstandingBalance.length === 0 && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">All fees paid!</h3>
               <p className="mt-1 text-sm text-gray-500">
-                All students have completed their fee payments.
+                No students have outstanding fee balances.
               </p>
             </div>
           )}
+        </div>
+
+        {/* Fee Balance Summary */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Outstanding Balance Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">
+                ₹{studentsWithOutstandingBalance.reduce((sum, s) => sum + s.devBalance, 0).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Development Fee Balance</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                ₹{studentsWithOutstandingBalance.reduce((sum, s) => sum + s.busBalance, 0).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Bus Fee Balance</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                ₹{totalOutstandingAmount.toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Total Outstanding</div>
+            </div>
+          </div>
         </div>
       </div>
     );
