@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
     
     // Initialize default users if not exists
-    if (!storedUsers.admin) {
+    if (Object.keys(storedUsers).length === 0) {
       const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }> = {
         admin: { password: 'admin', role: 'admin' },
         clerk: { password: 'admin', role: 'clerk' }
@@ -88,10 +88,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       localStorage.setItem('users', JSON.stringify(defaultUsers));
-      Object.assign(storedUsers, defaultUsers);
+      // Re-read from localStorage to ensure we have the updated data
+      const updatedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+      Object.assign(storedUsers, updatedUsers);
     }
 
     const userAccount = storedUsers[username];
+    console.log('Login attempt:', { username, userAccount, allUsers: Object.keys(storedUsers) });
+    
     if (userAccount && userAccount.password === password) {
       const userData: User = {
         id: username,
@@ -103,9 +107,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(userData);
       localStorage.setItem('currentUser', JSON.stringify(userData));
+      console.log('Login successful:', userData);
       return true;
     }
     
+    console.log('Login failed for:', username);
     return false;
   };
 
