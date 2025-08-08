@@ -30,15 +30,21 @@ const ChangePassword: React.FC = () => {
     }
 
     setLoading(true);
-    const success = await changePassword(oldPassword, newPassword);
     
-    if (success) {
-      setSuccess(true);
-      setOldPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } else {
-      setError('Current password is incorrect');
+    try {
+      const success = await changePassword(oldPassword, newPassword);
+      
+      if (success) {
+        setSuccess(true);
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setError('Current password is incorrect or password update failed');
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      setError('An error occurred while changing password. Please try again.');
     }
     
     setLoading(false);
