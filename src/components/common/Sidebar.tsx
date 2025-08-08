@@ -20,7 +20,7 @@ import {
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  userRole: 'admin' | 'teacher' | 'clerk';
+  userRole: 'admin' | 'teacher' | 'clerk' | 'user';
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
 }
@@ -66,11 +66,19 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'password', label: 'Change Password', icon: Lock },
   ];
 
+  const userMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'password', label: 'Change Password', icon: Lock },
+  ];
+
   let menuItems;
   if (userRole === 'admin') {
     menuItems = [...adminMenuItems, ...adminOnlyItems];
   } else if (userRole === 'clerk') {
     menuItems = clerkMenuItems;
+  } else if (userRole === 'user') {
+    menuItems = userMenuItems;
   } else {
     menuItems = teacherMenuItems;
   }

@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'teacher' | 'clerk';
+  role: 'admin' | 'teacher' | 'clerk' | 'user';
   class?: string;
   division?: string;
 }
@@ -14,7 +14,7 @@ interface AuthContextType {
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   resetUserPassword: (username: string, newPassword: string) => Promise<boolean>;
-  getAllUsers: () => Array<{ username: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }>;
+  getAllUsers: () => Array<{ username: string; role: 'admin' | 'teacher' | 'clerk' | 'user'; class?: string; division?: string }>;
   loading: boolean;
 }
 
@@ -48,9 +48,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Always ensure clerk exists
     if (!storedUsers.clerk || Object.keys(storedUsers).length === 0) {
       console.log('Initializing default users including clerk...');
-      const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }> = {
+      const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk' | 'user'; class?: string; division?: string }> = {
         admin: { password: 'admin', role: 'admin' },
-        clerk: { password: 'admin', role: 'clerk' }
+        clerk: { password: 'admin', role: 'clerk' },
+        user: { password: 'admin', role: 'user' }
       };
 
       // Generate class teacher accounts
@@ -79,6 +80,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       storedUsers.clerk = { password: 'admin', role: 'clerk' };
       localStorage.setItem('users', JSON.stringify(storedUsers));
       console.log('✅ Clerk user created');
+    }
+    
+    // Verify user exists
+    if (storedUsers.user) {
+      console.log('✅ User account exists:', storedUsers.user);
+    } else {
+      console.error('❌ User account missing! Creating now...');
+      storedUsers.user = { password: 'admin', role: 'user' };
+      localStorage.setItem('users', JSON.stringify(storedUsers));
+      console.log('✅ User account created');
     }
     
     console.log('Final users available:', Object.keys(storedUsers));

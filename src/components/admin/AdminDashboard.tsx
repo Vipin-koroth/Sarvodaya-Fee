@@ -55,7 +55,7 @@ const AdminDashboard: React.FC = () => {
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        userRole={user?.role === 'admin' ? 'admin' : 'clerk'}
+        userRole={user?.role === 'admin' ? 'admin' : user?.role === 'clerk' ? 'clerk' : user?.role === 'user' ? 'user' : 'clerk'}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
