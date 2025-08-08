@@ -156,120 +156,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
     if (!user) return false;
 
-    try {
-      // Check if Supabase is configured
-      const isSupabaseConfigured = !!(
-        import.meta.env.VITE_SUPABASE_URL && 
-        import.meta.env.VITE_SUPABASE_ANON_KEY &&
-        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
-        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
-      );
+    const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+    const userAccount = storedUsers[user.username];
 
-      if (isSupabaseConfigured) {
-        // Use Supabase auth to change password
-        const { supabase } = await import('../lib/supabase');
-        
-        // First verify the old password by attempting to sign in
-        const email = `${user.username}@sarvodayaschool.edu`;
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: oldPassword
-        });
-        
-        if (signInError) {
-          console.error('Old password verification failed:', signInError);
-          return false;
-        }
-        
-        // Update password in Supabase
-        const { error: updateError } = await supabase.auth.updateUser({
-          password: newPassword
-        });
-        
-        if (updateError) {
-          console.error('Password update failed:', updateError);
-          return false;
-        }
-        
-        console.log('Password updated successfully in Supabase');
-        return true;
-      } else {
-        // Fallback to localStorage for local development
-        const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-        const userAccount = storedUsers[user.username];
-
-        if (userAccount && userAccount.password === oldPassword) {
-          userAccount.password = newPassword;
-          localStorage.setItem('users', JSON.stringify(storedUsers));
-          return true;
-        }
-        
-        return false;
-      }
-    } catch (error) {
-      console.error('Error changing password:', error);
-      return false;
+    if (userAccount && userAccount.password === oldPassword) {
+      userAccount.password = newPassword;
+      localStorage.setItem('users', JSON.stringify(storedUsers));
+      return true;
     }
+
+    return false;
   };
 
   const resetUserPassword = async (username: string, newPassword: string): Promise<boolean> => {
     if (!user || user.role !== 'admin') return false;
 
-    try {
-      // Check if Supabase is configured
-      const isSupabaseConfigured = !!(
-        import.meta.env.VITE_SUPABASE_URL && 
-        import.meta.env.VITE_SUPABASE_ANON_KEY &&
-        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
-        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
-      );
+    const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+    const targetUser = storedUsers[username];
 
-      if (isSupabaseConfigured) {
-        // Use Supabase admin functions to reset user password
-        const { supabase } = await import('../lib/supabase');
-        
-        // Get the user by email
-        const email = `${username}@sarvodayaschool.edu`;
-        
-        // Note: This requires admin privileges in Supabase
-        // For now, we'll update the current user's password if they're admin
-        // In a full implementation, you'd use Supabase Admin API
-        
-        if (user.username === username) {
-          // User is resetting their own password
-          const { error } = await supabase.auth.updateUser({
-            password: newPassword
-          });
-          
-          if (error) {
-            console.error('Password reset failed:', error);
-            return false;
-          }
-          
-          return true;
-        } else {
-          // For other users, we'd need admin API access
-          // For now, show a message that this requires admin setup
-          console.log('Admin password reset requires Supabase Admin API setup');
-          return false;
-        }
-      } else {
-        // Fallback to localStorage
-        const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-        const targetUser = storedUsers[username];
-
-        if (targetUser) {
-          targetUser.password = newPassword;
-          localStorage.setItem('users', JSON.stringify(storedUsers));
-          return true;
-        }
-        
-        return false;
-      }
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      return false;
+    if (targetUser) {
+      targetUser.password = newPassword;
+      localStorage.setItem('users', JSON.stringify(storedUsers));
+      return true;
     }
+
+    return false;
   };
 
   const getAllUsers = () => {
