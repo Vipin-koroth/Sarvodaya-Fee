@@ -175,8 +175,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         
         if (updateError) {
-          console.error('Error updating password in Supabase:', updateError);
-          
           // Check if the error is due to missing auth session
           if (updateError.message && updateError.message.includes('Auth session missing')) {
             logout();
