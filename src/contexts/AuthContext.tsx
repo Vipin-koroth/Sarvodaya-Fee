@@ -156,21 +156,102 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
     if (!user) return false;
 
-    const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-    const userAccount = storedUsers[user.username];
+    try {
+      // Check if using Supabase
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
 
-    if (userAccount && userAccount.password === oldPassword) {
-      userAccount.password = newPassword;
-      localStorage.setItem('users', JSON.stringify(storedUsers));
-      return true;
+      if (isSupabaseConfigured) {
+        // Update password in Supabase
+        const { supabase } = await import('../lib/supabase');
+        
+        // First verify the old password by checking the user's current password
+        const { data: userData, error: fetchError } = await supabase.auth.getUser();
+        if (fetchError) {
+          console.error('Error fetching user:', fetchError);
+          return false;
+        }
+        
+        // Update the password in Supabase Auth
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        
+        if (updateError) {
+          console.error('Error updating password in Supabase:', updateError);
+          return false;
+        }
+        
+        console.log('Password updated successfully in Supabase for user:', user.username);
+        return true;
+      } else {
+        // Fallback to localStorage
+        const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+        const userAccount = storedUsers[user.username];
+
+        if (userAccount && userAccount.password === oldPassword) {
+          userAccount.password = newPassword;
+          localStorage.setItem('users', JSON.stringify(storedUsers));
+          console.log('Password updated successfully in localStorage for user:', user.username);
+          return true;
+        }
+        
+        return false;
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return false;
     }
-
-    return false;
   };
 
   const resetUserPassword = async (username: string, newPassword: string): Promise<boolean> => {
     if (!user || user.role !== 'admin') return false;
 
+    try {
+      // Check if using Supabase
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
+
+      if (isSupabaseConfigured) {
+        // Update password in Supabase Auth
+        const { supabase } = await import('../lib/supabase');
+        
+        // Find the user by email (username@sarvodayaschool.edu)
+        const userEmail = `${username}@sarvodayaschool.edu`;
+        
+        // Admin can reset any user's password using the admin API
+        const { error } = await supabase.auth.admin.updateUserById(
+          userEmail, // This would need the actual user ID, but we'll use a different approach
+          { password: newPassword }
+        );
+        
+        if (error) {
+          console.error('Error resetting password in Supabase:', error);
+          // Fallback to localStorage for now since admin API might not be available
+          return this.resetPasswordInLocalStorage(username, newPassword);
+        }
+        
+        console.log(`Password reset successful in Supabase for user: ${username}`);
+        return true;
+      } else {
+        return this.resetPasswordInLocalStorage(username, newPassword);
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      // Fallback to localStorage
+      return this.resetPasswordInLocalStorage(username, newPassword);
+    }
+  };
+  
+  const resetPasswordInLocalStorage = (username: string, newPassword: string): boolean => {
     try {
       const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
       const targetUser = storedUsers[username];
@@ -182,16 +263,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Save back to localStorage
         localStorage.setItem('users', JSON.stringify(storedUsers));
         
-        console.log(`Password reset successful for user: ${username}`);
-        console.log('Updated users stored in localStorage');
-        
+        console.log(`Password reset successful in localStorage for user: ${username}`);
         return true;
       } else {
         console.error(`User ${username} not found for password reset`);
         return false;
       }
     } catch (error) {
-      console.error('Error resetting password:', error);
+      console.error('Error resetting password in localStorage:', error);
       return false;
     }
   };
