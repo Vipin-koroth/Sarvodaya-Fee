@@ -108,16 +108,6 @@ const Login: React.FC = () => {
             </button>
           </form>
 
-
-          {/* Instructions */}
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Login Instructions:</h3>
-            <ul className="text-xs text-blue-800 space-y-1">
-              <li>• Admin: username "admin", password "admin"</li>
-              <li>• Clerk: username "clerk", password "admin"</li>
-              <li>• Reports Only: username "sarvodaya", password "admin"</li>
-              <li>• Teachers: username "class[X][Y]" (e.g., class1a, class12e)</li>
-              <li>• Default password: "admin" (changeable after login)</li>
-            </ul>
         </div>
       </div>
     </div>
