@@ -171,16 +171,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetUserPassword = async (username: string, newPassword: string): Promise<boolean> => {
     if (!user || user.role !== 'admin') return false;
 
-    const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-    const targetUser = storedUsers[username];
+    try {
+      const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+      const targetUser = storedUsers[username];
 
-    if (targetUser) {
-      targetUser.password = newPassword;
-      localStorage.setItem('users', JSON.stringify(storedUsers));
-      return true;
+      if (targetUser) {
+        // Update the password
+        targetUser.password = newPassword;
+        
+        // Save back to localStorage
+        localStorage.setItem('users', JSON.stringify(storedUsers));
+        
+        console.log(`Password reset successful for user: ${username}`);
+        console.log('Updated users stored in localStorage');
+        
+        return true;
+      } else {
+        console.error(`User ${username} not found for password reset`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return false;
     }
-
-    return false;
   };
 
   const getAllUsers = () => {
