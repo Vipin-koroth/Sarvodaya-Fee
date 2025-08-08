@@ -226,7 +226,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
           console.error('Error saving password change to localStorage:', error);
           return false;
-          };
         }
       }
 
