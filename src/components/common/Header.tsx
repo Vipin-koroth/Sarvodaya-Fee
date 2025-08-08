@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'teacher' | 'clerk';
+  role: 'admin' | 'teacher' | 'clerk' | 'sarvodaya';
   class?: string;
   division?: string;
 }
@@ -23,6 +23,8 @@ const Header: React.FC<HeaderProps> = ({ user, onMobileMenuToggle }) => {
       return 'Administrator';
     } else if (user.role === 'clerk') {
       return 'Clerk';
+    } else if (user.role === 'sarvodaya') {
+      return 'Sarvodaya Reports';
     }
     return `Class ${user.class}-${user.division} Teacher`;
   };

@@ -22,11 +22,11 @@ const AdminDashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardStats />;
+        return user?.role === 'sarvodaya' ? <Reports /> : <DashboardStats />;
       case 'students':
-        return <StudentManagement />;
+        return user?.role === 'sarvodaya' ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <StudentManagement />;
       case 'payments':
-        return <PaymentManagement />;
+        return user?.role === 'sarvodaya' ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <PaymentManagement />;
       case 'fees':
         return user?.role === 'admin' ? <FeeConfiguration /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'reports':
@@ -34,7 +34,7 @@ const AdminDashboard: React.FC = () => {
       case 'receipt-wise-report':
         return <ReceiptWiseReport />;
       case 'print-receipt':
-        return <PrintReceipt />;
+        return user?.role === 'sarvodaya' ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <PrintReceipt />;
       case 'sms-config':
         return user?.role === 'admin' ? <SMSConfiguration /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'data-management':
@@ -46,7 +46,7 @@ const AdminDashboard: React.FC = () => {
       case 'password':
         return <ChangePassword />;
       default:
-        return <DashboardStats />;
+        return user?.role === 'sarvodaya' ? <Reports /> : <DashboardStats />;
     }
   };
 
@@ -55,7 +55,7 @@ const AdminDashboard: React.FC = () => {
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        userRole={user?.role === 'admin' ? 'admin' : 'clerk'}
+        userRole={user?.role === 'admin' ? 'admin' : user?.role === 'clerk' ? 'clerk' : user?.role === 'sarvodaya' ? 'sarvodaya' : 'clerk'}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
