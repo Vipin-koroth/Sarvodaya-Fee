@@ -39,6 +39,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setLoading(false);
 
+    // Initialize default users if they don't exist
+    const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+    if (Object.keys(storedUsers).length === 0) {
+      const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }> = {
+        admin: { password: 'admin', role: 'admin' },
+        clerk: { password: 'admin', role: 'clerk' }
+      };
+
+      // Generate class teacher accounts
+      for (let classNum = 1; classNum <= 12; classNum++) {
+        for (let division of ['a', 'b', 'c', 'd', 'e']) {
+          const teacherUsername = `class${classNum}${division}`;
+          defaultUsers[teacherUsername] = {
+            password: 'admin',
+            role: 'teacher',
+            class: classNum.toString(),
+            division: division.toUpperCase()
+          };
+        }
+      }
+
+      localStorage.setItem('users', JSON.stringify(defaultUsers));
+      console.log('Default users initialized:', Object.keys(defaultUsers));
+    }
     // Auto logout when window/tab is closed
     const handleBeforeUnload = () => {
       localStorage.removeItem('currentUser');
@@ -67,34 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get stored users or use defaults
     const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
     
-    // Initialize default users if not exists
-    if (Object.keys(storedUsers).length === 0) {
-      const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }> = {
-        admin: { password: 'admin', role: 'admin' },
-        clerk: { password: 'admin', role: 'clerk' }
-      };
-
-      // Generate class teacher accounts
-      for (let classNum = 1; classNum <= 12; classNum++) {
-        for (let division of ['a', 'b', 'c', 'd', 'e']) {
-          const teacherUsername = `class${classNum}${division}`;
-          defaultUsers[teacherUsername] = {
-            password: 'admin',
-            role: 'teacher',
-            class: classNum.toString(),
-            division: division.toUpperCase()
-          };
-        }
-      }
-
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
-      // Re-read from localStorage to ensure we have the updated data
-      const updatedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-      Object.assign(storedUsers, updatedUsers);
-    }
-
     const userAccount = storedUsers[username];
-    console.log('Login attempt:', { username, userAccount, allUsers: Object.keys(storedUsers) });
+    console.log('Login attempt:', { 
+      username, 
+      userExists: !!userAccount, 
+      userRole: userAccount?.role,
+      allUsers: Object.keys(storedUsers) 
+    });
     
     if (userAccount && userAccount.password === password) {
       const userData: User = {
