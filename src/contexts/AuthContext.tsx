@@ -166,10 +166,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (isSupabaseConfigured) {
-        // Update password directly for authenticated user
+        // Use Supabase auth to change password
         const { supabase } = await import('../lib/supabase');
         
-        // Update password for currently authenticated user
+        // First verify the old password by attempting to sign in
+        const email = `${user.username}@sarvodayaschool.edu`;
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: oldPassword
+        });
+        
+        if (signInError) {
+          console.error('Old password verification failed:', signInError);
+          return false;
+        }
+        
+        // Update password in Supabase
         const { error: updateError } = await supabase.auth.updateUser({
           password: newPassword
         });
@@ -213,11 +225,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (isSupabaseConfigured) {
-        // Handle password reset for Supabase users
+        // Use Supabase admin functions to reset user password
         const { supabase } = await import('../lib/supabase');
         
+        // Get the user by email
+        const email = `${username}@sarvodayaschool.edu`;
+        
+        // Note: This requires admin privileges in Supabase
+        // For now, we'll update the current user's password if they're admin
+        // In a full implementation, you'd use Supabase Admin API
+        
         if (user.username === username) {
-          // Admin is resetting their own password
+          // User is resetting their own password
           const { error } = await supabase.auth.updateUser({
             password: newPassword
           });
@@ -229,9 +248,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           return true;
         } else {
-          // Resetting other users' passwords requires Supabase Admin API
-          // This is not supported from client-side for security reasons
-          console.log('Resetting other users passwords requires backend Admin API implementation');
+          // For other users, we'd need admin API access
+          // For now, show a message that this requires admin setup
+          console.log('Admin password reset requires Supabase Admin API setup');
           return false;
         }
       } else {
