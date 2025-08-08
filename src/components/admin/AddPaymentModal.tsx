@@ -26,7 +26,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
   });
 
   // Filter students based on user role
-  const availableStudents = user?.role === 'admin' 
+  const availableStudents = user?.role === 'admin' || user?.role === 'clerk'
     ? students 
     : students.filter(s => s.class === user?.class && s.division === user?.division);
 
