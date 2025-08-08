@@ -176,7 +176,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (updateError) {
           console.error('Error updating password in Supabase:', updateError);
-          return false;
+          
+          // Check if the error is due to missing auth session
+          if (updateError.message && updateError.message.includes('Auth session missing')) {
+            logout();
+            throw new Error('Your session has expired. Please log in again to change your password.');
+          }
+          
+          // For other errors, throw the original error message
+          throw new Error(updateError.message || 'Failed to update password');
         }
         
         console.log('Password updated successfully in Supabase for user:', user.username);
