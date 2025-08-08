@@ -33,15 +33,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider useEffect starting...');
+    
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
+      console.log('Found saved user:', savedUser);
       setUser(JSON.parse(savedUser));
     }
-    setLoading(false);
 
     // Initialize default users if they don't exist
-    const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-    if (Object.keys(storedUsers).length === 0) {
+    let storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+    console.log('Current stored users:', Object.keys(storedUsers));
+    
+    // Always ensure clerk exists
+    if (!storedUsers.clerk || Object.keys(storedUsers).length === 0) {
+      console.log('Initializing default users including clerk...');
       const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk'; class?: string; division?: string }> = {
         admin: { password: 'admin', role: 'admin' },
         clerk: { password: 'admin', role: 'clerk' }
@@ -61,8 +67,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       localStorage.setItem('users', JSON.stringify(defaultUsers));
-      console.log('Default users initialized:', Object.keys(defaultUsers));
+      storedUsers = defaultUsers;
+      console.log('Default users initialized and saved:', Object.keys(defaultUsers));
     }
+    
+    // Verify clerk exists
+    if (storedUsers.clerk) {
+      console.log('✅ Clerk user exists:', storedUsers.clerk);
+    } else {
+      console.error('❌ Clerk user missing! Creating now...');
+      storedUsers.clerk = { password: 'admin', role: 'clerk' };
+      localStorage.setItem('users', JSON.stringify(storedUsers));
+      console.log('✅ Clerk user created');
+    }
+    
+    console.log('Final users available:', Object.keys(storedUsers));
+    setLoading(false);
+    
     // Auto logout when window/tab is closed
     const handleBeforeUnload = () => {
       localStorage.removeItem('currentUser');
@@ -91,13 +112,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get stored users or use defaults
     const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
     
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('Username:', username);
+    console.log('Password:', password);
+    console.log('Available users:', Object.keys(storedUsers));
+    
     const userAccount = storedUsers[username];
-    console.log('Login attempt:', { 
-      username, 
-      userExists: !!userAccount, 
-      userRole: userAccount?.role,
-      allUsers: Object.keys(storedUsers) 
-    });
+    console.log('User account found:', !!userAccount);
+    if (userAccount) {
+      console.log('User role:', userAccount.role);
+      console.log('Stored password:', userAccount.password);
+      console.log('Password match:', userAccount.password === password);
+    }
     
     if (userAccount && userAccount.password === password) {
       const userData: User = {
@@ -110,11 +136,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(userData);
       localStorage.setItem('currentUser', JSON.stringify(userData));
-      console.log('Login successful:', userData);
+      console.log('✅ Login successful:', userData);
       return true;
     }
     
-    console.log('Login failed for:', username);
+    console.log('❌ Login failed for:', username);
     return false;
   };
 
