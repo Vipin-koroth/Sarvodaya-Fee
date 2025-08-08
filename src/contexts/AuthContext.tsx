@@ -169,13 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Update password in Supabase
         const { supabase } = await import('../lib/supabase');
         
-        // First verify the old password by checking the user's current password
-        const { data: userData, error: fetchError } = await supabase.auth.getUser();
-        if (fetchError) {
-          console.error('Error fetching user:', fetchError);
-          return false;
-        }
-        
         // Update the password in Supabase Auth
         const { error: updateError } = await supabase.auth.updateUser({
           password: newPassword
