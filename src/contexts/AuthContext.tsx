@@ -41,24 +41,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(JSON.parse(savedUser));
     }
 
-    // Initialize default users if they don't exist
+    // Get existing users or initialize empty object
     let storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
     console.log('Current stored users:', Object.keys(storedUsers));
     
-    // Always ensure clerk exists
-    if (!storedUsers.clerk || Object.keys(storedUsers).length === 0) {
-      console.log('Initializing default users including clerk...');
-      const defaultUsers: Record<string, { password: string; role: 'admin' | 'teacher' | 'clerk' | 'sarvodaya'; class?: string; division?: string }> = {
-        admin: { password: 'admin', role: 'admin' },
-        clerk: { password: 'admin', role: 'clerk' },
-        sarvodaya: { password: 'admin', role: 'sarvodaya' }
-      };
+    // Define required core users
+    const coreUsers = {
+      admin: { password: 'admin', role: 'admin' as const },
+      clerk: { password: 'admin', role: 'clerk' as const },
+      sarvodaya: { password: 'admin', role: 'sarvodaya' as const }
+    };
 
-      // Generate class teacher accounts
+    let needsUpdate = false;
+
+    // Add missing core users
+    for (const [username, userData] of Object.entries(coreUsers)) {
+      if (!storedUsers[username]) {
+        storedUsers[username] = userData;
+        needsUpdate = true;
+      }
+    }
+
+    // Check if teacher accounts exist, if not generate them
+    const hasTeachers = Object.keys(storedUsers).some(key => key.startsWith('class'));
+    if (!hasTeachers) {
       for (let classNum = 1; classNum <= 12; classNum++) {
         for (let division of ['a', 'b', 'c', 'd', 'e']) {
           const teacherUsername = `class${classNum}${division}`;
-          defaultUsers[teacherUsername] = {
+          storedUsers[teacherUsername] = {
             password: 'admin',
             role: 'teacher',
             class: classNum.toString(),
@@ -66,30 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
       }
+      needsUpdate = true;
+    }
 
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
-      storedUsers = defaultUsers;
-      console.log('Default users initialized and saved:', Object.keys(defaultUsers));
-    }
-    
-    // Verify clerk exists
-    if (storedUsers.clerk) {
-      console.log('✅ Clerk user exists:', storedUsers.clerk);
-    } else {
-      console.error('❌ Clerk user missing! Creating now...');
-      storedUsers.clerk = { password: 'admin', role: 'clerk' };
+    // Save to localStorage if any updates were made
+    if (needsUpdate) {
       localStorage.setItem('users', JSON.stringify(storedUsers));
-      console.log('✅ Clerk user created');
-    }
-    
-    // Verify sarvodaya exists
-    if (storedUsers.sarvodaya) {
-      console.log('✅ Sarvodaya user exists:', storedUsers.sarvodaya);
-    } else {
-      console.error('❌ Sarvodaya user missing! Creating now...');
-      storedUsers.sarvodaya = { password: 'admin', role: 'sarvodaya' };
-      localStorage.setItem('users', JSON.stringify(storedUsers));
-      console.log('✅ Sarvodaya user created');
+      console.log('Default users initialized and saved:', Object.keys(storedUsers));
     }
     
     console.log('Final users available:', Object.keys(storedUsers));
