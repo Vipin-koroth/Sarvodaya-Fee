@@ -69,8 +69,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
       
       setFormData(prev => ({
         ...prev,
-        developmentFee: remainingDevelopmentFee,
-        busFee: remainingBusFee,
+        developmentFee: remainingDevelopmentFee > 0 ? remainingDevelopmentFee : 0,
+        busFee: remainingBusFee > 0 ? remainingBusFee : 0,
         specialFee: 0,
         specialFeeType: ''
       }));
@@ -318,7 +318,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Development Fee (Max: ₹{feeStatus.development.remaining})
+                    Development Fee (Balance: ₹{feeStatus.development.remaining})
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
@@ -340,7 +340,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bus Fee (Max: ₹{feeStatus.bus.remaining})
+                    Bus Fee (Balance: ₹{feeStatus.bus.remaining})
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
