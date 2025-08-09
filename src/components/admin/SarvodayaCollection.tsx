@@ -211,6 +211,25 @@ const SarvodayaCollection: React.FC = () => {
     }
   };
 
+  // Get class range based on user
+  const getClassRange = () => {
+    switch (user?.username) {
+      case 'lp':
+        return { min: 1, max: 4 };
+      case 'up':
+        return { min: 5, max: 7 };
+      case 'hs':
+        return { min: 8, max: 10 };
+      case 'hss':
+        return { min: 11, max: 12 };
+      case 'sarvodaya':
+      default:
+        return { min: 1, max: 12 }; // Full access for sarvodaya
+    }
+  };
+
+  const classRange = getClassRange();
+
   // Filter collections
   const filteredCollections = collections.filter(collection => {
     const classNum = parseInt(collection.class);
@@ -232,7 +251,7 @@ const SarvodayaCollection: React.FC = () => {
   const todayCollections = collections.filter(c => {
     const classNum = parseInt(c.class);
     return classNum >= classRange.min && classNum <= classRange.max &&
-    c.collectionDate === new Date().toISOString().split('T')[0]
+    c.collectionDate === new Date().toISOString().split('T')[0];
   });
   const todayTotal = todayCollections.reduce((sum, c) => sum + c.amount, 0);
 
@@ -240,24 +259,6 @@ const SarvodayaCollection: React.FC = () => {
   const actualCollections = getActualCollections();
   const reportedCollections = getReportedCollections();
   
-  // Get class range based on user
-  const getClassRange = () => {
-    switch (user?.username) {
-      case 'lp':
-        return { min: 1, max: 4 };
-      case 'up':
-        return { min: 5, max: 7 };
-      case 'hs':
-        return { min: 8, max: 10 };
-      case 'hss':
-        return { min: 11, max: 12 };
-      case 'sarvodaya':
-      default:
-        return { min: 1, max: 12 }; // Full access for sarvodaya
-    }
-  };
-  
-  const classRange = getClassRange();
   const balanceData = [];
 
   for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
@@ -283,16 +284,8 @@ const SarvodayaCollection: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {user?.username === 'lp' ? 'LP Collection Management (Class 1-4)' :
-             user?.username === 'up' ? 'UP Collection Management (Class 5-7)' :
-             user?.username === 'hs' ? 'HS Collection Management (Class 8-10)' :
-             user?.username === 'hss' ? 'HSS Collection Management (Class 11-12)' :
-             'Collection Management'}
-          </h1>
-          <p className="text-gray-600">
-            Track class teacher collections and balances for your assigned classes
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Collection Management</h1>
+          <p className="text-gray-600">Track class teacher collections and balances</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -433,7 +426,7 @@ const SarvodayaCollection: React.FC = () => {
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">All Classes</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(cls => (
+            {Array.from({ length: classRange.max - classRange.min + 1 }, (_, i) => classRange.min + i).map(cls => (
               <option key={cls} value={cls.toString()}>Class {cls}</option>
             ))}
           </select>
@@ -570,7 +563,7 @@ const SarvodayaCollection: React.FC = () => {
                     const selected = e.target.value;
                     const teacher = getClassTeachers().find(t => t.name === selected);
                     setFormData(prev => ({
-                  {Array.from({ length: classRange.max - classRange.min + 1 }, (_, i) => classRange.min + i).map(cls => (
+                      ...prev,
                       teacherName: selected,
                       class: teacher?.class || '',
                       division: teacher?.division || ''
