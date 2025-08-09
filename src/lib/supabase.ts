@@ -3,11 +3,24 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+// Only create client if both URL and key are properly configured
+let supabase: any = null;
+
+if (supabaseUrl && supabaseAnonKey && 
+    supabaseUrl !== 'your_supabase_project_url' && 
+    supabaseAnonKey !== 'your_supabase_anon_key') {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client created successfully');
+  } catch (error) {
+    console.warn('⚠️ Failed to create Supabase client:', error);
+    supabase = null;
+  }
+} else {
+  console.log('ℹ️ Supabase not configured, using localStorage');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export { supabase };
 
 // Database types
 export interface Student {

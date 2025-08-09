@@ -70,16 +70,18 @@ const isSupabaseConfigured = () => {
   try {
     const url = import.meta.env.VITE_SUPABASE_URL;
     const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const isConfigured = !!(url && key && url !== 'your_supabase_project_url' && key !== 'your_supabase_anon_key');
-    console.log('Supabase configuration check:', { 
-      hasUrl: !!url, 
-      hasKey: !!key, 
-      isConfigured,
-      url: url?.substring(0, 20) + '...' 
-    });
+    const isConfigured = !!(url && key && 
+      url !== 'your_supabase_project_url' && 
+      key !== 'your_supabase_anon_key' &&
+      url.startsWith('https://') &&
+      key.length > 20);
+    
+    if (!isConfigured) {
+      console.log('ℹ️ Supabase not properly configured, using localStorage');
+    }
     return isConfigured;
   } catch {
-    console.log('Supabase configuration check failed, using localStorage');
+    console.log('ℹ️ Supabase configuration check failed, using localStorage');
     return false;
   }
 };
@@ -120,6 +122,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useSupabase, setUseSupabase] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   // Helper function to get class range for user
   const getClassRangeForUser = (userRole: string, username: string) => {
@@ -142,29 +145,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   // Load initial data
   useEffect(() => {
+    // Prevent multiple initializations
+    if (initialized) return;
+    
     const configured = isSupabaseConfigured();
+    console.log('DataContext initialization - Supabase configured:', configured);
     setUseSupabase(configured);
     
     if (configured) {
       loadSupabaseData();
     } else {
+      console.log('Using localStorage for data storage');
       loadLocalStorageData();
     }
-  }, []);
+    
+    setInitialized(true);
+  }, [initialized]);
 
   const loadSupabaseData = async () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading data from Supabase...');
       await Promise.all([
         loadStudentsFromSupabase(),
         loadPaymentsFromSupabase(),
         loadFeeConfigFromSupabase()
       ]);
+      console.log('Supabase data loaded successfully');
       setupRealtimeSubscriptions();
     } catch (err) {
       console.error('Supabase connection failed, falling back to localStorage:', err);
-      setError('Supabase connection failed, using local storage');
+      setError(null); // Don't show error, just fallback silently
       setUseSupabase(false);
       loadLocalStorageData();
     } finally {
@@ -176,26 +188,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading data from localStorage...');
       
       // Load students
       const savedStudents = localStorage.getItem('students');
       if (savedStudents) {
         setStudents(JSON.parse(savedStudents));
+        console.log('Students loaded from localStorage:', JSON.parse(savedStudents).length);
       }
 
       // Load payments
       const savedPayments = localStorage.getItem('payments');
       if (savedPayments) {
         setPayments(JSON.parse(savedPayments));
+        console.log('Payments loaded from localStorage:', JSON.parse(savedPayments).length);
       }
 
       // Load fee config
       const savedFeeConfig = localStorage.getItem('feeConfig');
       if (savedFeeConfig) {
         setFeeConfig(JSON.parse(savedFeeConfig));
+        console.log('Fee config loaded from localStorage');
       }
       
-      console.log('Data loaded from localStorage successfully');
+      console.log('✅ All data loaded from localStorage successfully');
     } catch (err) {
       console.error('Error loading from localStorage:', err);
       setError('Failed to load data from local storage');
