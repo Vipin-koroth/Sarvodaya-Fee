@@ -13,6 +13,7 @@ import SMSConfiguration from './SMSConfiguration';
 import DataManagement from './DataManagement';
 import UserManagement from './UserManagement';
 import ReceiptWiseReport from './ReceiptWiseReport';
+import SarvodayaCollection from './SarvodayaCollection';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -23,6 +24,8 @@ const AdminDashboard: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return user?.role === 'sarvodaya' ? <Reports /> : <DashboardStats />;
+      case 'collection':
+        return user?.role === 'sarvodaya' ? <SarvodayaCollection /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div>;
       case 'students':
         return user?.role === 'sarvodaya' ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <StudentManagement />;
       case 'payments':
