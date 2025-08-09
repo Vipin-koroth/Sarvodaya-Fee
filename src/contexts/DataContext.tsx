@@ -121,6 +121,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [useSupabase, setUseSupabase] = useState(false);
 
+  // Helper function to get class range for user
+  const getClassRangeForUser = (userRole: string, username: string) => {
+    if (userRole !== 'sarvodaya') return null;
+    
+    switch (username) {
+      case 'lp':
+        return { min: 1, max: 4 };
+      case 'up':
+        return { min: 5, max: 7 };
+      case 'hs':
+        return { min: 8, max: 10 };
+      case 'hss':
+        return { min: 11, max: 12 };
+      case 'sarvodaya':
+        return null; // Full access
+      default:
+        return null;
+    }
+  };
   // Load initial data
   useEffect(() => {
     const configured = isSupabaseConfigured();
