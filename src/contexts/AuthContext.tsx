@@ -49,7 +49,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const coreUsers = {
       admin: { password: 'admin', role: 'admin' as const },
       clerk: { password: 'admin', role: 'clerk' as const },
-      sarvodaya: { password: 'admin', role: 'sarvodaya' as const }
+      sarvodaya: { password: 'admin', role: 'sarvodaya' as const },
+      lp: { password: 'admin', role: 'sarvodaya' as const },
+      up: { password: 'admin', role: 'sarvodaya' as const },
+      hs: { password: 'admin', role: 'sarvodaya' as const },
+      hss: { password: 'admin', role: 'sarvodaya' as const }
     };
 
     let needsUpdate = false;

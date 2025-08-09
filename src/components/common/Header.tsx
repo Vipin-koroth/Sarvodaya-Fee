@@ -24,7 +24,19 @@ const Header: React.FC<HeaderProps> = ({ user, onMobileMenuToggle }) => {
     } else if (user.role === 'clerk') {
       return 'Clerk';
     } else if (user.role === 'sarvodaya') {
-      return 'Sarvodaya Reports';
+      if (user.username === 'sarvodaya') {
+        return 'Sarvodaya Reports';
+      } else if (user.username === 'lp') {
+        return 'LP Reports';
+      } else if (user.username === 'up') {
+        return 'UP Reports';
+      } else if (user.username === 'hs') {
+        return 'HS Reports';
+      } else if (user.username === 'hss') {
+        return 'HSS Reports';
+      } else {
+        return 'Reports User';
+      }
     }
     return `Class ${user.class}-${user.division} Teacher`;
   };
