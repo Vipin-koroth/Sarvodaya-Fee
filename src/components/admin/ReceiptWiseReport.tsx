@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { FileText, Download, Calendar, Users, Search, Filter, Receipt } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ReceiptWiseReport: React.FC = () => {
   const { payments, students } = useData();
+  const { user } = useAuth();
   const [dateFilter, setDateFilter] = useState<'single' | 'range'>('single');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [fromDate, setFromDate] = useState('');
@@ -12,8 +14,47 @@ const ReceiptWiseReport: React.FC = () => {
   const [selectedDivision, setSelectedDivision] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Helper function to get class range for user
+  const getClassRangeForUser = () => {
+    if (!user || user.role !== 'sarvodaya') return null;
+    
+    switch (user.username) {
+      case 'lp':
+        return { min: 1, max: 4, name: 'LP (Classes 1-4)' };
+      case 'up':
+        return { min: 5, max: 7, name: 'UP (Classes 5-7)' };
+      case 'hs':
+        return { min: 8, max: 10, name: 'HS (Classes 8-10)' };
+      case 'hss':
+        return { min: 11, max: 12, name: 'HSS (Classes 11-12)' };
+      case 'sarvodaya':
+        return null; // Full access
+      default:
+        return null;
+    }
+  };
+
+  // Filter data based on user's class range
+  const getBaseFilteredData = () => {
+    const classRange = getClassRangeForUser();
+    if (!classRange) return { students, payments }; // Full access for sarvodaya
+    
+    const filteredStudents = students.filter(student => {
+      const classNum = parseInt(student.class);
+      return classNum >= classRange.min && classNum <= classRange.max;
+    });
+    
+    const filteredPayments = payments.filter(payment => {
+      const classNum = parseInt(payment.class);
+      return classNum >= classRange.min && classNum <= classRange.max;
+    });
+    
+    return { students: filteredStudents, payments: filteredPayments };
+  };
+
   const getFilteredPayments = () => {
-    let filteredPayments = payments;
+    const { payments: basePayments } = getBaseFilteredData();
+    let filteredPayments = basePayments;
 
     // Apply date filter
     if (dateFilter === 'single') {
@@ -109,8 +150,20 @@ const ReceiptWiseReport: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Receipt-wise Payment Report</h1>
-        <p className="text-gray-600">Generate detailed receipt-wise payment reports with advanced filters</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {(() => {
+            const classRange = getClassRangeForUser();
+            return classRange ? `${classRange.name} Receipt-wise Report` : 'Receipt-wise Payment Report';
+          })()}
+        </h1>
+        <p className="text-gray-600">
+          {(() => {
+            const classRange = getClassRangeForUser();
+            return classRange 
+              ? `Generate detailed receipt reports for ${classRange.name} section`
+              : 'Generate detailed receipt-wise payment reports with advanced filters';
+          })()}
+        </p>
       </div>
 
       {/* Filters Section */}
@@ -211,9 +264,22 @@ const ReceiptWiseReport: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Classes</option>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>Class {i + 1}</option>
-                  ))}
+                  {(() => {
+                    const classRange = getClassRangeForUser();
+                    if (classRange) {
+                      const classes = [];
+                      for (let i = classRange.min; i <= classRange.max; i++) {
+                        classes.push(i);
+                      }
+                      return classes.map(cls => (
+                        <option key={cls} value={cls}>Class {cls}</option>
+                      ));
+                    } else {
+                      return Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>Class {i + 1}</option>
+                      ));
+                    }
+                  })()}
                 </select>
               </div>
               <div>
@@ -341,7 +407,8 @@ const ReceiptWiseReport: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPayments.map((payment) => {
-                const student = students.find(s => s.id === payment.studentId);
+                const { students: baseStudents } = getBaseFilteredData();
+                const student = baseStudents.find(s => s.id === payment.studentId);
                 return (
                   <tr key={payment.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">

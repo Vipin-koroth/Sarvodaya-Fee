@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { FileText, Download, Calendar, Users, TrendingUp, Bus, Eye, X, Receipt, AlertTriangle } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 import ReceiptWiseReport from './ReceiptWiseReport';
 
 const Reports: React.FC = () => {
   const { students, payments, feeConfig } = useData();
+  const { user } = useAuth();
   const [activeReport, setActiveReport] = useState('class-wise');
   const [dateFilter, setDateFilter] = useState<'all' | 'month' | 'custom'>('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -12,18 +14,63 @@ const Reports: React.FC = () => {
   const [toDate, setToDate] = useState('');
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<string | null>(null);
 
+  // Helper function to get class range for user
+  const getClassRangeForUser = () => {
+    if (!user || user.role !== 'sarvodaya') return null;
+    
+    switch (user.username) {
+      case 'lp':
+        return { min: 1, max: 4, name: 'LP (Classes 1-4)' };
+      case 'up':
+        return { min: 5, max: 7, name: 'UP (Classes 5-7)' };
+      case 'hs':
+        return { min: 8, max: 10, name: 'HS (Classes 8-10)' };
+      case 'hss':
+        return { min: 11, max: 12, name: 'HSS (Classes 11-12)' };
+      case 'sarvodaya':
+        return null; // Full access
+      default:
+        return null;
+    }
+  };
+
+  // Filter data based on user's class range
+  const getFilteredStudents = () => {
+    const classRange = getClassRangeForUser();
+    if (!classRange) return students; // Full access for sarvodaya
+    
+    return students.filter(student => {
+      const classNum = parseInt(student.class);
+      return classNum >= classRange.min && classNum <= classRange.max;
+    });
+  };
+
   const getFilteredPayments = () => {
-    let filteredPayments = payments;
+    const classRange = getClassRangeForUser();
+    if (!classRange) return payments; // Full access for sarvodaya
+    
+    return payments.filter(payment => {
+      const classNum = parseInt(payment.class);
+      return classNum >= classRange.min && classNum <= classRange.max;
+    });
+  };
+
+  // Use filtered data
+  const filteredStudents = getFilteredStudents();
+  const filteredPayments = getFilteredPayments();
+
+  const getDateFilteredPayments = () => {
+    let dateFilteredPayments = filteredPayments;
 
     if (dateFilter === 'month') {
       const [year, month] = selectedMonth.split('-');
-      filteredPayments = filteredPayments.filter(payment => {
+      dateFilteredPayments = dateFilteredPayments.filter(payment => {
         const paymentDate = new Date(payment.paymentDate);
         return paymentDate.getFullYear() === parseInt(year) && 
                paymentDate.getMonth() === parseInt(month) - 1;
       });
     } else if (dateFilter === 'custom') {
-      filteredPayments = filteredPayments.filter(payment => {
+      dateFilteredPayments = dateFilteredPayments.filter(payment => {
         const paymentDate = new Date(payment.paymentDate).toISOString().split('T')[0];
         const matchesFromDate = !fromDate || paymentDate >= fromDate;
         const matchesToDate = !toDate || paymentDate <= toDate;
@@ -31,15 +78,15 @@ const Reports: React.FC = () => {
       });
     }
 
-    return filteredPayments;
+    return dateFilteredPayments;
   };
 
   // Get student payment details
   const getStudentPaymentDetails = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
+    const student = filteredStudents.find(s => s.id === studentId);
     if (!student) return null;
 
-    const studentPayments = payments.filter(p => p.studentId === studentId);
+    const studentPayments = filteredPayments.filter(p => p.studentId === studentId);
     
     // Calculate fee structure
     const classKey = (['11', '12'].includes(student.class)) 
@@ -282,11 +329,13 @@ const Reports: React.FC = () => {
   };
 
   const ClassWiseReport: React.FC = () => {
-    const filteredPayments = getFilteredPayments();
-    const totalCollection = filteredPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
-    const developmentFees = filteredPayments.reduce((sum, payment) => sum + payment.developmentFee, 0);
-    const busFees = filteredPayments.reduce((sum, payment) => sum + payment.busFee, 0);
-    const specialFees = filteredPayments.reduce((sum, payment) => sum + payment.specialFee, 0);
+    const dateFilteredPayments = getDateFilteredPayments();
+    const totalCollection = dateFilteredPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
+    const developmentFees = dateFilteredPayments.reduce((sum, payment) => sum + payment.developmentFee, 0);
+    const busFees = dateFilteredPayments.reduce((sum, payment) => sum + payment.busFee, 0);
+    const specialFees = dateFilteredPayments.reduce((sum, payment) => sum + payment.specialFee, 0);
+
+    const classRange = getClassRangeForUser();
 
     // Calculate class-wise totals
     const getClassWiseTotals = () => {
@@ -301,12 +350,12 @@ const Reports: React.FC = () => {
       }> = {};
 
       // Group students by class
-      const studentsByClass = students.reduce((acc, student) => {
+      const studentsByClass = filteredStudents.reduce((acc, student) => {
         const classKey = `${student.class}-${student.division}`;
         if (!acc[classKey]) acc[classKey] = [];
         acc[classKey].push(student);
         return acc;
-      }, {} as Record<string, typeof students>);
+      }, {} as Record<string, typeof filteredStudents>);
 
       Object.entries(studentsByClass).forEach(([classKey, classStudents]) => {
         const [classNum, division] = classKey.split('-');
@@ -327,7 +376,7 @@ const Reports: React.FC = () => {
           const discountedBusFee = Math.max(0, originalBusFee - (student.busFeeDiscount || 0));
 
           // Get payments for this student
-          const studentPayments = payments.filter(p => p.studentId === student.id);
+          const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
           const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
           const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
 
@@ -360,7 +409,7 @@ const Reports: React.FC = () => {
         'Special Fee Type', 'Total Amount', 'Payment Date', 'Added By'
       ];
       
-      const csvData = filteredPayments.map(payment => [
+      const csvData = dateFilteredPayments.map(payment => [
         payment.studentName,
         payment.admissionNo,
         payment.class,
@@ -379,7 +428,8 @@ const Reports: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `class_wise_report_${new Date().toISOString().slice(0, 10)}.csv`;
+      const sectionName = classRange ? classRange.name.split(' ')[0].toLowerCase() : 'all';
+      a.download = `${sectionName}_class_wise_report_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     };
@@ -392,8 +442,10 @@ const Reports: React.FC = () => {
             <div className="flex items-center">
               <Users className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-blue-600">Total Students</p>
-                <p className="text-2xl font-bold text-gray-900">{students.length}</p>
+                <p className="text-sm font-medium text-blue-600">
+                  {classRange ? `${classRange.name} Students` : 'Total Students'}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">{filteredStudents.length}</p>
               </div>
             </div>
           </div>
@@ -413,7 +465,7 @@ const Reports: React.FC = () => {
               <FileText className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-purple-600">Total Payments</p>
-                <p className="text-2xl font-bold text-gray-900">{filteredPayments.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{dateFilteredPayments.length}</p>
               </div>
             </div>
           </div>
@@ -621,7 +673,7 @@ const Reports: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPayments.map((payment) => (
+                {dateFilteredPayments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -669,7 +721,7 @@ const Reports: React.FC = () => {
             </table>
           </div>
           
-          {filteredPayments.length === 0 && (
+          {dateFilteredPayments.length === 0 && (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
@@ -684,10 +736,10 @@ const Reports: React.FC = () => {
   };
 
   const BusStopWiseReport: React.FC = () => {
-    const filteredPayments = getFilteredPayments();
+    const dateFilteredPayments = getDateFilteredPayments();
     
     // Group students by bus stop and organize by class
-    const busStopData = students.reduce((acc, student) => {
+    const busStopData = filteredStudents.reduce((acc, student) => {
       const stopName = student.busStop;
       const classKey = `${student.class}-${student.division}`;
       
@@ -710,7 +762,7 @@ const Reports: React.FC = () => {
       }
       
       // Add student to class group
-      const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
+      const studentPayments = dateFilteredPayments.filter(p => p.studentId === student.id);
       const studentTotalCollection = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
       
       acc[stopName].classes[classKey].students.push({
@@ -770,7 +822,9 @@ const Reports: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `bus_stop_wise_students_${new Date().toISOString().slice(0, 10)}.csv`;
+      const classRange = getClassRangeForUser();
+      const sectionName = classRange ? classRange.name.split(' ')[0].toLowerCase() : 'all';
+      a.download = `${sectionName}_bus_stop_wise_students_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     };
@@ -822,7 +876,7 @@ const Reports: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-orange-600">Active Classes</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {new Set(students.map(s => `${s.class}-${s.division}`)).size}
+                  {new Set(filteredStudents.map(s => `${s.class}-${s.division}`)).size}
                 </p>
               </div>
             </div>
@@ -980,7 +1034,7 @@ const Reports: React.FC = () => {
 
   const MonthlyCollectionReport: React.FC = () => {
     // Get all unique months from payments
-    const months = [...new Set(payments.map(p => {
+    const months = [...new Set(filteredPayments.map(p => {
       const date = new Date(p.paymentDate);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     }))].sort();
@@ -991,12 +1045,14 @@ const Reports: React.FC = () => {
       return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
     });
 
+    const classRange = getClassRangeForUser();
+
     const downloadCSV = () => {
       const headers = ['Student Name', 'Admission No', 'Class', 'Division', ...monthNames, 'Total'];
       const csvData: string[][] = [];
       
-      students.forEach(student => {
-        const studentPayments = payments.filter(p => p.studentId === student.id);
+      filteredStudents.forEach(student => {
+        const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
         
         const monthlyAmounts = months.map(month => {
           const monthPayments = studentPayments.filter(p => {
@@ -1029,7 +1085,8 @@ const Reports: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `monthly_collection_report_${new Date().toISOString().slice(0, 10)}.csv`;
+      const sectionName = classRange ? classRange.name.split(' ')[0].toLowerCase() : 'all';
+      a.download = `${sectionName}_monthly_collection_report_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     };
@@ -1069,8 +1126,8 @@ const Reports: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {students.map(student => {
-                  const studentPayments = payments.filter(p => p.studentId === student.id);
+                {filteredStudents.map(student => {
+                  const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
                   
                   const monthlyAmounts = months.map(month => {
                     const monthPayments = studentPayments.filter(p => {
@@ -1124,8 +1181,8 @@ const Reports: React.FC = () => {
             </table>
           </div>
           
-          {students.filter(student => {
-            const studentPayments = payments.filter(p => p.studentId === student.id);
+          {filteredStudents.filter(student => {
+            const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
             const totalAmount = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
             return totalAmount > 0;
           }).length === 0 && (
@@ -1151,8 +1208,8 @@ const Reports: React.FC = () => {
         'Total Required', 'Total Paid', 'Total Balance', 'Payment Count'
       ];
       
-      const csvData = students.map(student => {
-        const studentPayments = payments.filter(p => p.studentId === student.id);
+      const csvData = filteredStudents.map(student => {
+        const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
         const totalPaid = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
         const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
         const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
@@ -1205,8 +1262,8 @@ const Reports: React.FC = () => {
     };
 
     // Calculate statistics for all students
-    const studentsWithBalances = students.map(student => {
-      const studentPayments = payments.filter(p => p.studentId === student.id);
+    const studentsWithBalances = filteredStudents.map(student => {
+      const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
       const totalPaid = studentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
       const paidDevFee = studentPayments.reduce((sum, p) => sum + p.developmentFee, 0);
       const paidBusFee = studentPayments.reduce((sum, p) => sum + p.busFee, 0);
@@ -1288,7 +1345,7 @@ const Reports: React.FC = () => {
               <FileText className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-blue-600">Total Students</p>
-                <p className="text-2xl font-bold text-gray-900">{students.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{filteredStudents.length}</p>
               </div>
             </div>
           </div>
@@ -1436,8 +1493,8 @@ const Reports: React.FC = () => {
   };
 
   const NoPaymentStudentsReport: React.FC = () => {
-    const studentsWithNoPayments = students.filter(student => {
-      const studentPayments = payments.filter(p => p.studentId === student.id);
+    const studentsWithNoPayments = filteredStudents.filter(student => {
+      const studentPayments = filteredPayments.filter(p => p.studentId === student.id);
       return studentPayments.length === 0;
     });
 
@@ -1581,8 +1638,20 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-        <p className="text-gray-600">Generate comprehensive reports and analyze fee collection data</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {(() => {
+            const classRange = getClassRangeForUser();
+            return classRange ? `${classRange.name} Reports & Analytics` : 'Reports & Analytics';
+          })()}
+        </h1>
+        <p className="text-gray-600">
+          {(() => {
+            const classRange = getClassRangeForUser();
+            return classRange 
+              ? `Generate reports for ${classRange.name} section`
+              : 'Generate comprehensive reports and analyze fee collection data';
+          })()}
+        </p>
       </div>
 
       {/* Report Type Selection */}
