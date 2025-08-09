@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, Users, TrendingUp, CreditCard, Search, Edit, Trash2, Save } from 'lucide-react';
+import { Plus, Calendar, Users, TrendingUp, CreditCard, Search, Edit, Trash2, Save, BookOpen } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface CollectionEntry {
+interface SectionCollectionEntry {
   id: string;
-  teacherName: string;
-  class: string;
-  division: string;
+  section: 'LP' | 'UP' | 'HS' | 'HSS';
+  sectionHead: string;
   collectionDate: string;
   amount: number;
   remarks: string;
@@ -18,185 +17,129 @@ interface CollectionEntry {
 const SarvodayaCollection: React.FC = () => {
   const { students, payments } = useData();
   const { user } = useAuth();
-  const [collections, setCollections] = useState<CollectionEntry[]>(() => {
-    const saved = localStorage.getItem('sarvodayaCollections');
+  const [sectionCollections, setSectionCollections] = useState<SectionCollectionEntry[]>(() => {
+    const saved = localStorage.getItem('sectionCollections');
     return saved ? JSON.parse(saved) : [];
   });
   
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingCollection, setEditingCollection] = useState<CollectionEntry | null>(null);
+  const [editingCollection, setEditingCollection] = useState<SectionCollectionEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [classFilter, setClassFilter] = useState('');
+  const [sectionFilter, setSectionFilter] = useState('');
 
   const [formData, setFormData] = useState({
-    teacherName: '',
-    class: '',
-    division: '',
+    section: '' as 'LP' | 'UP' | 'HS' | 'HSS' | '',
+    sectionHead: '',
     collectionDate: new Date().toISOString().split('T')[0],
     amount: 0,
     remarks: ''
   });
 
   // Save collections to localStorage
-  const saveCollections = (newCollections: CollectionEntry[]) => {
-    setCollections(newCollections);
-    localStorage.setItem('sarvodayaCollections', JSON.stringify(newCollections));
+  const saveSectionCollections = (newCollections: SectionCollectionEntry[]) => {
+    setSectionCollections(newCollections);
+    localStorage.setItem('sectionCollections', JSON.stringify(newCollections));
   };
 
   // Generate ID
   const generateId = () => {
-    return 'col_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    return 'sec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   };
 
-  // Get class teachers list
-  const getClassTeachers = () => {
-    // Get class range based on user
-    const getClassRange = () => {
-      switch (user?.username) {
-        case 'lp':
-          return { min: 1, max: 4 };
-        case 'up':
-          return { min: 5, max: 7 };
-        case 'hs':
-          return { min: 8, max: 10 };
-        case 'hss':
-          return { min: 11, max: 12 };
-        case 'sarvodaya':
-        default:
-          return { min: 1, max: 12 }; // Full access for sarvodaya
-      }
+  // Get section configuration
+  const getSectionConfig = () => {
+    return {
+      LP: { name: 'Lower Primary', classes: [1, 2, 3, 4], head: 'LP Section Head' },
+      UP: { name: 'Upper Primary', classes: [5, 6, 7], head: 'UP Section Head' },
+      HS: { name: 'High School', classes: [8, 9, 10], head: 'HS Section Head' },
+      HSS: { name: 'Higher Secondary', classes: [11, 12], head: 'HSS Section Head' }
     };
-    
-    const classRange = getClassRange();
-    const teachers = [];
-    for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
-      for (let division of ['A', 'B', 'C', 'D', 'E']) {
-        teachers.push({
-          name: `Class ${classNum}-${division} Teacher`,
-          class: classNum.toString(),
-          division: division
-        });
-      }
-    }
-    return teachers;
   };
 
-  // Calculate actual collections from payments
-  const getActualCollections = () => {
-    // Get class range based on user
-    const getClassRange = () => {
-      switch (user?.username) {
-        case 'lp':
-          return { min: 1, max: 4 };
-        case 'up':
-          return { min: 5, max: 7 };
-        case 'hs':
-          return { min: 8, max: 10 };
-        case 'hss':
-          return { min: 11, max: 12 };
-        case 'sarvodaya':
-        default:
-          return { min: 1, max: 12 }; // Full access for sarvodaya
-      }
-    };
+  // Calculate actual collections by section
+  const getActualSectionCollections = () => {
+    const sectionConfig = getSectionConfig();
+    const sectionCollections: Record<string, number> = {};
     
-    const classRange = getClassRange();
-    const classCollections: Record<string, number> = {};
-    
-    payments.forEach(payment => {
-      const classNum = parseInt(payment.class);
-      // Filter by class range
-      if (classNum < classRange.min || classNum > classRange.max) {
-        return;
-      }
+    Object.entries(sectionConfig).forEach(([sectionKey, config]) => {
+      sectionCollections[sectionKey] = 0;
       
-      const classKey = `${payment.class}-${payment.division}`;
-      if (!classCollections[classKey]) {
-        classCollections[classKey] = 0;
-      }
-      classCollections[classKey] += payment.totalAmount;
+      payments.forEach(payment => {
+        const classNum = parseInt(payment.class);
+        if (config.classes.includes(classNum)) {
+          sectionCollections[sectionKey] += payment.totalAmount;
+        }
+      });
     });
     
-    return classCollections;
+    return sectionCollections;
   };
 
-  // Calculate reported collections
-  const getReportedCollections = () => {
-    // Get class range based on user
-    const getClassRange = () => {
-      switch (user?.username) {
-        case 'lp':
-          return { min: 1, max: 4 };
-        case 'up':
-          return { min: 5, max: 7 };
-        case 'hs':
-          return { min: 8, max: 10 };
-        case 'hss':
-          return { min: 11, max: 12 };
-        case 'sarvodaya':
-        default:
-          return { min: 1, max: 12 }; // Full access for sarvodaya
-      }
-    };
+  // Calculate reported collections by section
+  const getReportedSectionCollections = () => {
+    const reportedCollections: Record<string, number> = {};
     
-    const classRange = getClassRange();
-    const classCollections: Record<string, number> = {};
-    
-    collections.forEach(collection => {
-      const classNum = parseInt(collection.class);
-      // Filter by class range
-      if (classNum < classRange.min || classNum > classRange.max) {
-        return;
-      }
-      
-      const classKey = `${collection.class}-${collection.division}`;
-      if (!classCollections[classKey]) {
-        classCollections[classKey] = 0;
-      }
-      classCollections[classKey] += collection.amount;
+    ['LP', 'UP', 'HS', 'HSS'].forEach(section => {
+      reportedCollections[section] = sectionCollections
+        .filter(c => c.section === section)
+        .reduce((sum, c) => sum + c.amount, 0);
     });
     
-    return classCollections;
+    return reportedCollections;
+  };
+
+  // Get section balance data
+  const getSectionBalanceData = () => {
+    const actualCollections = getActualSectionCollections();
+    const reportedCollections = getReportedSectionCollections();
+    const sectionConfig = getSectionConfig();
+    
+    return Object.entries(sectionConfig).map(([sectionKey, config]) => ({
+      section: sectionKey,
+      name: config.name,
+      classes: config.classes.join(', '),
+      actual: actualCollections[sectionKey] || 0,
+      reported: reportedCollections[sectionKey] || 0,
+      balance: (actualCollections[sectionKey] || 0) - (reportedCollections[sectionKey] || 0)
+    }));
   };
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.teacherName || !formData.class || !formData.division || formData.amount <= 0) {
+    if (!formData.section || !formData.sectionHead || formData.amount <= 0) {
       alert('Please fill all required fields');
       return;
     }
 
-    const newCollection: CollectionEntry = {
+    const newCollection: SectionCollectionEntry = {
       id: editingCollection ? editingCollection.id : generateId(),
-      teacherName: formData.teacherName,
-      class: formData.class,
-      division: formData.division,
+      section: formData.section,
+      sectionHead: formData.sectionHead,
       collectionDate: formData.collectionDate,
       amount: formData.amount,
       remarks: formData.remarks,
-      addedBy: 'sarvodaya',
+      addedBy: user?.username || 'sarvodaya',
       createdAt: editingCollection ? editingCollection.createdAt : new Date().toISOString()
     };
 
     if (editingCollection) {
-      const updatedCollections = collections.map(c => 
+      const updatedCollections = sectionCollections.map(c => 
         c.id === editingCollection.id ? newCollection : c
       );
-      saveCollections(updatedCollections);
+      saveSectionCollections(updatedCollections);
       setEditingCollection(null);
     } else {
-      saveCollections([newCollection, ...collections]);
+      saveSectionCollections([newCollection, ...sectionCollections]);
       setShowAddModal(false);
     }
 
     // Reset form
     setFormData({
-      teacherName: '',
-      class: '',
-      division: '',
+      section: '' as 'LP' | 'UP' | 'HS' | 'HSS' | '',
+      sectionHead: '',
       collectionDate: new Date().toISOString().split('T')[0],
       amount: 0,
       remarks: ''
@@ -206,101 +149,44 @@ const SarvodayaCollection: React.FC = () => {
   // Handle delete
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this collection entry?')) {
-      const updatedCollections = collections.filter(c => c.id !== id);
-      saveCollections(updatedCollections);
+      const updatedCollections = sectionCollections.filter(c => c.id !== id);
+      saveSectionCollections(updatedCollections);
     }
   };
-
-  // Get class range based on user
-  const getClassRange = () => {
-    switch (user?.username) {
-      case 'lp':
-        return { min: 1, max: 4 };
-      case 'up':
-        return { min: 5, max: 7 };
-      case 'hs':
-        return { min: 8, max: 10 };
-      case 'hss':
-        return { min: 11, max: 12 };
-      case 'sarvodaya':
-      default:
-        return { min: 1, max: 12 }; // Full access for sarvodaya
-    }
-  };
-
-  const classRange = getClassRange();
 
   // Filter collections
-  const filteredCollections = collections.filter(collection => {
-    const classNum = parseInt(collection.class);
-    // Filter by user's class range
-    if (classNum < classRange.min || classNum > classRange.max) {
-      return false;
-    }
-    
-    const matchesSearch = collection.teacherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         `${collection.class}-${collection.division}`.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCollections = sectionCollections.filter(collection => {
+    const matchesSearch = collection.sectionHead.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         collection.section.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDate = !dateFilter || collection.collectionDate === dateFilter;
-    const matchesClass = !classFilter || collection.class === classFilter;
+    const matchesSection = !sectionFilter || collection.section === sectionFilter;
     
-    return matchesSearch && matchesDate && matchesClass;
+    return matchesSearch && matchesDate && matchesSection;
   });
 
   // Calculate totals
   const totalReported = filteredCollections.reduce((sum, c) => sum + c.amount, 0);
-  const todayCollections = collections.filter(c => {
-    const classNum = parseInt(c.class);
-    return classNum >= classRange.min && classNum <= classRange.max &&
-    c.collectionDate === new Date().toISOString().split('T')[0];
-  });
+  const todayCollections = sectionCollections.filter(c => 
+    c.collectionDate === new Date().toISOString().split('T')[0]
+  );
   const todayTotal = todayCollections.reduce((sum, c) => sum + c.amount, 0);
 
-  // Get balance report data
-  const actualCollections = getActualCollections();
-  const reportedCollections = getReportedCollections();
-  
-  const balanceData = [];
-
-  for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
-    for (let division of ['A', 'B', 'C', 'D', 'E']) {
-      const classKey = `${classNum}-${division}`;
-      const actual = actualCollections[classKey] || 0;
-      const reported = reportedCollections[classKey] || 0;
-      const balance = actual - reported;
-      
-      if (actual > 0 || reported > 0) {
-        balanceData.push({
-          class: classNum.toString(),
-          division,
-          actual,
-          reported,
-          balance
-        });
-      }
-    }
-  }
+  // Get balance data
+  const balanceData = getSectionBalanceData();
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {user?.username === 'lp' ? 'LP Collection Management (Class 1-4)' :
-             user?.username === 'up' ? 'UP Collection Management (Class 5-7)' :
-             user?.username === 'hs' ? 'HS Collection Management (Class 8-10)' :
-             user?.username === 'hss' ? 'HSS Collection Management (Class 11-12)' :
-             'Collection Management'}
-          </h1>
-          <p className="text-gray-600">
-            Track class teacher collections and balances for your assigned classes
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Section-wise Collection Management</h1>
+          <p className="text-gray-600">Track section head collections and balances (LP, UP, HS, HSS)</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
-          <span>Add Collection</span>
+          <span>Add Section Collection</span>
         </button>
       </div>
 
@@ -308,10 +194,10 @@ const SarvodayaCollection: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-blue-50 rounded-lg p-4">
           <div className="flex items-center">
-            <CreditCard className="h-8 w-8 text-blue-600" />
+            <BookOpen className="h-8 w-8 text-blue-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-blue-600">Total Collections</p>
-              <p className="text-2xl font-bold text-gray-900">{collections.length}</p>
+              <p className="text-sm font-medium text-blue-600">Total Entries</p>
+              <p className="text-2xl font-bold text-gray-900">{sectionCollections.length}</p>
             </div>
           </div>
         </div>
@@ -338,7 +224,7 @@ const SarvodayaCollection: React.FC = () => {
         
         <div className="bg-orange-50 rounded-lg p-4">
           <div className="flex items-center">
-            <Users className="h-8 w-8 text-orange-600" />
+            <CreditCard className="h-8 w-8 text-orange-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-orange-600">Today's Amount</p>
               <p className="text-2xl font-bold text-gray-900">₹{todayTotal.toLocaleString()}</p>
@@ -347,15 +233,18 @@ const SarvodayaCollection: React.FC = () => {
         </div>
       </div>
 
-      {/* Balance Report */}
+      {/* Section Balance Report */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Collection Balance Report</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Section-wise Collection Balance</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Class
+                  Section
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Classes
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actual Collection
@@ -364,7 +253,7 @@ const SarvodayaCollection: React.FC = () => {
                   Reported Collection
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Balance
+                  Balance Status
                 </th>
               </tr>
             </thead>
@@ -372,8 +261,14 @@ const SarvodayaCollection: React.FC = () => {
               {balanceData.map((item, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{item.section}</div>
+                      <div className="text-sm text-gray-500">{item.name}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                      Class {item.class}-{item.division}
+                      Classes {item.classes}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -387,7 +282,7 @@ const SarvodayaCollection: React.FC = () => {
                       item.balance > 0 ? 'text-red-600' : 
                       item.balance < 0 ? 'text-orange-600' : 'text-green-600'
                     }`}>
-                      ₹{item.balance.toLocaleString()}
+                      ₹{Math.abs(item.balance).toLocaleString()}
                       {item.balance > 0 && ' (Pending)'}
                       {item.balance < 0 && ' (Excess)'}
                       {item.balance === 0 && ' (Balanced)'}
@@ -398,12 +293,6 @@ const SarvodayaCollection: React.FC = () => {
             </tbody>
           </table>
         </div>
-        
-        {balanceData.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <p>No collection data available</p>
-          </div>
-        )}
       </div>
 
       {/* Filters */}
@@ -413,7 +302,7 @@ const SarvodayaCollection: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by teacher or class..."
+              placeholder="Search by section or head..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -429,14 +318,15 @@ const SarvodayaCollection: React.FC = () => {
             />
           </div>
           <select
-            value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
+            value={sectionFilter}
+            onChange={(e) => setSectionFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="">All Classes</option>
-            {Array.from({ length: classRange.max - classRange.min + 1 }, (_, i) => classRange.min + i).map(cls => (
-              <option key={cls} value={cls.toString()}>Class {cls}</option>
-            ))}
+            <option value="">All Sections</option>
+            <option value="LP">LP (Classes 1-4)</option>
+            <option value="UP">UP (Classes 5-7)</option>
+            <option value="HS">HS (Classes 8-10)</option>
+            <option value="HSS">HSS (Classes 11-12)</option>
           </select>
           <div className="text-sm text-gray-600 flex items-center">
             Showing: {filteredCollections.length} entries
@@ -444,14 +334,17 @@ const SarvodayaCollection: React.FC = () => {
         </div>
       </div>
 
-      {/* Collections Table */}
+      {/* Section Collections Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Section Collection Entries</h3>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Teacher & Class
+                  Section & Head
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Collection Date
@@ -468,87 +361,94 @@ const SarvodayaCollection: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCollections.map((collection) => (
-                <tr key={collection.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{collection.teacherName}</div>
-                      <div className="text-sm text-gray-500">Class {collection.class}-{collection.division}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(collection.collectionDate).toLocaleDateString('en-GB')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-lg font-semibold text-green-600">
-                      ₹{collection.amount.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {collection.remarks || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingCollection(collection);
-                          setFormData({
-                            teacherName: collection.teacherName,
-                            class: collection.class,
-                            division: collection.division,
-                            collectionDate: collection.collectionDate,
-                            amount: collection.amount,
-                            remarks: collection.remarks
-                          });
-                          setShowAddModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Edit Collection"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(collection.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Delete Collection"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredCollections.map((collection) => {
+                const sectionConfig = getSectionConfig();
+                const config = sectionConfig[collection.section];
+                
+                return (
+                  <tr key={collection.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {collection.section} - {config?.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {collection.sectionHead} • Classes {config?.classes.join(', ')}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(collection.collectionDate).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-lg font-semibold text-green-600">
+                        ₹{collection.amount.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {collection.remarks || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingCollection(collection);
+                            setFormData({
+                              section: collection.section,
+                              sectionHead: collection.sectionHead,
+                              collectionDate: collection.collectionDate,
+                              amount: collection.amount,
+                              remarks: collection.remarks
+                            });
+                            setShowAddModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit Collection"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(collection.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete Collection"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
         
         {filteredCollections.length === 0 && (
           <div className="text-center py-12">
-            <CreditCard className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No collections found</h3>
+            <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No section collections found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || dateFilter || classFilter ? 'No collections match your search criteria.' : 'Get started by adding a collection entry.'}
+              {searchTerm || dateFilter || sectionFilter ? 'No collections match your search criteria.' : 'Get started by adding a section collection entry.'}
             </p>
           </div>
         )}
       </div>
 
-      {/* Add/Edit Collection Modal */}
+      {/* Add/Edit Section Collection Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingCollection ? 'Edit Collection' : 'Add Collection Entry'}
+                {editingCollection ? 'Edit Section Collection' : 'Add Section Collection'}
               </h2>
               <button 
                 onClick={() => {
                   setShowAddModal(false);
                   setEditingCollection(null);
                   setFormData({
-                    teacherName: '',
-                    class: '',
-                    division: '',
+                    section: '' as 'LP' | 'UP' | 'HS' | 'HSS' | '',
+                    sectionHead: '',
                     collectionDate: new Date().toISOString().split('T')[0],
                     amount: 0,
                     remarks: ''
@@ -563,53 +463,42 @@ const SarvodayaCollection: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Teacher Name
+                  Section
                 </label>
                 <select
-                  value={formData.teacherName}
+                  value={formData.section}
                   onChange={(e) => {
-                    const selected = e.target.value;
-                    const teacher = getClassTeachers().find(t => t.name === selected);
+                    const section = e.target.value as 'LP' | 'UP' | 'HS' | 'HSS';
+                    const sectionConfig = getSectionConfig();
                     setFormData(prev => ({
                       ...prev,
-                      teacherName: selected,
-                      class: teacher?.class || '',
-                      division: teacher?.division || ''
+                      section: section,
+                      sectionHead: section ? sectionConfig[section].head : ''
                     }));
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="">Select Teacher</option>
-                  {getClassTeachers().map((teacher, index) => (
-                    <option key={index} value={teacher.name}>{teacher.name}</option>
-                  ))}
+                  <option value="">Select Section</option>
+                  <option value="LP">LP - Lower Primary (Classes 1-4)</option>
+                  <option value="UP">UP - Upper Primary (Classes 5-7)</option>
+                  <option value="HS">HS - High School (Classes 8-10)</option>
+                  <option value="HSS">HSS - Higher Secondary (Classes 11-12)</option>
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Class
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.class}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Division
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.division}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Section Head Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.sectionHead}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sectionHead: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter section head name"
+                  required
+                />
               </div>
 
               <div>
@@ -662,9 +551,8 @@ const SarvodayaCollection: React.FC = () => {
                     setShowAddModal(false);
                     setEditingCollection(null);
                     setFormData({
-                      teacherName: '',
-                      class: '',
-                      division: '',
+                      section: '' as 'LP' | 'UP' | 'HS' | 'HSS' | '',
+                      sectionHead: '',
                       collectionDate: new Date().toISOString().split('T')[0],
                       amount: 0,
                       remarks: ''
@@ -686,6 +574,75 @@ const SarvodayaCollection: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Date-wise Collection Summary */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Date-wise Collection Summary</h2>
+        
+        {/* Get unique dates from collections */}
+        {(() => {
+          const uniqueDates = [...new Set(sectionCollections.map(c => c.collectionDate))].sort().reverse();
+          
+          if (uniqueDates.length === 0) {
+            return (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p>No collection entries found</p>
+              </div>
+            );
+          }
+          
+          return (
+            <div className="space-y-4">
+              {uniqueDates.slice(0, 7).map(date => {
+                const dateCollections = sectionCollections.filter(c => c.collectionDate === date);
+                const dateTotal = dateCollections.reduce((sum, c) => sum + c.amount, 0);
+                
+                return (
+                  <div key={date} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-medium text-gray-900">
+                        {new Date(date).toLocaleDateString('en-GB', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </h4>
+                      <span className="text-lg font-semibold text-green-600">
+                        ₹{dateTotal.toLocaleString()}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {['LP', 'UP', 'HS', 'HSS'].map(section => {
+                        const sectionAmount = dateCollections
+                          .filter(c => c.section === section)
+                          .reduce((sum, c) => sum + c.amount, 0);
+                        
+                        return (
+                          <div key={section} className="bg-gray-50 rounded p-3 text-center">
+                            <div className="text-sm font-medium text-gray-700">{section}</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              ₹{sectionAmount.toLocaleString()}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {uniqueDates.length > 7 && (
+                <div className="text-center text-sm text-gray-500">
+                  Showing last 7 days. Use date filter above to see specific dates.
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 };
