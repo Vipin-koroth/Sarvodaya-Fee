@@ -284,8 +284,16 @@ const SarvodayaCollection: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Collection Management</h1>
-          <p className="text-gray-600">Track class teacher collections and balances</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {user?.username === 'lp' ? 'LP Collection Management (Class 1-4)' :
+             user?.username === 'up' ? 'UP Collection Management (Class 5-7)' :
+             user?.username === 'hs' ? 'HS Collection Management (Class 8-10)' :
+             user?.username === 'hss' ? 'HSS Collection Management (Class 11-12)' :
+             'Collection Management'}
+          </h1>
+          <p className="text-gray-600">
+            Track class teacher collections and balances for your assigned classes
+          </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
