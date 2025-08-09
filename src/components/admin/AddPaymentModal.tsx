@@ -69,8 +69,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({ onClose, onPaymentSuc
       
       setFormData(prev => ({
         ...prev,
-        developmentFee: remainingDevelopmentFee > 0 ? remainingDevelopmentFee : 0,
-        busFee: remainingBusFee > 0 ? remainingBusFee : 0,
+        developmentFee: 0,
+        busFee: 0,
         specialFee: 0,
         specialFeeType: ''
       }));
