@@ -6,48 +6,48 @@ import TeacherDashboard from './components/teacher/TeacherDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 
-function AppContent() {
-  const { user, loading } = useAuth();
+function App() {
+  function AppContent() {
+    const { user, loading } = useAuth();
 
-  if (loading) {
+    if (loading) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route 
+              path="/login" 
+              element={!user ? <Login /> : <Navigate to="/dashboard" />} 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                user ? (
+                  <DataProvider>
+                    {(user.role === 'admin' || user.role === 'clerk' || user.role === 'sarvodaya') ? <AdminDashboard /> : <TeacherDashboard />}
+                  </DataProvider>
+                ) : (
+                  <Navigate to="/login" />
+                )
+              } 
+            />
+            <Route 
+              path="/" 
+              element={<Navigate to={user ? "/dashboard" : "/login"} />} 
+            />
+          </Routes>
+        </div>
+      </Router>
     );
   }
 
-  return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Routes>
-          <Route 
-            path="/login" 
-            element={!user ? <Login /> : <Navigate to="/dashboard" />} 
-          />
-          <Route 
-            path="/dashboard" 
-            element={
-              user ? (
-                <DataProvider>
-                  {(user.role === 'admin' || user.role === 'clerk' || user.role === 'sarvodaya') ? <AdminDashboard /> : <TeacherDashboard />}
-                </DataProvider>
-              ) : (
-                <Navigate to="/login" />
-              )
-            } 
-          />
-          <Route 
-            path="/" 
-            element={<Navigate to={user ? "/dashboard" : "/login"} />} 
-          />
-        </Routes>
-      </div>
-    </Router>
-  );
-}
-
-function App() {
   return (
     <AuthProvider>
       <AppContent />
