@@ -37,10 +37,19 @@ export interface FeeConfiguration {
   busStops: Record<string, number>;
 }
 
+export interface SectionCollection {
+  id: string;
+  sectionHead: string; // lp, up, hs, hss
+  collectedAmount: number;
+  collectionDate: string;
+  addedBy: string;
+  remarks?: string;
+}
 interface DataContextType {
   students: Student[];
   payments: Payment[];
   feeConfig: FeeConfiguration;
+  sectionCollections: SectionCollection[];
   addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
   updateStudent: (id: string, student: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
@@ -49,6 +58,8 @@ interface DataContextType {
   updatePayment: (id: string, payment: Partial<Payment>) => Promise<void>;
   deletePayment: (id: string) => Promise<void>;
   updateFeeConfig: (config: Partial<FeeConfiguration>) => Promise<void>;
+  addSectionCollection: (collection: Omit<SectionCollection, 'id' | 'collectionDate'>) => Promise<void>;
+  getSectionCollectionSummary: (sectionHead: string) => { totalCollected: number; totalExpected: number; balance: number; excess: number };
   sendSMS: (mobile: string, message: string) => void;
   sendWhatsApp: (mobile: string, message: string) => void;
   loading: boolean;
@@ -115,11 +126,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [feeConfig, setFeeConfig] = useState<FeeConfiguration>(getDefaultFeeConfig());
+  const [sectionCollections, setSectionCollections] = useState<SectionCollection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useSupabase, setUseSupabase] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
+  // Helper function to get class range for user
+  const getClassRangeForUser = (userRole: string, username: string) => {
+    if (userRole !== 'sarvodaya') return null;
+    
+    switch (username) {
+      case 'lp':
+        return { min: 1, max: 4 };
+      case 'up':
+        return { min: 5, max: 7 };
+      case 'hs':
+        return { min: 8, max: 10 };
+      case 'hss':
+        return { min: 11, max: 12 };
+      case 'sarvodaya':
+        return null; // Full access
+      default:
+        return null;
+    }
+  };
   // Load initial data
   useEffect(() => {
     // Prevent multiple initializations
@@ -179,6 +210,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedFeeConfig = localStorage.getItem('feeConfig');
       if (savedFeeConfig) {
         setFeeConfig(JSON.parse(savedFeeConfig));
+      }
+      
+      // Load section collections
+      const savedSectionCollections = localStorage.getItem('sectionCollections');
+      if (savedSectionCollections) {
+        setSectionCollections(JSON.parse(savedSectionCollections));
       }
       
     } catch (err) {
