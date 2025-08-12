@@ -14,8 +14,7 @@ import {
   MessageCircle,
   Menu,
   X,
-  Receipt,
-  BarChart3
+  Receipt
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,7 +37,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'students', label: 'Students', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'collection', label: 'Collection Entry', icon: Receipt },
-    { id: 'section-wise-collection', label: 'Section-wise Collection', icon: BarChart3 },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
     { id: 'password', label: 'Change Password', icon: Lock },
@@ -49,7 +47,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'students', label: 'Students', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'collection', label: 'Collection Entry', icon: Receipt },
-    { id: 'section-wise-collection', label: 'Section-wise Collection', icon: BarChart3 },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
     { id: 'password', label: 'Change Password', icon: Lock },
