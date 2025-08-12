@@ -96,66 +96,6 @@ const DashboardStats: React.FC = () => {
         })}
       </div>
 
-      {/* Section-wise Collection Summary for Admin/Clerk/Sarvodaya */}
-      {(user?.role === 'admin' || user?.role === 'clerk' || user?.username === 'sarvodaya') && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-gray-900">Section-wise Collection Summary</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sectionSummary.map((section) => (
-              <div key={section.section} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-blue-900">{section.section}</h3>
-                  <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                    {section.classRange}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-blue-700">Students:</span>
-                    <span className="font-medium text-gray-900">{section.totalStudents}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-blue-700">Payments:</span>
-                    <span className="font-medium text-gray-900">{section.totalPayments}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-blue-700">Total Collection:</span>
-                    <span className="font-semibold text-green-600">₹{section.totalCollection.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-blue-700">Today:</span>
-                    <span className="font-medium text-orange-600">₹{section.todayCollection.toLocaleString()}</span>
-                  </div>
-                  {section.lastPaymentDate && (
-                    <div className="flex justify-between text-xs pt-2 border-t border-blue-200">
-                      <span className="text-blue-600">Last Payment:</span>
-                      <span className="text-gray-600">
-                        {new Date(section.lastPaymentDate).toLocaleDateString('en-GB')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Section Hierarchy</h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              <div>• <strong>LP (Lower Primary):</strong> Classes 1-4 - Basic education foundation</div>
-              <div>• <strong>UP (Upper Primary):</strong> Classes 5-7 - Elementary education completion</div>
-              <div>• <strong>HS (High School):</strong> Classes 8-10 - Secondary education</div>
-              <div>• <strong>HSS (Higher Secondary):</strong> Classes 11-12 - Pre-university education</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Recent Payments */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Payments</h2>

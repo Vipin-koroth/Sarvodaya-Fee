@@ -11,13 +11,13 @@ if (supabaseUrl && supabaseAnonKey &&
     supabaseAnonKey !== 'your_supabase_anon_key') {
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
-    // Supabase client created successfully
+    console.log('✅ Supabase client created successfully');
   } catch (error) {
-    console.warn('Failed to create Supabase client:', error);
+    console.warn('⚠️ Failed to create Supabase client:', error);
     supabase = null;
   }
 } else {
-  // Supabase not configured, using localStorage
+  console.log('ℹ️ Supabase not configured, using localStorage');
 }
 
 export { supabase };

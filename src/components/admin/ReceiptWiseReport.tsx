@@ -264,16 +264,22 @@ const ReceiptWiseReport: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Classes</option>
-                  {userClassRange ? (
-                    Array.from({ length: userClassRange.max - userClassRange.min + 1 }, (_, i) => {
-                      const cls = userClassRange.min + i;
-                      return <option key={cls} value={cls}>Class {cls}</option>;
-                    })
-                  ) : (
-                    Array.from({ length: 12 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>Class {i + 1}</option>
-                    ))
-                  )}
+                  {(() => {
+                    const classRange = getClassRangeForUser();
+                    if (classRange) {
+                      const classes = [];
+                      for (let i = classRange.min; i <= classRange.max; i++) {
+                        classes.push(i);
+                      }
+                      return classes.map(cls => (
+                        <option key={cls} value={cls}>Class {cls}</option>
+                      ));
+                    } else {
+                      return Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>Class {i + 1}</option>
+                      ));
+                    }
+                  })()}
                 </select>
               </div>
               <div>
