@@ -33,17 +33,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider useEffect starting...');
-    
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-      console.log('Found saved user:', savedUser);
       setUser(JSON.parse(savedUser));
     }
 
     // Get existing users or initialize empty object
     let storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-    console.log('Current stored users:', Object.keys(storedUsers));
     
     // Define required core users
     const coreUsers = {
@@ -86,10 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Save to localStorage if any updates were made
     if (needsUpdate) {
       localStorage.setItem('users', JSON.stringify(storedUsers));
-      console.log('Default users initialized and saved:', Object.keys(storedUsers));
     }
     
-    console.log('Final users available:', Object.keys(storedUsers));
     setLoading(false);
     
     // Auto logout when window/tab is closed
@@ -120,18 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get stored users or use defaults
     const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
     
-    console.log('=== LOGIN ATTEMPT ===');
-    console.log('Username:', username);
-    console.log('Password:', password);
-    console.log('Available users:', Object.keys(storedUsers));
-    
     const userAccount = storedUsers[username];
-    console.log('User account found:', !!userAccount);
-    if (userAccount) {
-      console.log('User role:', userAccount.role);
-      console.log('Stored password:', userAccount.password);
-      console.log('Password match:', userAccount.password === password);
-    }
     
     if (userAccount && userAccount.password === password) {
       const userData: User = {
@@ -144,11 +127,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(userData);
       localStorage.setItem('currentUser', JSON.stringify(userData));
-      console.log('✅ Login successful:', userData);
       return true;
     }
     
-    console.log('❌ Login failed for:', username);
     return false;
   };
 

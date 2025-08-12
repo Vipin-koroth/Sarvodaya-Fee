@@ -76,12 +76,8 @@ const isSupabaseConfigured = () => {
       url.startsWith('https://') &&
       key.length > 20);
     
-    if (!isConfigured) {
-      console.log('ℹ️ Supabase not properly configured, using localStorage');
-    }
     return isConfigured;
   } catch {
-    console.log('ℹ️ Supabase configuration check failed, using localStorage');
     return false;
   }
 };
@@ -166,16 +162,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       setError(null);
-      console.log('Loading data from Supabase...');
       await Promise.all([
         loadStudentsFromSupabase(),
         loadPaymentsFromSupabase(),
         loadFeeConfigFromSupabase()
       ]);
-      console.log('Supabase data loaded successfully');
       setupRealtimeSubscriptions();
     } catch (err) {
-      console.error('Supabase connection failed, falling back to localStorage:', err);
       setError(null); // Don't show error, just fallback silently
       setUseSupabase(false);
       loadLocalStorageData();
@@ -188,30 +181,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       setError(null);
-      console.log('Loading data from localStorage...');
       
       // Load students
       const savedStudents = localStorage.getItem('students');
       if (savedStudents) {
         setStudents(JSON.parse(savedStudents));
-        console.log('Students loaded from localStorage:', JSON.parse(savedStudents).length);
       }
 
       // Load payments
       const savedPayments = localStorage.getItem('payments');
       if (savedPayments) {
         setPayments(JSON.parse(savedPayments));
-        console.log('Payments loaded from localStorage:', JSON.parse(savedPayments).length);
       }
 
       // Load fee config
       const savedFeeConfig = localStorage.getItem('feeConfig');
       if (savedFeeConfig) {
         setFeeConfig(JSON.parse(savedFeeConfig));
-        console.log('Fee config loaded from localStorage');
       }
       
-      console.log('✅ All data loaded from localStorage successfully');
     } catch (err) {
       console.error('Error loading from localStorage:', err);
       setError('Failed to load data from local storage');
@@ -312,17 +300,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'students' },
         (payload) => {
-          console.log('Students realtime update:', payload);
           if (payload.eventType === 'INSERT') {
             const newStudent = transformSupabaseStudent(payload.new as SupabaseStudent);
             setStudents(prev => {
               // Check if student already exists to avoid duplicates
               const exists = prev.find(s => s.id === newStudent.id);
               if (exists) {
-                console.log('Student already exists in state, skipping duplicate');
                 return prev;
               }
-              console.log('Adding new student from realtime:', newStudent);
               return [newStudent, ...prev];
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -341,17 +326,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'payments' },
         (payload) => {
-          console.log('Payments realtime update:', payload);
           if (payload.eventType === 'INSERT') {
             const newPayment = transformSupabasePayment(payload.new as SupabasePayment);
             setPayments(prev => {
               // Check if payment already exists to avoid duplicates
               const exists = prev.find(p => p.id === newPayment.id);
               if (exists) {
-                console.log('Payment already exists in state, skipping duplicate');
                 return prev;
               }
-              console.log('Adding new payment from realtime:', newPayment);
               return [newPayment, ...prev];
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -370,7 +352,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'fee_config' },
         () => {
-          console.log('Fee config realtime update');
           loadFeeConfigFromSupabase();
         }
       )
@@ -378,7 +359,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Cleanup subscriptions
     return () => {
-      console.log('Cleaning up realtime subscriptions');
       studentsSubscription.unsubscribe();
       paymentsSubscription.unsubscribe();
       feeConfigSubscription.unsubscribe();
