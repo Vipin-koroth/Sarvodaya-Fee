@@ -183,66 +183,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user || user.role !== 'admin') return false;
 
     try {
-      // Check if using Supabase
-      const isSupabaseConfigured = !!(
-        import.meta.env.VITE_SUPABASE_URL && 
-        import.meta.env.VITE_SUPABASE_ANON_KEY &&
-        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
-        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
-      );
+      const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+      const targetUser = storedUsers[username];
 
-      if (isSupabaseConfigured) {
-        // Update password in Supabase
-        const { supabase } = await import('../lib/supabase');
+      if (targetUser) {
+        // Update the password
+        targetUser.password = newPassword;
         
-        // Find user by username in metadata
-        const { data: users, error: fetchError } = await supabase.auth.admin.listUsers();
+        // Save back to localStorage
+        localStorage.setItem('users', JSON.stringify(storedUsers));
         
-        if (fetchError) {
-          console.error('Error fetching users from Supabase:', fetchError);
-          return false;
-        }
-        
-        const targetUser = users.users.find(u => 
-          u.user_metadata?.username === username
-        );
-        
-        if (!targetUser) {
-          console.error(`User ${username} not found in Supabase`);
-          return false;
-        }
-        
-        // Update user password
-        const { error: updateError } = await supabase.auth.admin.updateUserById(
-          targetUser.id,
-          { password: newPassword }
-        );
-        
-        if (updateError) {
-          console.error('Error updating password in Supabase:', updateError);
-          return false;
-        }
-        
-        console.log(`Password reset successful for user: ${username} in Supabase`);
+        console.log(`Password reset successful for user: ${username}`);
         return true;
       } else {
-        // Update password in localStorage
-        const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-        const targetUser = storedUsers[username];
-
-        if (targetUser) {
-          // Update the password
-          targetUser.password = newPassword;
-          
-          // Save back to localStorage
-          localStorage.setItem('users', JSON.stringify(storedUsers));
-          
-          console.log(`Password reset successful for user: ${username} in localStorage`);
-          return true;
-        } else {
-          console.error(`User ${username} not found for password reset`);
-          return false;
-        }
+        console.error(`User ${username} not found for password reset`);
+        return false;
       }
     } catch (error) {
       console.error('Error resetting password:', error);
@@ -253,13 +208,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getAllUsers = () => {
     if (!user || user.role !== 'admin') return [];
 
-    const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-    return Object.entries(storedUsers).map(([username, userData]: [string, any]) => ({
-      username,
-      role: userData.role,
-      class: userData.class,
-      division: userData.division
-    }));
+    try {
+      // Check if using Supabase
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
+
+      if (isSupabaseConfigured) {
+        // This would need to be implemented with a server function
+        // For now, fall back to localStorage
+        console.log('Supabase user listing requires server-side implementation');
+      }
+      
+      // Use localStorage for user listing
+      const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+      return Object.entries(storedUsers).map(([username, userData]: [string, any]) => ({
+        username,
+        role: userData.role,
+        class: userData.class,
+        division: userData.division
+      }));
+    } catch (error) {
+      console.error('Error getting users:', error);
+      return [];
+    }
   };
 
   const value = {

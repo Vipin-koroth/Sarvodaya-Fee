@@ -65,7 +65,12 @@ const ChangePassword: React.FC = () => {
         {success && (
           <div className="flex items-center space-x-2 p-4 mb-6 text-green-700 bg-green-50 border border-green-200 rounded-lg">
             <CheckCircle className="h-5 w-5" />
-            <span>Password changed successfully!</span>
+            <div>
+              <span>Password changed successfully!</span>
+              <p className="text-xs text-green-600 mt-1">
+                Your password has been updated in the database and is now active.
+              </p>
+            </div>
           </div>
         )}
 

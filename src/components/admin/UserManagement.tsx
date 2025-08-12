@@ -73,7 +73,12 @@ const UserManagement: React.FC = () => {
         {success && (
           <div className="flex items-center space-x-2 p-4 mb-6 text-green-700 bg-green-50 border border-green-200 rounded-lg">
             <Shield className="h-5 w-5" />
-            <span>{success}</span>
+            <div>
+              <span>{success}</span>
+              <p className="text-xs text-green-600 mt-1">
+                Password has been updated in the database and will take effect immediately.
+              </p>
+            </div>
           </div>
         )}
 
