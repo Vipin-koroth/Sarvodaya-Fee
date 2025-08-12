@@ -27,9 +27,9 @@ const AdminDashboard: React.FC = () => {
       case 'collection':
         return (user?.role === 'sarvodaya' || user?.role === 'admin' || user?.role === 'clerk') ? <SarvodayaCollection /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div>;
       case 'students':
-        return user?.role === 'sarvodaya' ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <StudentManagement />;
+        return (user?.role === 'sarvodaya' || user?.role === 'clerk') ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <StudentManagement />;
       case 'payments':
-        return user?.role === 'sarvodaya' ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <PaymentManagement />;
+        return (user?.role === 'sarvodaya' || user?.role === 'clerk') ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <PaymentManagement />;
       case 'fees':
         return user?.role === 'admin' ? <FeeConfiguration /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'reports':
@@ -37,7 +37,7 @@ const AdminDashboard: React.FC = () => {
       case 'receipt-wise-report':
         return <ReceiptWiseReport />;
       case 'print-receipt':
-        return user?.role === 'sarvodaya' ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <PrintReceipt />;
+        return (user?.role === 'sarvodaya' || user?.role === 'clerk') ? <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div> : <PrintReceipt />;
       case 'sms-config':
         return user?.role === 'admin' ? <SMSConfiguration /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to administrators only</p></div>;
       case 'data-management':
