@@ -74,13 +74,12 @@ const SarvodayaCollection: React.FC = () => {
 
   // Get available classes for the user's section
   const getAvailableClasses = () => {
-    const classRange = getClassRangeForUser();
-    if (!classRange) {
+    if (!userClassRange) {
       return Array.from({ length: 12 }, (_, i) => i + 1);
     }
     
     const classes = [];
-    for (let i = classRange.min; i <= classRange.max; i++) {
+    for (let i = userClassRange.min; i <= userClassRange.max; i++) {
       classes.push(i);
     }
     return classes;
@@ -89,14 +88,12 @@ const SarvodayaCollection: React.FC = () => {
   const availableClasses = getAvailableClasses();
 
   const getPageTitle = () => {
-    const classRange = getClassRangeForUser();
-    return classRange ? `${classRange.name} Collection Entry` : 'Collection Entry';
+    return userClassRange ? `${userClassRange.name} Collection Entry` : 'Collection Entry';
   };
 
   const getPageDescription = () => {
-    const classRange = getClassRangeForUser();
-    return classRange 
-      ? `Manage fee collections for ${classRange.name} section`
+    return userClassRange 
+      ? `Manage fee collections for ${userClassRange.name} section`
       : 'Manage fee collections for all classes';
   };
 

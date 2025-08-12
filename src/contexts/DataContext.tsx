@@ -1143,6 +1143,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateFeeConfig,
     sendSMS,
     sendWhatsApp,
+    getSectionCollectionSummary,
+    getClassRangeForUser,
     loading,
     error
   };
