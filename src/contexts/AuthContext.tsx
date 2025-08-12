@@ -183,21 +183,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user || user.role !== 'admin') return false;
 
     try {
-      const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-      const targetUser = storedUsers[username];
+      // Check if using Supabase
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
 
-      if (targetUser) {
-        // Update the password
-        targetUser.password = newPassword;
+      if (isSupabaseConfigured) {
+        // Update password in Supabase
+        const { supabase } = await import('../lib/supabase');
         
-        // Save back to localStorage
-        localStorage.setItem('users', JSON.stringify(storedUsers));
+        // Find user by username in metadata
+        const { data: users, error: fetchError } = await supabase.auth.admin.listUsers();
         
-        console.log(`Password reset successful for user: ${username}`);
+        if (fetchError) {
+          console.error('Error fetching users from Supabase:', fetchError);
+          return false;
+        }
+        
+        const targetUser = users.users.find(u => 
+          u.user_metadata?.username === username
+        );
+        
+        if (!targetUser) {
+          console.error(`User ${username} not found in Supabase`);
+          return false;
+        }
+        
+        // Update user password
+        const { error: updateError } = await supabase.auth.admin.updateUserById(
+          targetUser.id,
+          { password: newPassword }
+        );
+        
+        if (updateError) {
+          console.error('Error updating password in Supabase:', updateError);
+          return false;
+        }
+        
+        console.log(`Password reset successful for user: ${username} in Supabase`);
         return true;
       } else {
-        console.error(`User ${username} not found for password reset`);
-        return false;
+        // Update password in localStorage
+        const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+        const targetUser = storedUsers[username];
+
+        if (targetUser) {
+          // Update the password
+          targetUser.password = newPassword;
+          
+          // Save back to localStorage
+          localStorage.setItem('users', JSON.stringify(storedUsers));
+          
+          console.log(`Password reset successful for user: ${username} in localStorage`);
+          return true;
+        } else {
+          console.error(`User ${username} not found for password reset`);
+          return false;
+        }
       }
     } catch (error) {
       console.error('Error resetting password:', error);
