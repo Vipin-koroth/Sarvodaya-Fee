@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { Search, Receipt, Calendar, Users, TrendingUp, FileText, Eye, User } from 'lucide-react';
+import { Plus, Search, Receipt, Calendar, Users, TrendingUp, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData, Payment } from '../../contexts/DataContext';
+import AddPaymentModal from './AddPaymentModal';
 import ReceiptPrint from '../common/ReceiptPrint';
+import PaymentSuccessModal from './PaymentSuccessModal';
 
 const SarvodayaCollection: React.FC = () => {
   const { user } = useAuth();
   const { payments, students } = useData();
+  const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterClass, setFilterClass] = useState('');
-  const [filterTeacher, setFilterTeacher] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [successPayment, setSuccessPayment] = useState<Payment | null>(null);
 
   // Helper function to get class range for user
   const getClassRangeForUser = () => {
@@ -53,20 +56,13 @@ const SarvodayaCollection: React.FC = () => {
 
   const { students: sectionStudents, payments: sectionPayments } = getFilteredData();
 
-  // Get unique teachers who have made collections in this section
-  const getTeachersInSection = () => {
-    const teachers = [...new Set(sectionPayments.map(p => p.addedBy))].sort();
-    return teachers;
-  };
-
   const filteredPayments = sectionPayments.filter(payment => {
     const matchesSearch = payment.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.admissionNo.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDate = !filterDate || new Date(payment.paymentDate).toDateString() === new Date(filterDate).toDateString();
     const matchesClass = !filterClass || payment.class === filterClass;
-    const matchesTeacher = !filterTeacher || payment.addedBy === filterTeacher;
     
-    return matchesSearch && matchesDate && matchesClass && matchesTeacher;
+    return matchesSearch && matchesDate && matchesClass;
   });
 
   const todayPayments = sectionPayments.filter(payment => 
@@ -91,40 +87,18 @@ const SarvodayaCollection: React.FC = () => {
   };
 
   const availableClasses = getAvailableClasses();
-  const teachersInSection = getTeachersInSection();
 
   const getPageTitle = () => {
     const classRange = getClassRangeForUser();
-    return classRange ? `${classRange.name} Collection Report` : 'Collection Entry';
+    return classRange ? `${classRange.name} Collection Entry` : 'Collection Entry';
   };
 
   const getPageDescription = () => {
     const classRange = getClassRangeForUser();
     return classRange 
-      ? `View collections made by class teachers in ${classRange.name} section`
+      ? `Manage fee collections for ${classRange.name} section`
       : 'Manage fee collections for all classes';
   };
-
-  // Group payments by teacher for summary
-  const getTeacherSummary = () => {
-    const summary: Record<string, { count: number; total: number; classes: Set<string> }> = {};
-    
-    filteredPayments.forEach(payment => {
-      if (!summary[payment.addedBy]) {
-        summary[payment.addedBy] = { count: 0, total: 0, classes: new Set() };
-      }
-      summary[payment.addedBy].count++;
-      summary[payment.addedBy].total += payment.totalAmount;
-      summary[payment.addedBy].classes.add(`${payment.class}-${payment.division}`);
-    });
-    
-    return summary;
-  };
-
-  const teacherSummary = getTeacherSummary();
-
-  // Check if user is section head (not main sarvodaya user)
-  const isSectionHead = user?.role === 'sarvodaya' && user?.username !== 'sarvodaya';
 
   return (
     <div className="space-y-6">
@@ -133,12 +107,13 @@ const SarvodayaCollection: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h1>
           <p className="text-gray-600">{getPageDescription()}</p>
         </div>
-        {isSectionHead && (
-          <div className="bg-blue-50 px-4 py-2 rounded-lg">
-            <div className="text-sm text-blue-700 font-medium">Section Head View</div>
-            <div className="text-xs text-blue-600">Collections by class teachers</div>
-          </div>
-        )}
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Payment</span>
+        </button>
       </div>
 
       {/* Summary Stats */}
@@ -184,40 +159,9 @@ const SarvodayaCollection: React.FC = () => {
         </div>
       </div>
 
-      {/* Teacher Summary (for section heads) */}
-      {isSectionHead && Object.keys(teacherSummary).length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Teacher Collection Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(teacherSummary).map(([teacher, data]) => (
-              <div key={teacher} className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <User className="h-5 w-5 text-gray-600 mr-2" />
-                  <span className="font-medium text-gray-900">{teacher}</span>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Collections:</span>
-                    <span className="font-medium">{data.count}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Amount:</span>
-                    <span className="font-medium text-green-600">₹{data.total.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Classes:</span>
-                    <span className="font-medium text-xs">{Array.from(data.classes).join(', ')}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -247,16 +191,6 @@ const SarvodayaCollection: React.FC = () => {
               <option key={cls} value={cls.toString()}>Class {cls}</option>
             ))}
           </select>
-          <select
-            value={filterTeacher}
-            onChange={(e) => setFilterTeacher(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">All Teachers</option>
-            {teachersInSection.map(teacher => (
-              <option key={teacher} value={teacher}>{teacher}</option>
-            ))}
-          </select>
           <div className="text-sm text-gray-600 flex items-center">
             Showing: {filteredPayments.length} payments
           </div>
@@ -280,9 +214,6 @@ const SarvodayaCollection: React.FC = () => {
                 </th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                   Payment Date
-                </th>
-                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Collected By
                 </th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -329,20 +260,14 @@ const SarvodayaCollection: React.FC = () => {
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
                     {new Date(payment.paymentDate).toLocaleDateString('en-GB')}
                   </td>
-                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm font-medium text-gray-900">{payment.addedBy}</span>
-                    </div>
-                  </td>
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setSelectedPayment(payment)}
                         className="text-blue-600 hover:text-blue-900"
-                        title="View Receipt"
+                        title="Print Receipt"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Receipt className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
@@ -355,13 +280,24 @@ const SarvodayaCollection: React.FC = () => {
         {filteredPayments.length === 0 && (
           <div className="text-center py-12">
             <Receipt className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No collections found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || filterDate || filterClass || filterTeacher
-                ? 'No collections match your search criteria.' 
-                : 'No collections have been made by class teachers yet.'
+              {searchTerm || filterDate || filterClass 
+                ? 'No payments match your search criteria.' 
+                : 'Get started by adding a payment.'
               }
             </p>
+            {!searchTerm && !filterDate && !filterClass && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Payment
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -397,11 +333,32 @@ const SarvodayaCollection: React.FC = () => {
         </div>
       )}
 
-      {/* Receipt Print Modal */}
+      {/* Modals */}
+      {showAddModal && (
+        <AddPaymentModal 
+          onClose={() => setShowAddModal(false)}
+          onPaymentSuccess={(payment) => {
+            setSuccessPayment(payment);
+            setShowAddModal(false);
+          }}
+        />
+      )}
+
       {selectedPayment && (
         <ReceiptPrint
           payment={selectedPayment}
           onClose={() => setSelectedPayment(null)}
+        />
+      )}
+
+      {successPayment && (
+        <PaymentSuccessModal
+          payment={successPayment}
+          onClose={() => setSuccessPayment(null)}
+          onPrintReceipt={(payment) => {
+            setSelectedPayment(payment);
+            setSuccessPayment(null);
+          }}
         />
       )}
     </div>
