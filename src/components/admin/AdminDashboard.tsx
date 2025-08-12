@@ -24,6 +24,10 @@ const AdminDashboard: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return user?.role === 'sarvodaya' ? <Reports /> : <DashboardStats />;
+      case 'section-collection':
+        return (user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user?.username || '')) ? <SectionHeadCollection /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted to section heads</p></div>;
+      case 'section-collections':
+        return (user?.role === 'admin' || user?.role === 'clerk' || user?.username === 'sarvodaya') ? <SectionCollectionView /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div>;
       case 'collection':
         return (user?.role === 'sarvodaya' || user?.role === 'admin' || user?.role === 'clerk') ? <SarvodayaCollection /> : <div className="text-center py-12"><p className="text-gray-500">Access restricted</p></div>;
       case 'students':
