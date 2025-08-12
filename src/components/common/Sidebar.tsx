@@ -44,8 +44,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const clerkMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'students', label: 'Students', icon: Users },
+    { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'collection', label: 'Collection Entry', icon: Receipt },
     { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
     { id: 'password', label: 'Change Password', icon: Lock },
   ];
 

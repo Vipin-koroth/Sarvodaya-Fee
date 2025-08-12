@@ -115,8 +115,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [feeConfig, setFeeConfig] = useState<FeeConfiguration>(getDefaultFeeConfig());
-  const [teacherCollections, setTeacherCollections] = useState<TeacherCollection[]>([]);
-  const [sectionCollections, setSectionCollections] = useState<SectionCollection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useSupabase, setUseSupabase] = useState(false);
@@ -200,18 +198,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedFeeConfig = localStorage.getItem('feeConfig');
       if (savedFeeConfig) {
         setFeeConfig(JSON.parse(savedFeeConfig));
-      }
-      
-      // Load teacher collections
-      const savedTeacherCollections = localStorage.getItem('teacherCollections');
-      if (savedTeacherCollections) {
-        setTeacherCollections(JSON.parse(savedTeacherCollections));
-      }
-
-      // Load section collections
-      const savedSectionCollections = localStorage.getItem('sectionCollections');
-      if (savedSectionCollections) {
-        setSectionCollections(JSON.parse(savedSectionCollections));
       }
       
     } catch (err) {
@@ -1162,108 +1148,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Helper function to determine section based on class
-  const getClassSection = (classNum: string): 'lp' | 'up' | 'hs' | 'hss' => {
-    const num = parseInt(classNum);
-    if (num >= 1 && num <= 4) return 'lp';
-    if (num >= 5 && num <= 7) return 'up';
-    if (num >= 8 && num <= 10) return 'hs';
-    if (num >= 11 && num <= 12) return 'hss';
-    return 'lp'; // default
-  };
-
-  // Teacher Collection Functions
-  const addTeacherCollection = async (collection: Omit<TeacherCollection, 'id'>) => {
-    const newCollection: TeacherCollection = {
-      ...collection,
-      id: generateId(),
-      section: getClassSection(collection.class)
-    };
-
-    if (useSupabase) {
-      // In a real implementation, this would save to Supabase
-      console.log('Would save teacher collection to Supabase:', newCollection);
-    }
-
-    const updatedCollections = [newCollection, ...teacherCollections];
-    setTeacherCollections(updatedCollections);
-    localStorage.setItem('teacherCollections', JSON.stringify(updatedCollections));
-  };
-
-  const updateTeacherCollection = async (id: string, updates: Partial<TeacherCollection>) => {
-    if (useSupabase) {
-      // In a real implementation, this would update in Supabase
-      console.log('Would update teacher collection in Supabase:', id, updates);
-    }
-
-    const updatedCollections = teacherCollections.map(tc => 
-      tc.id === id ? { ...tc, ...updates } : tc
-    );
-    setTeacherCollections(updatedCollections);
-    localStorage.setItem('teacherCollections', JSON.stringify(updatedCollections));
-  };
-
-  const addSectionCollection = async (collection: Omit<SectionCollection, 'id'>) => {
-    const newCollection: SectionCollection = {
-      ...collection,
-      id: generateId()
-    };
-
-    if (useSupabase) {
-      // In a real implementation, this would save to Supabase
-      console.log('Would save section collection to Supabase:', newCollection);
-    }
-
-    const updatedCollections = [newCollection, ...sectionCollections];
-    setSectionCollections(updatedCollections);
-    localStorage.setItem('sectionCollections', JSON.stringify(updatedCollections));
-  };
-
-  const updateSectionCollection = async (id: string, updates: Partial<SectionCollection>) => {
-    if (useSupabase) {
-      // In a real implementation, this would update in Supabase
-      console.log('Would update section collection in Supabase:', id, updates);
-    }
-
-    const updatedCollections = sectionCollections.map(sc => 
-      sc.id === id ? { ...sc, ...updates } : sc
-    );
-    setSectionCollections(updatedCollections);
-    localStorage.setItem('sectionCollections', JSON.stringify(updatedCollections));
-  };
-
-  const getTeacherCollectionSummary = (teacherUsername: string) => {
-    const collections = teacherCollections.filter(tc => tc.teacherUsername === teacherUsername);
-    const totalCollected = collections.reduce((sum, tc) => sum + tc.collectedAmount, 0);
-    const totalPaidToSection = collections
-      .filter(tc => tc.paidToSection)
-      .reduce((sum, tc) => sum + tc.collectedAmount, 0);
-    const pendingAmount = totalCollected - totalPaidToSection;
-
-    return { totalCollected, totalPaidToSection, pendingAmount };
-  };
-
-  const getSectionCollectionSummary = (section: string) => {
-    const sectionCollectionRecords = sectionCollections.filter(sc => sc.section === section);
-    const totalReceived = sectionCollectionRecords.reduce((sum, sc) => sum + sc.totalAmount, 0);
-    const totalPaidToClerk = sectionCollectionRecords
-      .filter(sc => sc.paidToClerk)
-      .reduce((sum, sc) => sum + sc.totalAmount, 0);
-    const pendingAmount = totalReceived - totalPaidToClerk;
-
-    // Get unpaid teachers for this section
-    const unpaidTeachers = teacherCollections.filter(tc => 
-      tc.section === section && !tc.paidToSection && tc.collectedAmount > 0
-    );
-
-    return { totalReceived, totalPaidToClerk, pendingAmount, unpaidTeachers };
-  };
   const value = {
     students,
     payments,
     feeConfig,
-    teacherCollections,
-    sectionCollections,
     addStudent,
     updateStudent,
     deleteStudent,
@@ -1272,12 +1160,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updatePayment,
     deletePayment,
     updateFeeConfig,
-    addTeacherCollection,
-    updateTeacherCollection,
-    addSectionCollection,
-    updateSectionCollection,
-    getTeacherCollectionSummary,
-    getSectionCollectionSummary,
     sendSMS,
     sendWhatsApp,
     loading,
