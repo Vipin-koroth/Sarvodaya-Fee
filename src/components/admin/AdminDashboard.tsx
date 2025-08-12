@@ -14,6 +14,8 @@ import DataManagement from './DataManagement';
 import UserManagement from './UserManagement';
 import ReceiptWiseReport from './ReceiptWiseReport';
 import SarvodayaCollection from './SarvodayaCollection';
+import SectionHeadCollection from './SectionHeadCollection';
+import SectionCollectionView from './SectionCollectionView';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
