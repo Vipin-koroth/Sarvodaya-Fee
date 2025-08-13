@@ -31,13 +31,13 @@ const SarvodayaCollection: React.FC = () => {
   
   // Section Collections State
   const [sectionCollections, setSectionCollections] = useState<SectionCollection[]>(() => {
-    const saved = localStorage.getItem('sectionCollections');
+    const saved = localStorage.getItem('globalSectionCollections');
     return saved ? JSON.parse(saved) : [];
   });
   
   // Class Collections State
   const [classCollections, setClassCollections] = useState<ClassCollection[]>(() => {
-    const saved = localStorage.getItem('classCollections');
+    const saved = localStorage.getItem('globalClassCollections');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -121,7 +121,7 @@ const SarvodayaCollection: React.FC = () => {
     }
 
     setSectionCollections(updatedCollections);
-    localStorage.setItem('sectionCollections', JSON.stringify(updatedCollections));
+    localStorage.setItem('globalSectionCollections', JSON.stringify(updatedCollections));
     
     // Reset form
     setSectionFormData({
@@ -158,7 +158,7 @@ const SarvodayaCollection: React.FC = () => {
     }
 
     setClassCollections(updatedCollections);
-    localStorage.setItem('classCollections', JSON.stringify(updatedCollections));
+    localStorage.setItem('globalClassCollections', JSON.stringify(updatedCollections));
     
     // Reset form
     setClassFormData({
@@ -194,7 +194,7 @@ const SarvodayaCollection: React.FC = () => {
     if (confirm('Are you sure you want to delete this section collection?')) {
       const updated = sectionCollections.filter(c => c.id !== id);
       setSectionCollections(updated);
-      localStorage.setItem('sectionCollections', JSON.stringify(updated));
+      localStorage.setItem('globalSectionCollections', JSON.stringify(updated));
     }
   };
 
@@ -202,7 +202,7 @@ const SarvodayaCollection: React.FC = () => {
     if (confirm('Are you sure you want to delete this class collection?')) {
       const updated = classCollections.filter(c => c.id !== id);
       setClassCollections(updated);
-      localStorage.setItem('classCollections', JSON.stringify(updated));
+      localStorage.setItem('globalClassCollections', JSON.stringify(updated));
     }
   };
 
@@ -411,7 +411,7 @@ const SarvodayaCollection: React.FC = () => {
 
   // Check if user should only see class-wise entry
   const isClassOnlyUser = () => {
-    return user?.role === 'sarvodaya' && user?.username !== 'sarvodaya';
+    return user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user?.username || '');
   };
 
   return (
@@ -878,10 +878,28 @@ const SarvodayaCollection: React.FC = () => {
                   required
                 >
                   <option value="">Select Section</option>
-                  <option value="LP">LP (Classes 1-4)</option>
-                  <option value="UP">UP (Classes 5-7)</option>
-                  <option value="HS">HS (Classes 8-10)</option>
-                  <option value="HSS">HSS (Classes 11-12)</option>
+                  {(() => {
+                    // If user is a section head, only show their section
+                    if (user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user?.username || '')) {
+                      const sectionMap = {
+                        'lp': 'LP',
+                        'up': 'UP', 
+                        'hs': 'HS',
+                        'hss': 'HSS'
+                      };
+                      const userSection = sectionMap[user.username as keyof typeof sectionMap];
+                      return <option value={userSection}>{userSection} (Your Section)</option>;
+                    }
+                    // For admin, clerk, sarvodaya - show all sections
+                    return (
+                      <>
+                        <option value="LP">LP (Classes 1-4)</option>
+                        <option value="UP">UP (Classes 5-7)</option>
+                        <option value="HS">HS (Classes 8-10)</option>
+                        <option value="HSS">HSS (Classes 11-12)</option>
+                      </>
+                    );
+                  })()}
                 </select>
               </div>
               <div>
