@@ -450,3 +450,13 @@ const SarvodayaCollection: React.FC = () => {
 
   const { sectionActuals, classActuals } = calculateActualCollections();
   const { sectionReported, classReported } = calculateReportedCollections();
+
+  return (
+    <div className="space-y-6">
+      {/* Component content will be added here */}
+      <div>SarvodayaCollection Component</div>
+    </div>
+  );
+}
+
+export default SarvodayaCollection;
