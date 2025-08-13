@@ -621,7 +621,7 @@ const SarvodayaCollection: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={\`text-sm font-medium ${
+                        <span className={`text-sm font-medium ${
                           balanceDue === 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           ₹{balanceDue.toLocaleString()}
