@@ -110,12 +110,12 @@ const SarvodayaCollection: React.FC = () => {
   const handleSectionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Save to global section collections storage
-    const existingEntries = JSON.parse(localStorage.getItem('globalSectionCollections') || '{}');
-    existingEntries[selectedSection] = (existingEntries[selectedSection] || 0) + sectionAmount;
-    localStorage.setItem('globalSectionCollections', JSON.stringify(existingEntries));
-
     const newCollection: SectionCollection = {
+      // Save to global section collections storage
+      const existingEntries = JSON.parse(localStorage.getItem('globalSectionCollections') || '{}');
+      existingEntries[selectedSection] = (existingEntries[selectedSection] || 0) + sectionAmount;
+      localStorage.setItem('globalSectionCollections', JSON.stringify(existingEntries));
+      
       id: editingSectionId || generateId(),
       section: sectionFormData.section,
       headName: sectionFormData.headName,
@@ -349,7 +349,7 @@ const SarvodayaCollection: React.FC = () => {
         section,
         actualCollected,
         receivedFromHead,
-        remainingBalance: actualCollected - receivedFromHead,
+        remainingBalance: actualCollected - receivedFromHead
         classRange: classRange.join(', ')
       };
     });
@@ -451,12 +451,839 @@ const SarvodayaCollection: React.FC = () => {
   const { sectionActuals, classActuals } = calculateActualCollections();
   const { sectionReported, classReported } = calculateReportedCollections();
 
+  const getPageTitle = () => {
+    const classRange = getClassRangeForUser();
+    if (classRange) {
+      return `${classRange.name} Collection Entry`;
+    }
+    return 'Collection Entry';
+  };
+
+  // Check if user should only see class-wise entry
+  const isClassOnlyUser = () => {
+    return user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user?.username || '');
+  };
+
   return (
     <div className="space-y-6">
-      {/* Component content will be added here */}
-      <div>SarvodayaCollection Component</div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h1>
+        <p className="text-gray-600">
+          {(() => {
+            const classRange = getClassRangeForUser();
+            return classRange 
+              ? `Manage collection entries for ${classRange.name} section`
+              : 'Manage section-wise and class-wise collection entries';
+          })()}
+        </p>
+      </div>
+
+      {/* Tab Navigation */}
+      {!isClassOnlyUser() && (
+        <div className="bg-white rounded-lg shadow">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex">
+            <button
+              onClick={() => setActiveTab('section')}
+              className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                activeTab === 'section'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Section-wise Entry
+            </button>
+            <button
+              onClick={() => setActiveTab('class')}
+              className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                activeTab === 'class'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Class-wise Entry
+            </button>
+          </nav>
+        </div>
+      </div>
+      )}
+
+      {/* Section-wise Tab */}
+      {!isClassOnlyUser() && activeTab === 'section' && (
+        <div className="space-y-6">
+          {/* Section Head Tracking Summary for Clerk */}
+          {user?.role === 'clerk' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Section Head Collection Tracking</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {getSectionTotals().map((sectionData) => (
+                  <div key={sectionData.section} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">{sectionData.section} Section</h4>
+                      <div className={`w-3 h-3 rounded-full ${
+                        sectionData.remainingBalance === 0 ? 'bg-green-500' : 
+                        sectionData.remainingBalance > 0 ? 'bg-red-500' : 'bg-orange-500'
+                      }`}></div>
+                    </div>
+                    <div className="text-xs text-gray-600 mb-3">Classes: {sectionData.classRange}</div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Actual Collected:</span>
+                        <span className="font-medium text-blue-600">₹{sectionData.actualCollected.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Received from Head:</span>
+                        <span className="font-medium text-green-600">₹{sectionData.receivedFromSectionHead.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-gray-600 font-medium">Remaining Balance:</span>
+                        <span className={`font-bold ${
+                          sectionData.remainingBalance === 0 ? 'text-green-600' : 
+                          sectionData.remainingBalance > 0 ? 'text-red-600' : 'text-orange-600'
+                        }`}>
+                          {sectionData.remainingBalance === 0 ? '₹0' : 
+                           sectionData.remainingBalance > 0 ? `₹${sectionData.remainingBalance.toLocaleString()}` : 
+                           `+₹${Math.abs(sectionData.remainingBalance).toLocaleString()}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {Object.entries(sectionActuals).map(([section, actual]) => {
+              const reported = sectionReported[section as keyof typeof sectionReported] || 0;
+              const difference = actual - reported;
+              const status = difference === 0 ? 'balanced' : difference > 0 ? 'pending' : 'excess';
+              
+              return (
+                <div key={section} className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{section}</h3>
+                    <div className={`w-3 h-3 rounded-full ${
+                      status === 'balanced' ? 'bg-green-500' : 
+                      status === 'pending' ? 'bg-red-500' : 'bg-orange-500'
+                    }`}></div>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Actual:</span>
+                      <span className="font-medium">₹{(actual || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Reported:</span>
+                      <span className="font-medium">₹{(reported || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1">
+                      <span className="text-gray-600">Difference:</span>
+                      <span className={`font-medium ${
+                        status === 'balanced' ? 'text-green-600' : 
+                        status === 'pending' ? 'text-red-600' : 'text-orange-600'
+                      }`}>
+                        ₹{Math.abs(difference || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Section Controls */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Section Collections</h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={downloadSectionCollectionsCSV}
+                  className="flex items-center space-x-2 px-3 py-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 text-sm"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Collections CSV</span>
+                </button>
+                <button
+                  onClick={downloadSectionBalanceCSV}
+                  className="flex items-center space-x-2 px-3 py-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 text-sm"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Balance CSV</span>
+                </button>
+                <button
+                  onClick={() => setShowSectionForm(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Section Entry</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by section or head name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="text-sm text-gray-600 flex items-center">
+                Total: {getFilteredSectionCollections().length} entries
+              </div>
+            </div>
+
+            {/* Section Collections Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Section
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Head Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Received
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Balance Due
+                    </th>
+                    {user?.role === 'clerk' && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actual Collected
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Remaining Balance
+                        </th>
+                      </>
+                    )}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Added By
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getFilteredSectionCollections().map((collection) => {
+                    // Calculate section totals for this row
+                    let classRange: number[] = [];
+                    switch (collection.section) {
+                      case 'LP': classRange = [1, 2, 3, 4]; break;
+                      case 'UP': classRange = [5, 6, 7]; break;
+                      case 'HS': classRange = [8, 9, 10]; break;
+                      case 'HSS': classRange = [11, 12]; break;
+                    }
+                    
+                    const actualCollected = payments
+                      .filter(p => classRange.includes(parseInt(p.class)))
+                      .reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+                    
+                    const sectionCollections = globalSectionCollections.filter(c => c.section === collection.section);
+                    const receivedFromHead = sectionCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
+                    const remainingBalance = actualCollected - receivedFromHead;
+
+                    return (
+                      <tr key={collection.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {collection.section}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {collection.headName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-blue-600">
+                            ₹{(sectionActuals[collection.section as keyof typeof sectionActuals] || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-medium ${
+                            Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)) === 0 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`}>
+                            ₹{Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)).toLocaleString()}
+                          </span>
+                        </td>
+                        {user?.role === 'clerk' && (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                              ₹{actualCollected.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <span className={
+                                remainingBalance === 0 ? 'text-green-600' : 
+                                remainingBalance > 0 ? 'text-red-600' : 'text-orange-600'
+                              }>
+                                {remainingBalance === 0 ? '₹0' : 
+                                 remainingBalance > 0 ? `₹${remainingBalance.toLocaleString()}` : 
+                                 `+₹${Math.abs(remainingBalance).toLocaleString()}`}
+                              </span>
+                            </td>
+                          </>
+                        )}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-green-600">
+                            ₹{(collection.amount || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(collection.date).toLocaleDateString('en-GB')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {collection.addedBy}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => editSectionCollection(collection)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteSectionCollection(collection.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {getFilteredSectionCollections().length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No section collections found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by adding a section collection entry.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Class-wise Tab */}
+      {(isClassOnlyUser() || activeTab === 'class') && (
+        <div className="space-y-6">
+          {/* Class Summary Cards for restricted users */}
+          {isClassOnlyUser() && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {(() => {
+                const classRange = getClassRangeForUser();
+                if (!classRange) return null;
+                
+                const classCards = [];
+                for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
+                  for (let division of ['A', 'B', 'C', 'D', 'E']) {
+                    const classKey = `${classNum}${division}`;
+                    const actualAmount = classActuals[classKey] || 0;
+                    const reportedAmount = classReported[classKey] || 0;
+                    const pendingAmount = Math.max(0, actualAmount - reportedAmount);
+                    
+                    // Only show classes that have actual collections or reported collections
+                    if (actualAmount > 0 || reportedAmount > 0) {
+                      classCards.push(
+                        <div key={classKey} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-gray-900">Class {classNum}-{division}</h3>
+                            <div className={`w-3 h-3 rounded-full ${
+                              pendingAmount === 0 ? 'bg-green-500' : 'bg-red-500'
+                            }`}></div>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total Received:</span>
+                              <span className="font-medium text-blue-600">₹{actualAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Reported:</span>
+                              <span className="font-medium text-green-600">₹{reportedAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between border-t pt-2">
+                              <span className="text-gray-600 font-medium">Pending:</span>
+                              <span className={`font-bold ${
+                                actualAmount - reportedAmount === 0 ? 'text-green-600' : 
+                                actualAmount - reportedAmount > 0 ? 'text-red-600' : 'text-orange-600'
+                              }`}>
+                                {actualAmount - reportedAmount === 0 ? '₹0' :
+                                 actualAmount - reportedAmount > 0 ? `₹${(actualAmount - reportedAmount).toLocaleString()}` :
+                                 `+₹${Math.abs(actualAmount - reportedAmount).toLocaleString()}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  }
+                }
+                return classCards;
+              })()}
+            </div>
+          )}
+
+          {/* Class Controls */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Class Collections</h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={downloadClassCollectionsCSV}
+                  className="flex items-center space-x-2 px-3 py-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 text-sm"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Collections CSV</span>
+                </button>
+                <button
+                  onClick={downloadClassBalanceCSV}
+                  className="flex items-center space-x-2 px-3 py-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 text-sm"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Balance CSV</span>
+                </button>
+                <button
+                  onClick={() => setShowClassForm(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Class Entry</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Class Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by teacher or class..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="text-sm text-gray-600 flex items-center">
+                Total: {getFilteredClassCollections().length} entries
+              </div>
+            </div>
+
+            {/* Class Collections Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Class
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Teacher Name
+                    </th>
+                    {isClassOnlyUser() && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Received
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Pending Amount
+                        </th>
+                      </>
+                    )}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Added By
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getFilteredClassCollections().map((collection) => (
+                    <tr key={collection.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                          {collection.class}-{collection.division}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {collection.teacherName}
+                      </td>
+                      {isClassOnlyUser() && (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-blue-600">
+                              ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`text-sm font-medium ${
+                              (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) === 0 
+                                ? 'text-green-600' 
+                                : (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) > 0
+                                ? 'text-red-600'
+                                : 'text-orange-600'
+                            }`}>
+                              {(() => {
+                                const difference = (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0);
+                                if (difference === 0) return '₹0';
+                                if (difference > 0) return `₹${difference.toLocaleString()}`;
+                                return `+₹${Math.abs(difference).toLocaleString()}`;
+                              })()}
+                            </span>
+                          </td>
+                        </>
+                      )}
+                      {!isClassOnlyUser() && (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-blue-600">
+                              ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`text-sm font-medium ${
+                              (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) === 0 
+                                ? 'text-green-600' 
+                                : (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) > 0
+                                ? 'text-red-600'
+                                : 'text-orange-600'
+                            }`}>
+                              {(() => {
+                                const difference = (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0);
+                                if (difference === 0) return '₹0';
+                                if (difference > 0) return `₹${difference.toLocaleString()}`;
+                                return `+₹${Math.abs(difference).toLocaleString()}`;
+                              })()}
+                            </span>
+                          </td>
+                        </>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-green-600">
+                          ₹{(collection.amount || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(collection.date).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {collection.addedBy}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => editClassCollection(collection)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteClassCollection(collection.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {getFilteredClassCollections().length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No class collections found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by adding a class collection entry.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Section Form Modal */}
+      {!isClassOnlyUser() && showSectionForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {editingSectionId ? 'Edit Section Collection' : 'Add Section Collection'}
+            </h3>
+            <form onSubmit={handleSectionSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Section
+                </label>
+                <select
+                  value={sectionFormData.section}
+                  onChange={(e) => setSectionFormData(prev => ({ ...prev, section: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select Section</option>
+                  {(() => {
+                    // If user is a section head, only show their section
+                    if (user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user?.username || '')) {
+                      const sectionMap = {
+                        'lp': 'LP',
+                        'up': 'UP', 
+                        'hs': 'HS',
+                        'hss': 'HSS'
+                      };
+                      const userSection = sectionMap[user.username as keyof typeof sectionMap];
+                      return <option value={userSection}>{userSection} (Your Section)</option>;
+                    }
+                    // For admin, clerk, sarvodaya - show all sections
+                    return (
+                      <>
+                        <option value="LP">LP (Classes 1-4)</option>
+                        <option value="UP">UP (Classes 5-7)</option>
+                        <option value="HS">HS (Classes 8-10)</option>
+                        <option value="HSS">HSS (Classes 11-12)</option>
+                      </>
+                    );
+                  })()}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Section Head Name
+                </label>
+                <input
+                  type="text"
+                  value={sectionFormData.headName}
+                  onChange={(e) => setSectionFormData(prev => ({ ...prev, headName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  value={sectionFormData.amount}
+                  onChange={(e) => setSectionFormData(prev => ({ ...prev, amount: parseInt(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={sectionFormData.date}
+                  onChange={(e) => setSectionFormData(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSectionForm(false);
+                    setEditingSectionId(null);
+                    setSectionFormData({
+                      section: '',
+                      headName: '',
+                      amount: 0,
+                      date: new Date().toISOString().split('T')[0]
+                    });
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {editingSectionId ? 'Update' : 'Add'} Collection
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Class Form Modal */}
+      {showClassForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {editingClassId ? 'Edit Class Collection' : 'Add Class Collection'}
+            </h3>
+            <form onSubmit={handleClassSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Class
+                  </label>
+                  <select
+                    value={classFormData.class}
+                    onChange={(e) => handleClassChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Class</option>
+                    {(() => {
+                      const classRange = getClassRangeForUser();
+                      if (classRange) {
+                        const classes = [];
+                        for (let i = classRange.min; i <= classRange.max; i++) {
+                          classes.push(i);
+                        }
+                        return classes.map(cls => (
+                          <option key={cls} value={cls}>{cls}</option>
+                        ));
+                      } else {
+                        return Array.from({ length: 12 }, (_, i) => (
+                          <option key={i + 1} value={i + 1}>{i + 1}</option>
+                        ));
+                      }
+                    })()}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Division
+                  </label>
+                  <select
+                    value={classFormData.division}
+                    onChange={(e) => handleDivisionChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Division</option>
+                    {['A', 'B', 'C', 'D', 'E'].map(div => (
+                      <option key={div} value={div}>{div}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Teacher Name
+                </label>
+                <input
+                  type="text"
+                  value={classFormData.teacherName}
+                  onChange={(e) => setClassFormData(prev => ({ ...prev, teacherName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  value={classFormData.amount}
+                  onChange={(e) => setClassFormData(prev => ({ ...prev, amount: parseInt(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={classFormData.date}
+                  onChange={(e) => setClassFormData(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowClassForm(false);
+                    setEditingClassId(null);
+                    setClassFormData({
+                      class: '',
+                      division: '',
+                      teacherName: '',
+                      amount: 0,
+                      date: new Date().toISOString().split('T')[0]
+                    });
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {editingClassId ? 'Update' : 'Add'} Collection
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default SarvodayaCollection;
