@@ -403,7 +403,15 @@ const SarvodayaCollection: React.FC = () => {
 
   const getPageTitle = () => {
     const classRange = getClassRangeForUser();
-    return classRange ? `${classRange.name} Collection Entry` : 'Collection Entry';
+    if (classRange) {
+      return `${classRange.name} Collection Entry`;
+    }
+    return 'Collection Entry';
+  };
+
+  // Check if user should only see class-wise entry
+  const isClassOnlyUser = () => {
+    return user?.role === 'sarvodaya' && user?.username !== 'sarvodaya';
   };
 
   return (
@@ -421,7 +429,8 @@ const SarvodayaCollection: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow">
+      {!isClassOnlyUser() && (
+        <div className="bg-white rounded-lg shadow">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex">
             <button
@@ -447,9 +456,10 @@ const SarvodayaCollection: React.FC = () => {
           </nav>
         </div>
       </div>
+      )}
 
       {/* Section-wise Tab */}
-      {activeTab === 'section' && (
+      {!isClassOnlyUser() && activeTab === 'section' && (
         <div className="space-y-6">
           {/* Section Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -629,8 +639,61 @@ const SarvodayaCollection: React.FC = () => {
       )}
 
       {/* Class-wise Tab */}
-      {activeTab === 'class' && (
+      {(isClassOnlyUser() || activeTab === 'class') && (
         <div className="space-y-6">
+          {/* Class Summary Cards for restricted users */}
+          {isClassOnlyUser() && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {(() => {
+                const classRange = getClassRangeForUser();
+                if (!classRange) return null;
+                
+                const classCards = [];
+                for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
+                  for (let division of ['A', 'B', 'C', 'D', 'E']) {
+                    const classKey = `${classNum}${division}`;
+                    const actualAmount = classActuals[classKey] || 0;
+                    const reportedAmount = classReported[classKey] || 0;
+                    const pendingAmount = Math.max(0, actualAmount - reportedAmount);
+                    
+                    // Only show classes that have actual collections or reported collections
+                    if (actualAmount > 0 || reportedAmount > 0) {
+                      classCards.push(
+                        <div key={classKey} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-gray-900">Class {classNum}-{division}</h3>
+                            <div className={`w-3 h-3 rounded-full ${
+                              pendingAmount === 0 ? 'bg-green-500' : 'bg-red-500'
+                            }`}></div>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total Received:</span>
+                              <span className="font-medium text-blue-600">₹{actualAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Reported:</span>
+                              <span className="font-medium text-green-600">₹{reportedAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between border-t pt-2">
+                              <span className="text-gray-600 font-medium">Pending:</span>
+                              <span className={`font-bold ${
+                                pendingAmount === 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                ₹{pendingAmount.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  }
+                }
+                return classCards;
+              })()}
+            </div>
+          )}
+
           {/* Class Controls */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -697,6 +760,16 @@ const SarvodayaCollection: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Teacher Name
                     </th>
+                    {isClassOnlyUser() && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Received
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Pending Amount
+                        </th>
+                      </>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
@@ -722,6 +795,24 @@ const SarvodayaCollection: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {collection.teacherName}
                       </td>
+                      {isClassOnlyUser() && (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-blue-600">
+                              ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`text-sm font-medium ${
+                              Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)) === 0 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              ₹{Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)).toLocaleString()}
+                            </span>
+                          </td>
+                        </>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-green-600">
                           ₹{(collection.amount || 0).toLocaleString()}
@@ -769,7 +860,7 @@ const SarvodayaCollection: React.FC = () => {
       )}
 
       {/* Section Form Modal */}
-      {showSectionForm && (
+      {!isClassOnlyUser() && showSectionForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
