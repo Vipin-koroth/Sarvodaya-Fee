@@ -698,9 +698,12 @@ const SarvodayaCollection: React.FC = () => {
                             <div className="flex justify-between border-t pt-2">
                               <span className="text-gray-600 font-medium">Pending:</span>
                               <span className={`font-bold ${
-                                pendingAmount === 0 ? 'text-green-600' : 'text-red-600'
+                                actualAmount - reportedAmount === 0 ? 'text-green-600' : 
+                                actualAmount - reportedAmount > 0 ? 'text-red-600' : 'text-orange-600'
                               }`}>
-                                ₹{pendingAmount.toLocaleString()}
+                                {actualAmount - reportedAmount === 0 ? '₹0' :
+                                 actualAmount - reportedAmount > 0 ? `₹${(actualAmount - reportedAmount).toLocaleString()}` :
+                                 `+₹${Math.abs(actualAmount - reportedAmount).toLocaleString()}`}
                               </span>
                             </div>
                           </div>
