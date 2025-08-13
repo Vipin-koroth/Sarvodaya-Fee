@@ -827,11 +827,43 @@ const SarvodayaCollection: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`text-sm font-medium ${
-                              Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)) === 0 
+                              (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) === 0 
                                 ? 'text-green-600' 
-                                : 'text-red-600'
+                                : (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) > 0
+                                ? 'text-red-600'
+                                : 'text-orange-600'
                             }`}>
-                              ₹{Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)).toLocaleString()}
+                              {(() => {
+                                const difference = (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0);
+                                if (difference === 0) return '₹0';
+                                if (difference > 0) return `₹${difference.toLocaleString()}`;
+                                return `+₹${Math.abs(difference).toLocaleString()}`;
+                              })()}
+                            </span>
+                          </td>
+                        </>
+                      )}
+                      {!isClassOnlyUser() && (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-blue-600">
+                              ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`text-sm font-medium ${
+                              (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) === 0 
+                                ? 'text-green-600' 
+                                : (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0) > 0
+                                ? 'text-red-600'
+                                : 'text-orange-600'
+                            }`}>
+                              {(() => {
+                                const difference = (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0);
+                                if (difference === 0) return '₹0';
+                                if (difference > 0) return `₹${difference.toLocaleString()}`;
+                                return `+₹${Math.abs(difference).toLocaleString()}`;
+                              })()}
                             </span>
                           </td>
                         </>
