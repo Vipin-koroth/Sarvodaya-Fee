@@ -568,6 +568,12 @@ const SarvodayaCollection: React.FC = () => {
                       Head Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Received
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Balance Due
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -591,6 +597,20 @@ const SarvodayaCollection: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {collection.headName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-blue-600">
+                          ₹{(sectionActuals[collection.section as keyof typeof sectionActuals] || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`text-sm font-medium ${
+                          Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)) === 0 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          ₹{Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)).toLocaleString()}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-green-600">
