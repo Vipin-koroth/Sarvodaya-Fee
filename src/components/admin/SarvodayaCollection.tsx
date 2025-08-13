@@ -480,20 +480,20 @@ const SarvodayaCollection: React.FC = () => {
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Actual:</span>
-                    <span className="text-gray-600">Total Received:</span>
+                              <span className="font-medium text-blue-600">₹{actual.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reported:</span>
-                    <span className="text-gray-600">Head Reported:</span>
+                              <span className="font-medium text-green-600">₹{reported.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1">
                       <span className="text-gray-600">Difference:</span>
-                    <span className="text-gray-600">Balance Due:</span>
-                        status === 'balanced' ? 'text-green-600' : 
-                        status === 'pending' ? 'text-red-600' : 'text-orange-600'
-                      }`}>
-                        ₹{Math.abs(difference || 0).toLocaleString()}
-                      </span>
+                              <span className={`font-bold ${
+                                status === 'balanced' ? 'text-green-600' : 
+                                status === 'pending' ? 'text-red-600' : 'text-orange-600'
+                              }`}>
+                                ₹{Math.abs(difference || 0).toLocaleString()}
+                              </span>
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
