@@ -480,20 +480,20 @@ const SarvodayaCollection: React.FC = () => {
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Actual:</span>
-                              <span className="font-medium text-blue-600">₹{actual.toLocaleString()}</span>
+                    <span className="text-gray-600">Total Received:</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reported:</span>
-                              <span className="font-medium text-green-600">₹{reported.toLocaleString()}</span>
+                    <span className="text-gray-600">Head Reported:</span>
                     </div>
                     <div className="flex justify-between border-t pt-1">
                       <span className="text-gray-600">Difference:</span>
-                              <span className={`font-bold ${
-                                status === 'balanced' ? 'text-green-600' : 
-                                status === 'pending' ? 'text-red-600' : 'text-orange-600'
-                              }`}>
-                                ₹{Math.abs(difference || 0).toLocaleString()}
-                              </span>
+                    <span className="text-gray-600">Balance Due:</span>
+                        status === 'balanced' ? 'text-green-600' : 
+                        status === 'pending' ? 'text-red-600' : 'text-orange-600'
+                      }`}>
+                        ₹{Math.abs(difference || 0).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
@@ -621,7 +621,7 @@ const SarvodayaCollection: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-sm font-medium ${
+                        <span className={\`text-sm font-medium ${
                           balanceDue === 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           ₹{balanceDue.toLocaleString()}
@@ -687,7 +687,7 @@ const SarvodayaCollection: React.FC = () => {
                 const classCards = [];
                 for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
                   for (let division of ['A', 'B', 'C', 'D', 'E']) {
-                    const classKey = `${classNum}${division}`;
+                    const classKey = \`${classNum}${division}`;
                     const actualAmount = classActuals[classKey] || 0;
                     const reportedAmount = classReported[classKey] || 0;
                     const pendingAmount = Math.max(0, actualAmount - reportedAmount);
