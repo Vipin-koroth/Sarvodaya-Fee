@@ -3,6 +3,14 @@ import { Plus, Search, Edit, Trash2, Download, Calendar, Users, TrendingUp, File
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Define global section collections structure
+const globalSectionCollections = [
+  { id: 'LP', name: 'LP (Classes 1-4)', classes: [1, 2, 3, 4] },
+  { id: 'UP', name: 'UP (Classes 5-7)', classes: [5, 6, 7] },
+  { id: 'HS', name: 'HS (Classes 8-10)', classes: [8, 9, 10] },
+  { id: 'HSS', name: 'HSS (Classes 11-12)', classes: [11, 12] }
+];
+
 interface SectionCollection {
   id: string;
   section: string;
@@ -305,6 +313,39 @@ const SarvodayaCollection: React.FC = () => {
     return { sectionReported, classReported };
   };
 
+  // Calculate section-wise totals for detailed tracking
+  const getSectionTotals = () => {
+    const sections = ['LP', 'UP', 'HS', 'HSS'];
+    return sections.map(section => {
+      const sectionCollections = globalSectionCollections.filter(c => c.section === section);
+      const receivedFromSectionHead = sectionCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
+      
+      // Get class range for section
+      let classRange: number[] = [];
+      switch (section) {
+        case 'LP': classRange = [1, 2, 3, 4]; break;
+        case 'UP': classRange = [5, 6, 7]; break;
+        case 'HS': classRange = [8, 9, 10]; break;
+        case 'HSS': classRange = [11, 12]; break;
+      }
+      
+      // Calculate actual collected from payments
+      const actualCollected = payments
+        .filter(p => classRange.includes(parseInt(p.class)))
+        .reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+      
+      const remainingBalance = actualCollected - receivedFromSectionHead;
+      
+      return {
+        section,
+        actualCollected,
+        receivedFromSectionHead,
+        remainingBalance,
+        classRange: classRange.join(', ')
+      };
+    });
+  };
+
   // CSV Download functions
   const downloadSectionCollectionsCSV = () => {
     const headers = ['Section', 'Head Name', 'Amount', 'Date', 'Added By'];
@@ -461,6 +502,48 @@ const SarvodayaCollection: React.FC = () => {
       {/* Section-wise Tab */}
       {!isClassOnlyUser() && activeTab === 'section' && (
         <div className="space-y-6">
+          {/* Section Head Tracking Summary for Clerk */}
+          {user?.role === 'clerk' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Section Head Collection Tracking</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {getSectionTotals().map((sectionData) => (
+                  <div key={sectionData.section} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">{sectionData.section} Section</h4>
+                      <div className={`w-3 h-3 rounded-full ${
+                        sectionData.remainingBalance === 0 ? 'bg-green-500' : 
+                        sectionData.remainingBalance > 0 ? 'bg-red-500' : 'bg-orange-500'
+                      }`}></div>
+                    </div>
+                    <div className="text-xs text-gray-600 mb-3">Classes: {sectionData.classRange}</div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Actual Collected:</span>
+                        <span className="font-medium text-blue-600">₹{sectionData.actualCollected.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Received from Head:</span>
+                        <span className="font-medium text-green-600">₹{sectionData.receivedFromSectionHead.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-gray-600 font-medium">Remaining Balance:</span>
+                        <span className={`font-bold ${
+                          sectionData.remainingBalance === 0 ? 'text-green-600' : 
+                          sectionData.remainingBalance > 0 ? 'text-red-600' : 'text-orange-600'
+                        }`}>
+                          {sectionData.remainingBalance === 0 ? '₹0' : 
+                           sectionData.remainingBalance > 0 ? `₹${sectionData.remainingBalance.toLocaleString()}` : 
+                           `+₹${Math.abs(sectionData.remainingBalance).toLocaleString()}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Section Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {Object.entries(sectionActuals).map(([section, actual]) => {
@@ -573,6 +656,16 @@ const SarvodayaCollection: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Balance Due
                     </th>
+                    {user?.role === 'clerk' && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actual Collected
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Remaining Balance
+                        </th>
+                      </>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
@@ -588,59 +681,95 @@ const SarvodayaCollection: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {getFilteredSectionCollections().map((collection) => (
-                    <tr key={collection.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {collection.section}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {collection.headName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-blue-600">
-                          ₹{(sectionActuals[collection.section as keyof typeof sectionActuals] || 0).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-sm font-medium ${
-                          Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)) === 0 
-                            ? 'text-green-600' 
-                            : 'text-red-600'
-                        }`}>
-                          ₹{Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-green-600">
-                          ₹{(collection.amount || 0).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(collection.date).toLocaleDateString('en-GB')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {collection.addedBy}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => editSectionCollection(collection)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteSectionCollection(collection.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {getFilteredSectionCollections().map((collection) => {
+                    // Calculate section totals for this row
+                    let classRange: number[] = [];
+                    switch (collection.section) {
+                      case 'LP': classRange = [1, 2, 3, 4]; break;
+                      case 'UP': classRange = [5, 6, 7]; break;
+                      case 'HS': classRange = [8, 9, 10]; break;
+                      case 'HSS': classRange = [11, 12]; break;
+                    }
+                    
+                    const actualCollected = payments
+                      .filter(p => classRange.includes(parseInt(p.class)))
+                      .reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+                    
+                    const sectionCollections = globalSectionCollections.filter(c => c.section === collection.section);
+                    const receivedFromHead = sectionCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
+                    const remainingBalance = actualCollected - receivedFromHead;
+
+                    return (
+                      <tr key={collection.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {collection.section}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {collection.headName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-blue-600">
+                            ₹{(sectionActuals[collection.section as keyof typeof sectionActuals] || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-medium ${
+                            Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)) === 0 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`}>
+                            ₹{Math.max(0, (sectionActuals[collection.section as keyof typeof sectionActuals] || 0) - (sectionReported[collection.section as keyof typeof sectionReported] || 0)).toLocaleString()}
+                          </span>
+                        </td>
+                        {user?.role === 'clerk' && (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                              ₹{actualCollected.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <span className={
+                                remainingBalance === 0 ? 'text-green-600' : 
+                                remainingBalance > 0 ? 'text-red-600' : 'text-orange-600'
+                              }>
+                                {remainingBalance === 0 ? '₹0' : 
+                                 remainingBalance > 0 ? `₹${remainingBalance.toLocaleString()}` : 
+                                 `+₹${Math.abs(remainingBalance).toLocaleString()}`}
+                              </span>
+                            </td>
+                          </>
+                        )}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-green-600">
+                            ₹{(collection.amount || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(collection.date).toLocaleDateString('en-GB')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {collection.addedBy}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => editSectionCollection(collection)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteSectionCollection(collection.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
