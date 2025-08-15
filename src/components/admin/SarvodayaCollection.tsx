@@ -487,8 +487,8 @@ const SarvodayaCollection: React.FC = () => {
                       <span className="font-medium">₹{(reported || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1">
-                      <span className="text-gray-600">Difference:</span>
-                      <span className={`font-medium ${
+                     <div>Teacher Collected: ₹{actualCollected.toLocaleString()}</div>
+                     <div>Amount Received: ₹{totalReported.toLocaleString()}</div>
                         status === 'balanced' ? 'text-green-600' : 
                         status === 'pending' ? 'text-red-600' : 'text-orange-600'
                       }`}>
