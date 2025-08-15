@@ -688,7 +688,7 @@ const SarvodayaCollection: React.FC = () => {
                   </div>
                   <div className="mt-2">
                     <p className="text-lg font-bold text-gray-900">₹{totalEntered.toLocaleString()}</p>
-                    <p className="text-xs text-gray-600">Total Entered</p>
+                    <p className="text-xs text-gray-600">Section Total Entered amount</p>
                   </div>
                 </div>
               );
@@ -1232,4 +1232,5 @@ const SarvodayaCollection: React.FC = () => {
   );
 };
 
+export default SarvodayaCollection;
 export default SarvodayaCollection;
