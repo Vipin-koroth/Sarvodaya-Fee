@@ -162,26 +162,6 @@ const SarvodayaCollection: React.FC = () => {
   };
 
   // Calculate section collections from teacher entries
-  const getSectionCollectionsFromEntries = () => {
-    const sectionTotals: Record<string, { busFee: number; developmentFund: number; others: number; total: number; entries: number }> = {
-      lp: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 },
-      up: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 },
-      hs: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 },
-      hss: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 }
-    };
-
-    sectionCollections.forEach(entry => {
-      const section = entry.sectionHead as 'lp' | 'up' | 'hs' | 'hss';
-      if (sectionTotals[section]) {
-        sectionTotals[section][entry.feeType === 'bus_fee' ? 'busFee' : 
-                              entry.feeType === 'development_fund' ? 'developmentFund' : 'others'] += entry.amount;
-        sectionTotals[section].total += entry.amount;
-        sectionTotals[section].entries += 1;
-      }
-    });
-
-    return sectionTotals;
-  };
 
   // Calculate clerk collections from section entries
   const getClerkCollectionsFromEntries = () => {
