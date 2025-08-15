@@ -521,7 +521,7 @@ const SarvodayaCollection: React.FC = () => {
                           }`}>
                             ₹{Math.abs((fromPayments?.total || 0) - (fromEntries?.total || 0)).toLocaleString()}
                           </span>
-                        </div>
+        {clerkCollections.length === 0 && (
                       </div>
                     </div>
                   </div>
