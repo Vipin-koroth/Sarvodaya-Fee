@@ -661,6 +661,40 @@ const SarvodayaCollection: React.FC = () => {
       {/* Class-wise Tab */}
       {(isClassOnlyUser() || activeTab === 'class') && (
         <div className="space-y-6">
+          {/* Section Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { section: 'LP', classes: [1, 2, 3, 4], color: 'blue' },
+              { section: 'UP', classes: [5, 6, 7], color: 'green' },
+              { section: 'HS', classes: [8, 9, 10], color: 'purple' },
+              { section: 'HSS', classes: [11, 12], color: 'orange' }
+            ].map(({ section, classes, color }) => {
+              const sectionCollections = classCollections.filter(collection => 
+                classes.includes(parseInt(collection.class))
+              );
+              const totalEntered = sectionCollections.reduce((sum, collection) => sum + (collection.amount || 0), 0);
+              const entryCount = sectionCollections.length;
+              
+              return (
+                <div key={section} className={`bg-${color}-50 rounded-lg p-4`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`text-sm font-medium text-${color}-600`}>{section} Section</p>
+                      <p className="text-xs text-gray-600">Classes {classes.join(', ')}</p>
+                    </div>
+                    <div className={`p-2 bg-${color}-100 rounded-lg`}>
+                      <span className={`text-${color}-600 font-bold`}>{entryCount}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-lg font-bold text-gray-900">₹{totalEntered.toLocaleString()}</p>
+                    <p className="text-xs text-gray-600">Total Entered</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Section Summary Cards for admin/clerk/sarvodaya in class-wise view */}
           {!isClassOnlyUser() && (
             <div className="bg-white rounded-lg shadow p-6">
@@ -836,6 +870,9 @@ const SarvodayaCollection: React.FC = () => {
                       Class
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Section
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Teacher Name
                     </th>
                     {isClassOnlyUser() && (
@@ -863,63 +900,87 @@ const SarvodayaCollection: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {getFilteredClassCollections().map((collection) => (
-                    <tr key={collection.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                          {collection.class}-{collection.division}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {collection.teacherName}
-                      </td>
-                      {isClassOnlyUser() && (
-                        <>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-blue-600">
-                              ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-medium ${
-                              Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)) === 0 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }`}>
-                              ₹{Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)).toLocaleString()}
-                            </span>
-                          </td>
-                        </>
-                      )}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-green-600">
-                          ₹{(collection.amount || 0).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(collection.date).toLocaleDateString('en-GB')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {collection.addedBy}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => editClassCollection(collection)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteClassCollection(collection.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {getFilteredClassCollections().map((collection) => {
+                    // Determine section based on class
+                    const getSection = (classNum: number) => {
+                      if (classNum >= 1 && classNum <= 4) return 'LP';
+                      if (classNum >= 5 && classNum <= 7) return 'UP';
+                      if (classNum >= 8 && classNum <= 10) return 'HS';
+                      if (classNum >= 11 && classNum <= 12) return 'HSS';
+                      return 'Unknown';
+                    };
+                    
+                    const section = getSection(parseInt(collection.class));
+                    
+                    return (
+                      <tr key={collection.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                            {collection.class}-{collection.division}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            section === 'LP' ? 'bg-blue-100 text-blue-800' :
+                            section === 'UP' ? 'bg-green-100 text-green-800' :
+                            section === 'HS' ? 'bg-purple-100 text-purple-800' :
+                            section === 'HSS' ? 'bg-orange-100 text-orange-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {section}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {collection.teacherName}
+                        </td>
+                        {isClassOnlyUser() && (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-medium text-blue-600">
+                                ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`text-sm font-medium ${
+                                Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)) === 0 
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                ₹{Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)).toLocaleString()}
+                              </span>
+                            </td>
+                          </>
+                        )}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-green-600">
+                            ₹{(collection.amount || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(collection.date).toLocaleDateString('en-GB')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {collection.addedBy}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => editClassCollection(collection)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteClassCollection(collection.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
