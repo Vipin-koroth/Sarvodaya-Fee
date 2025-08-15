@@ -31,6 +31,11 @@ const SarvodayaCollection: React.FC = () => {
     description: ''
   });
 
+  // Helper function to check if user is a section user
+  const isSectionUser = () => {
+    return user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user.username);
+  };
+
   // Load collection entries from localStorage
   useEffect(() => {
     const savedEntries = localStorage.getItem('sectionCollectionEntries');
