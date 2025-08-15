@@ -327,6 +327,12 @@ const SarvodayaCollection: React.FC = () => {
         case 'UP': classRange = [5, 6, 7]; break;
         case 'HS': classRange = [8, 9, 10]; break;
         case 'HSS': classRange = [11, 12]; break;
+      // Get amount received by head (what head has collected from their section)
+      const receivedByHead = actualCollected;
+      
+      // Get amount received from head (what head has reported/submitted)
+      const receivedFromHead = reportedAmount;
+      
       }
       
       // Calculate actual collected from payments
@@ -341,6 +347,8 @@ const SarvodayaCollection: React.FC = () => {
         actualCollected,
         receivedFromSectionHead,
         remainingBalance,
+        receivedByHead,
+        receivedFromHead,
         classRange: classRange.join(', ')
       };
     });
