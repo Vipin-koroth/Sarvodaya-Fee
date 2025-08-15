@@ -82,6 +82,30 @@ const SarvodayaCollection: React.FC = () => {
     
     return { students: filteredStudents, payments: filteredPayments };
   };
+  // Get available class teachers for section user
+  const getAvailableClassTeachers = () => {
+    const classRange = getClassRangeForUser();
+    if (!classRange) return [];
+    
+    const classTeachers = [];
+    for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
+      for (let division of ['A', 'B', 'C', 'D', 'E']) {
+        // Check if there are students in this class-division
+        const hasStudents = students.some(s => 
+          s.class === classNum.toString() && s.division === division
+        );
+        if (hasStudents) {
+          classTeachers.push({
+            value: `class${classNum}${division.toLowerCase()}`,
+            label: `Class ${classNum}-${division} Teacher`,
+            class: classNum.toString(),
+            division: division
+          });
+        }
+      }
+    }
+    return classTeachers;
+  };
 
   // Calculate section totals from actual payments
   const getSectionTotals = () => {
@@ -137,14 +161,16 @@ const SarvodayaCollection: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.sectionHead || formData.amount <= 0) {
+    const sectionHead = isSectionUser() ? user?.username || '' : formData.sectionHead;
+    
+    if (!sectionHead || formData.amount <= 0) {
       alert('Please fill all required fields');
       return;
     }
 
     const newEntry: CollectionEntry = {
       id: editingEntry?.id || Date.now().toString(),
-      sectionHead: formData.sectionHead,
+      sectionHead: sectionHead,
       feeType: formData.feeType,
       amount: formData.amount,
       date: formData.date,
@@ -433,14 +459,20 @@ const SarvodayaCollection: React.FC = () => {
                             {new Date(entry.date).toLocaleDateString('en-GB')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              entry.sectionHead === 'lp' ? 'bg-blue-100 text-blue-800' :
-                              entry.sectionHead === 'up' ? 'bg-green-100 text-green-800' :
-                              entry.sectionHead === 'hs' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-purple-100 text-purple-800'
-                            }`}>
-                              {getSectionDisplay(entry.sectionHead)}
-                            </span>
+                            {entry.sectionHead.startsWith('class') ? (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                {entry.sectionHead.replace('class', 'Class ').replace(/(\d+)([a-z])/, '$1-$2').toUpperCase()}
+                              </span>
+                            ) : (
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                entry.sectionHead === 'lp' ? 'bg-blue-100 text-blue-800' :
+                                entry.sectionHead === 'up' ? 'bg-green-100 text-green-800' :
+                                entry.sectionHead === 'hs' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-purple-100 text-purple-800'
+                              }`}>
+                                {getSectionDisplay(entry.sectionHead)}
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -521,20 +553,36 @@ const SarvodayaCollection: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Section Head
+                  {isSectionUser() ? 'Class Teacher' : 'Section Head'}
                 </label>
-                <select
-                  value={formData.sectionHead}
-                  onChange={(e) => setFormData(prev => ({ ...prev, sectionHead: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Select Section Head</option>
-                  <option value="lp">LP (Classes 1-4)</option>
-                  <option value="up">UP (Classes 5-7)</option>
-                  <option value="hs">HS (Classes 8-10)</option>
-                  <option value="hss">HSS (Classes 11-12)</option>
-                </select>
+                {isSectionUser() ? (
+                  <select
+                    value={formData.sectionHead}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sectionHead: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select Class Teacher</option>
+                    {getAvailableClassTeachers().map(teacher => (
+                      <option key={teacher.value} value={teacher.value}>
+                        {teacher.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    value={formData.sectionHead}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sectionHead: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select Section Head</option>
+                    <option value="lp">LP (Classes 1-4)</option>
+                    <option value="up">UP (Classes 5-7)</option>
+                    <option value="hs">HS (Classes 8-10)</option>
+                    <option value="hss">HSS (Classes 11-12)</option>
+                  </select>
+                )}
               </div>
 
               <div>
