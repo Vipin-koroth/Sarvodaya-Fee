@@ -494,6 +494,7 @@ const SarvodayaCollection: React.FC = () => {
                       }`}>
                         ₹{Math.abs(difference || 0).toLocaleString()}
                       </span>
+                   </div>
                     </div>
                   </div>
                 </div>
