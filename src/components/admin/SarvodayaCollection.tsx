@@ -1233,4 +1233,3 @@ const SarvodayaCollection: React.FC = () => {
 };
 
 export default SarvodayaCollection;
-export default SarvodayaCollection;
