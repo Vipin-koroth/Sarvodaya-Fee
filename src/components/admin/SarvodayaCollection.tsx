@@ -322,6 +322,7 @@ const SarvodayaCollection: React.FC = () => {
       
       // Get class range for section
       let classRange: number[] = [];
+      const receivedByHead = actualCollected; // Total collected by section head from their classes
       switch (section) {
         case 'LP': classRange = [1, 2, 3, 4]; break;
         case 'UP': classRange = [5, 6, 7]; break;
@@ -345,6 +346,7 @@ const SarvodayaCollection: React.FC = () => {
       return {
         section,
         actualCollected,
+        receivedByHead,
         receivedFromSectionHead,
         remainingBalance,
         receivedByHead,
