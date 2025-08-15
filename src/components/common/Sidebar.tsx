@@ -70,6 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const sarvodayaMenuItems = [
     { id: 'collection', label: 'Collection Entry', icon: CreditCard },
+    { id: 'collection', label: 'Collection Entry', icon: CreditCard },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'password', label: 'Change Password', icon: Lock },
   ];
