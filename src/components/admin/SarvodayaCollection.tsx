@@ -358,8 +358,8 @@ const SarvodayaCollection: React.FC = () => {
       // Get actual collections for this section
       const sectionPayments = payments.filter(payment => {
         const classNum = parseInt(payment.class);
-        return classNum >= sectionInfo!.minClass && classNum <= sectionInfo!.maxClass;
-      });
+        const classNum = parseInt(payment.class);
+        return classNum >= section.min && classNum <= section.max;
       
       const actualCollected = sectionPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
       const balance = actualCollected - reportedAmount;
