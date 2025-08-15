@@ -316,39 +316,26 @@ const SarvodayaCollection: React.FC = () => {
   // Calculate section-wise totals for detailed tracking
   const getSectionTotals = () => {
     const sections = ['LP', 'UP', 'HS', 'HSS'];
-    // Calculate actual collected amount first
-    const actualCollected = payments
-      .filter(p => {
-        let classRange: number[] = [];
-        switch (section) {
-          case 'LP': classRange = [1, 2, 3, 4]; break;
-          case 'UP': classRange = [5, 6, 7]; break;
-          case 'HS': classRange = [8, 9, 10]; break;
-          case 'HSS': classRange = [11, 12]; break;
-        }
-        return classRange.includes(parseInt(p.class));
-      })
-      .reduce((sum, p) => sum + (p.totalAmount || 0), 0);
-    
     return sections.map(section => {
       const sectionCollections = globalSectionCollections.filter(c => c.section === section);
       const receivedFromSectionHead = sectionCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
       
       // Get class range for section
       let classRange: number[] = [];
-      const receivedByHead = actualCollected; // Total collected by section head from their classes
       switch (section) {
         case 'LP': classRange = [1, 2, 3, 4]; break;
         case 'UP': classRange = [5, 6, 7]; break;
         case 'HS': classRange = [8, 9, 10]; break;
         case 'HSS': classRange = [11, 12]; break;
-      }
       // Get amount received by head (what head has collected from their section)
-      const headCollectedAmount = actualCollected;
+      const receivedByHead = actualCollected;
       
       // Get amount received from head (what head has reported/submitted)
       const receivedFromHead = reportedAmount;
       
+      }
+      
+      // Calculate actual collected from payments
       const actualCollected = payments
         .filter(p => classRange.includes(parseInt(p.class)))
         .reduce((sum, p) => sum + (p.totalAmount || 0), 0);
@@ -358,7 +345,6 @@ const SarvodayaCollection: React.FC = () => {
       return {
         section,
         actualCollected,
-        receivedByHead: headCollectedAmount,
         receivedFromSectionHead,
         remainingBalance,
         receivedByHead,
@@ -494,31 +480,31 @@ const SarvodayaCollection: React.FC = () => {
       {/* Tab Navigation */}
       {!isClassOnlyUser() && (
         <div className="bg-white rounded-lg shadow">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex">
-              <button
-                onClick={() => setActiveTab('section')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                  activeTab === 'section'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Section-wise Entry
-              </button>
-              <button
-                onClick={() => setActiveTab('class')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                  activeTab === 'class'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Class-wise Entry
-              </button>
-            </nav>
-          </div>
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex">
+            <button
+              onClick={() => setActiveTab('section')}
+              className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                activeTab === 'section'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Section-wise Entry
+            </button>
+            <button
+              onClick={() => setActiveTab('class')}
+              className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                activeTab === 'class'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Class-wise Entry
+            </button>
+          </nav>
         </div>
+      </div>
       )}
 
       {/* Section-wise Tab */}
@@ -589,6 +575,22 @@ const SarvodayaCollection: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reported:</span>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="font-medium text-blue-600">
+                        ₹{section.receivedByHead.toLocaleString()}
+                      </span>
+                      <div className="text-xs text-gray-500">
+                        Total collected by {section.name} head
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="font-medium text-green-600">
+                        ₹{section.receivedFromHead.toLocaleString()}
+                      </span>
+                      <div className="text-xs text-gray-500">
+                        Amount reported by {section.name} head
+                      </div>
+                    </td>
                       <span className="font-medium">₹{(reported || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1">
