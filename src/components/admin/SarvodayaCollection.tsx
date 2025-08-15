@@ -621,7 +621,7 @@ const SarvodayaCollection: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                          {entry.fromTeacher.replace('class', 'Class ').replace(/(\d+)([a-z])/, '$1-$2').toUpperCase()}
+                          {entry.fromTeacher ? entry.fromTeacher.replace('class', 'Class ').replace(/(\d+)([a-z])/, '$1-$2').toUpperCase() : 'Unknown Teacher'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
