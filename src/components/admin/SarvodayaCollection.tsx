@@ -349,8 +349,6 @@ const SarvodayaCollection: React.FC = () => {
       // Get amount received from head (what head has reported/submitted)
       const receivedFromHead = reportedAmount;
       
-      const receivedByHead = actualCollected;
-      
       const actualCollected = payments
         .filter(p => classRange.includes(parseInt(p.class)))
         .reduce((sum, p) => sum + (p.totalAmount || 0), 0);
