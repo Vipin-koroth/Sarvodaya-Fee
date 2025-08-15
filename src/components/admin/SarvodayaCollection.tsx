@@ -346,6 +346,35 @@ const SarvodayaCollection: React.FC = () => {
     });
   };
 
+  // Get section head individual totals
+  const getSectionHeadTotals = () => {
+    const sectionHeads = ['lp', 'up', 'hs', 'hss'];
+    const globalEntries = JSON.parse(localStorage.getItem('globalSectionCollections') || '{}');
+    
+    return sectionHeads.map(headKey => {
+      const sectionInfo = globalSectionCollections.find(s => s.key === headKey.toUpperCase());
+      const reportedAmount = globalEntries[headKey.toUpperCase()] || 0;
+      
+      // Get actual collections for this section
+      const sectionPayments = payments.filter(payment => {
+        const classNum = parseInt(payment.class);
+        return classNum >= sectionInfo!.minClass && classNum <= sectionInfo!.maxClass;
+      });
+      
+      const actualCollected = sectionPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
+      const balance = actualCollected - reportedAmount;
+      
+      return {
+        headKey: headKey.toUpperCase(),
+        headName: sectionInfo!.name,
+        actualCollected,
+        reportedAmount,
+        balance,
+        status: balance === 0 ? 'balanced' : balance > 0 ? 'pending' : 'excess'
+      };
+    });
+  };
+
   // CSV Download functions
   const downloadSectionCollectionsCSV = () => {
     const headers = ['Section', 'Head Name', 'Amount', 'Date', 'Added By'];
