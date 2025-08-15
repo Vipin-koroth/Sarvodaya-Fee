@@ -491,10 +491,9 @@ const SarvodayaCollection: React.FC = () => {
                      <div>Amount Received: ₹{totalReported.toLocaleString()}</div>
                         status === 'balanced' ? 'text-green-600' : 
                         status === 'pending' ? 'text-red-600' : 'text-orange-600'
-                       }`}>
+                      }`}>
                         ₹{Math.abs(difference || 0).toLocaleString()}
                       </span>
-                    </div>
                     </div>
                   </div>
                 </div>
