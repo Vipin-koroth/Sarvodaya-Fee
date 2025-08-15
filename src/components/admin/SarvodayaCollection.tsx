@@ -488,12 +488,12 @@ const SarvodayaCollection: React.FC = () => {
                     </div>
                     <div className="flex justify-between border-t pt-1">
                       <span className="text-gray-600">Difference:</span>
-                      <span className={`font-medium ${
+                      <div className={`font-medium ${
                         status === 'balanced' ? 'text-green-600' : 
                         status === 'pending' ? 'text-red-600' : 'text-orange-600'
                       }`}>
                         ₹{Math.abs(difference || 0).toLocaleString()}
-                      </span>
+                      </div>
                     </div>
                   </div>
                 </div>
