@@ -358,7 +358,7 @@ const SarvodayaCollection: React.FC = () => {
       // Get actual collections for this section
       const sectionPayments = payments.filter(payment => {
         const classNum = parseInt(payment.class);
-        return classNum >= section.min && classNum <= section.max;
+        return classNum >= sectionInfo!.minClass && classNum <= sectionInfo!.maxClass;
       });
       
       const actualCollected = sectionPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
@@ -639,31 +639,31 @@ const SarvodayaCollection: React.FC = () => {
       {/* Tab Navigation */}
       {!isClassOnlyUser() && (
         <div className="bg-white rounded-lg shadow">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex">
-              <button
-                onClick={() => setActiveTab('section')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                  activeTab === 'section'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Section-wise Entry
-              </button>
-              <button
-                onClick={() => setActiveTab('class')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                  activeTab === 'class'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Class-wise Entry
-              </button>
-            </nav>
-          </div>
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex">
+            <button
+              onClick={() => setActiveTab('section')}
+              className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                activeTab === 'section'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Section-wise Entry
+            </button>
+            <button
+              onClick={() => setActiveTab('class')}
+              className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                activeTab === 'class'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Class-wise Entry
+            </button>
+          </nav>
         </div>
+      </div>
       )}
 
       {/* Section-wise Tab */}
