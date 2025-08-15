@@ -469,6 +469,51 @@ const SarvodayaCollection: React.FC = () => {
         </p>
       </div>
 
+      {/* Section Totals Summary for Sarvodaya Users */}
+      {(user?.role === 'sarvodaya' || user?.role === 'admin' || user?.role === 'clerk') && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Section-wise Collection Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {globalSectionCollections.map(section => {
+              const sectionPayments = payments.filter(payment => {
+                const classNum = parseInt(payment.class);
+                return section.classes.includes(classNum);
+              });
+              const sectionTotal = sectionPayments.reduce((sum, payment) => sum + payment.totalAmount, 0);
+              
+              return (
+                <div key={section.id} className="bg-blue-50 rounded-lg p-4">
+                  <div className="text-center">
+                    <h4 className="font-medium text-blue-900 mb-2">{section.name}</h4>
+                    <div className="text-sm text-blue-700 mb-1">
+                      Classes {section.classes.join(', ')}
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      ₹{sectionTotal.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-blue-600 mt-1">
+                      {sectionPayments.length} payments
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Grand Total */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <div className="text-lg font-semibold text-gray-900">
+                Total Collection: ₹{payments.reduce((sum, payment) => sum + payment.totalAmount, 0).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">
+                Across all sections ({payments.length} total payments)
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tab Navigation */}
       {!isClassOnlyUser() && (
         <div className="bg-white rounded-lg shadow">
@@ -654,6 +699,9 @@ const SarvodayaCollection: React.FC = () => {
                       Total Received
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Section
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Balance Due
                     </th>
                     {user?.role === 'clerk' && (
@@ -699,6 +747,14 @@ const SarvodayaCollection: React.FC = () => {
                     const receivedFromHead = sectionCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
                     const remainingBalance = actualCollected - receivedFromHead;
 
+                    // Determine which section this class belongs to
+                    const classNum = parseInt(collection.section);
+                    let sectionName = '';
+                    if (collection.section === 'LP') sectionName = 'LP';
+                    else if (collection.section === 'UP') sectionName = 'UP';
+                    else if (collection.section === 'HS') sectionName = 'HS';
+                    else if (collection.section === 'HSS') sectionName = 'HSS';
+
                     return (
                       <tr key={collection.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -712,6 +768,16 @@ const SarvodayaCollection: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-blue-600">
                             ₹{(sectionActuals[collection.section as keyof typeof sectionActuals] || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            sectionName === 'LP' ? 'bg-blue-100 text-blue-800' :
+                            sectionName === 'UP' ? 'bg-green-100 text-green-800' :
+                            sectionName === 'HS' ? 'bg-purple-100 text-purple-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                            {sectionName}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -772,6 +838,45 @@ const SarvodayaCollection: React.FC = () => {
                   })}
                 </tbody>
               </table>
+
+              {/* Class-wise Summary Footer */}
+              <div className="mt-4 pt-4 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="font-semibold text-gray-900">Total Classes</div>
+                    <div className="text-lg text-blue-600">{getFilteredSectionCollections().length}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-gray-900">Total Received</div>
+                    <div className="text-lg text-green-600">
+                      ₹{getFilteredSectionCollections().reduce((sum, c) => sum + (sectionActuals[c.section as keyof typeof sectionActuals] || 0), 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-gray-900">Total Reported</div>
+                    <div className="text-lg text-purple-600">
+                      ₹{getFilteredSectionCollections().reduce((sum, c) => sum + (c.amount || 0), 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-gray-900">Net Balance</div>
+                    <div className={`text-lg font-bold ${
+                      getFilteredSectionCollections().reduce((sum, c) => sum + ((sectionActuals[c.section as keyof typeof sectionActuals] || 0) - (c.amount || 0)), 0) === 0 
+                        ? 'text-green-600' 
+                        : getFilteredSectionCollections().reduce((sum, c) => sum + ((sectionActuals[c.section as keyof typeof sectionActuals] || 0) - (c.amount || 0)), 0) > 0
+                          ? 'text-red-600'
+                          : 'text-orange-600'
+                    }`}>
+                      {(() => {
+                        const netBalance = getFilteredSectionCollections().reduce((sum, c) => sum + ((sectionActuals[c.section as keyof typeof sectionActuals] || 0) - (c.amount || 0)), 0);
+                        return netBalance > 0 ? `₹${netBalance.toLocaleString()}` : 
+                               netBalance < 0 ? `+₹${Math.abs(netBalance).toLocaleString()}` : 
+                               '₹0';
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {getFilteredSectionCollections().length === 0 && (
