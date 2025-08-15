@@ -3,14 +3,6 @@ import { Plus, Search, Edit, Trash2, Download, Calendar, Users, TrendingUp, File
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Define global section collections structure
-const globalSectionCollections = [
-  { id: 'LP', name: 'LP (Classes 1-4)', classes: [1, 2, 3, 4] },
-  { id: 'UP', name: 'UP (Classes 5-7)', classes: [5, 6, 7] },
-  { id: 'HS', name: 'HS (Classes 8-10)', classes: [8, 9, 10] },
-  { id: 'HSS', name: 'HSS (Classes 11-12)', classes: [11, 12] }
-];
-
 interface SectionCollection {
   id: string;
   section: string;
@@ -327,12 +319,6 @@ const SarvodayaCollection: React.FC = () => {
         case 'UP': classRange = [5, 6, 7]; break;
         case 'HS': classRange = [8, 9, 10]; break;
         case 'HSS': classRange = [11, 12]; break;
-      // Get amount received by head (what head has collected from their section)
-      const receivedByHead = actualCollected;
-      
-      // Get amount received from head (what head has reported/submitted)
-      const receivedFromHead = reportedAmount;
-      
       }
       
       // Calculate actual collected from payments
@@ -347,8 +333,6 @@ const SarvodayaCollection: React.FC = () => {
         actualCollected,
         receivedFromSectionHead,
         remainingBalance,
-        receivedByHead,
-        receivedFromHead,
         classRange: classRange.join(', ')
       };
     });
@@ -575,22 +559,6 @@ const SarvodayaCollection: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reported:</span>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="font-medium text-blue-600">
-                        ₹{section.receivedByHead.toLocaleString()}
-                      </span>
-                      <div className="text-xs text-gray-500">
-                        Total collected by {section.name} head
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="font-medium text-green-600">
-                        ₹{section.receivedFromHead.toLocaleString()}
-                      </span>
-                      <div className="text-xs text-gray-500">
-                        Amount reported by {section.name} head
-                      </div>
-                    </td>
                       <span className="font-medium">₹{(reported || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1">
