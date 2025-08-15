@@ -661,6 +661,64 @@ const SarvodayaCollection: React.FC = () => {
       {/* Class-wise Tab */}
       {(isClassOnlyUser() || activeTab === 'class') && (
         <div className="space-y-6">
+          {/* Section Summary Cards for admin/clerk/sarvodaya in class-wise view */}
+          {!isClassOnlyUser() && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Section-wise Collection Summary</h2>
+                  <p className="text-sm text-gray-600">Total amounts entered by each section head</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {Object.entries(sectionActuals).map(([section, actual]) => {
+                  const reported = sectionReported[section as keyof typeof sectionReported] || 0;
+                  const difference = actual - reported;
+                  const status = difference === 0 ? 'balanced' : difference > 0 ? 'pending' : 'excess';
+                  
+                  return (
+                    <div key={section} className="bg-gray-50 rounded-lg p-4 border-l-4 border-purple-500">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold text-gray-900">{section} Section</h3>
+                        <div className={`w-3 h-3 rounded-full ${
+                          status === 'balanced' ? 'bg-green-500' : 
+                          status === 'pending' ? 'bg-red-500' : 'bg-orange-500'
+                        }`}></div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Received:</span>
+                          <span className="font-medium text-blue-600">₹{(actual || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Entered:</span>
+                          <span className="font-medium text-green-600">₹{(reported || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2">
+                          <span className="text-gray-600 font-medium">Balance Due:</span>
+                          <div className={`font-bold ${
+                            status === 'balanced' ? 'text-green-600' : 
+                            status === 'pending' ? 'text-red-600' : 'text-orange-600'
+                          }`}>
+                            ₹{Math.abs(difference || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 text-center mt-2">
+                          {status === 'balanced' ? '✅ Fully Reported' : 
+                           status === 'pending' ? '⏳ Pending Report' : '⚠️ Excess Reported'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Class Summary Cards for restricted users */}
           {isClassOnlyUser() && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
