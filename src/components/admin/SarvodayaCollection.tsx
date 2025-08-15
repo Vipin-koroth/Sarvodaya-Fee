@@ -575,6 +575,22 @@ const SarvodayaCollection: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reported:</span>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="font-medium text-blue-600">
+                        ₹{section.receivedByHead.toLocaleString()}
+                      </span>
+                      <div className="text-xs text-gray-500">
+                        Total collected by {section.name} head
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="font-medium text-green-600">
+                        ₹{section.receivedFromHead.toLocaleString()}
+                      </span>
+                      <div className="text-xs text-gray-500">
+                        Amount reported by {section.name} head
+                      </div>
+                    </td>
                       <span className="font-medium">₹{(reported || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between border-t pt-1">
