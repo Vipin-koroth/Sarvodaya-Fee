@@ -543,6 +543,99 @@ const SarvodayaCollection: React.FC = () => {
         </div>
       )}
 
+      {/* Section Head Collection Tracking */}
+      {(user?.role === 'sarvodaya' || user?.role === 'admin' || user?.role === 'clerk') && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Users className="w-5 h-5 text-purple-600" />
+            <h2 className="text-lg font-semibold text-gray-800">Section Head Collection Reports</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {getSectionHeadTotals().map((head) => (
+              <div key={head.headKey} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-medium text-gray-900">{head.headKey} User</h3>
+                    <p className="text-sm text-gray-600">{head.headName}</p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    head.status === 'balanced' ? 'bg-green-100 text-green-800' :
+                    head.status === 'pending' ? 'bg-red-100 text-red-800' :
+                    'bg-orange-100 text-orange-800'
+                  }`}>
+                    {head.status === 'balanced' ? '✓ Complete' :
+                     head.status === 'pending' ? '⏳ Pending' : '⚠ Excess'}
+                  </span>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Actual Collected:</span>
+                    <span className="font-medium text-blue-600">₹{head.actualCollected.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Reported by Head:</span>
+                    <span className="font-medium text-green-600">₹{head.reportedAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-gray-600 font-medium">Balance:</span>
+                    <span className={`font-bold ${
+                      head.balance === 0 ? 'text-green-600' :
+                      head.balance > 0 ? 'text-red-600' :
+                      'text-orange-600'
+                    }`}>
+                      {head.balance === 0 ? '₹0' :
+                       head.balance > 0 ? `₹${head.balance.toLocaleString()}` :
+                       `+₹${Math.abs(head.balance).toLocaleString()}`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Summary Row */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-lg font-bold text-blue-600">
+                  ₹{getSectionHeadTotals().reduce((sum, head) => sum + head.actualCollected, 0).toLocaleString()}
+                </div>
+                <div className="text-sm text-blue-800">Total Actual Collections</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-green-600">
+                  ₹{getSectionHeadTotals().reduce((sum, head) => sum + head.reportedAmount, 0).toLocaleString()}
+                </div>
+                <div className="text-sm text-green-800">Total Reported by Heads</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-purple-600">
+                  {getSectionHeadTotals().filter(head => head.status === 'balanced').length}/4
+                </div>
+                <div className="text-sm text-purple-800">Sections Balanced</div>
+              </div>
+              <div>
+                <div className={`text-lg font-bold ${
+                  getSectionHeadTotals().reduce((sum, head) => sum + head.balance, 0) === 0 ? 'text-green-600' :
+                  getSectionHeadTotals().reduce((sum, head) => sum + head.balance, 0) > 0 ? 'text-red-600' :
+                  'text-orange-600'
+                }`}>
+                  {(() => {
+                    const totalBalance = getSectionHeadTotals().reduce((sum, head) => sum + head.balance, 0);
+                    return totalBalance === 0 ? '₹0' :
+                           totalBalance > 0 ? `₹${totalBalance.toLocaleString()}` :
+                           `+₹${Math.abs(totalBalance).toLocaleString()}`;
+                  })()}
+                </div>
+                <div className="text-sm text-gray-800">Net Balance</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tab Navigation */}
       {!isClassOnlyUser() && (
         <div className="bg-white rounded-lg shadow">
