@@ -316,6 +316,8 @@ const SarvodayaCollection: React.FC = () => {
   // Calculate section-wise totals for detailed tracking
   const getSectionTotals = () => {
     const sections = ['LP', 'UP', 'HS', 'HSS'];
+      // Calculate actual collected amount first
+      const actualCollected = payments
     return sections.map(section => {
       const sectionCollections = globalSectionCollections.filter(c => c.section === section);
       const receivedFromSectionHead = sectionCollections.reduce((sum, c) => sum + (c.amount || 0), 0);
@@ -334,10 +336,8 @@ const SarvodayaCollection: React.FC = () => {
       // Get amount received from head (what head has reported/submitted)
       const receivedFromHead = reportedAmount;
       
-      }
+      const receivedByHead = actualCollected;
       
-      // Calculate actual collected from payments
-      const actualCollected = payments
         .filter(p => classRange.includes(parseInt(p.class)))
         .reduce((sum, p) => sum + (p.totalAmount || 0), 0);
       
