@@ -17,7 +17,10 @@ interface ClassCollection {
   class: string;
   division: string;
   teacherName: string;
-  amount: number;
+  busFee: number;
+  developmentFee: number;
+  othersFee: number;
+  totalAmount: number;
   date: string;
   addedBy: string;
 }
@@ -60,7 +63,9 @@ const SarvodayaCollection: React.FC = () => {
     class: '',
     division: '',
     teacherName: '',
-    amount: 0,
+    busFee: 0,
+    developmentFee: 0,
+    othersFee: 0,
     date: new Date().toISOString().split('T')[0]
   });
 
@@ -138,12 +143,17 @@ const SarvodayaCollection: React.FC = () => {
   const handleClassSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const totalAmount = classFormData.busFee + classFormData.developmentFee + classFormData.othersFee;
+    
     const newCollection: ClassCollection = {
       id: editingClassId || generateId(),
       class: classFormData.class,
       division: classFormData.division,
       teacherName: classFormData.teacherName,
-      amount: classFormData.amount,
+      busFee: classFormData.busFee,
+      developmentFee: classFormData.developmentFee,
+      othersFee: classFormData.othersFee,
+      totalAmount: totalAmount,
       date: classFormData.date,
       addedBy: user?.username || ''
     };
@@ -165,7 +175,9 @@ const SarvodayaCollection: React.FC = () => {
       class: '',
       division: '',
       teacherName: '',
-      amount: 0,
+      busFee: 0,
+      developmentFee: 0,
+      othersFee: 0,
       date: new Date().toISOString().split('T')[0]
     });
     setShowClassForm(false);
@@ -223,7 +235,9 @@ const SarvodayaCollection: React.FC = () => {
       class: collection.class,
       division: collection.division,
       teacherName: collection.teacherName,
-      amount: collection.amount,
+      busFee: collection.busFee,
+      developmentFee: collection.developmentFee,
+      othersFee: collection.othersFee,
       date: collection.date
     });
     setEditingClassId(collection.id);
@@ -299,7 +313,7 @@ const SarvodayaCollection: React.FC = () => {
     const classReported: Record<string, number> = {};
     classCollections.forEach(c => {
       const key = `${c.class}${c.division}`;
-      classReported[key] = (classReported[key] || 0) + (c.amount || 0);
+      classReported[key] = (classReported[key] || 0) + (c.totalAmount || 0);
     });
 
     return { sectionReported, classReported };
@@ -327,12 +341,15 @@ const SarvodayaCollection: React.FC = () => {
   };
 
   const downloadClassCollectionsCSV = () => {
-    const headers = ['Class', 'Division', 'Teacher Name', 'Amount', 'Date', 'Added By'];
+    const headers = ['Class', 'Division', 'Teacher Name', 'Bus Fee', 'Development Fee', 'Others Fee', 'Total Amount', 'Date', 'Added By'];
     const csvData = getFilteredClassCollections().map(c => [
       c.class,
       c.division,
       c.teacherName,
-      c.amount || 0,
+      c.busFee || 0,
+      c.developmentFee || 0,
+      c.othersFee || 0,
+      c.totalAmount || 0,
       c.date,
       c.addedBy
     ]);
