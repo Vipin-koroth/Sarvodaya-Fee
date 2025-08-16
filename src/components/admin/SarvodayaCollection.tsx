@@ -830,9 +830,28 @@ const SarvodayaCollection: React.FC = () => {
                           </td>
                         </>
                       )}
+                      {!isClassOnlyUser() && (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-blue-600">
+                              ₹{(collection.busFee || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-purple-600">
+                              ₹{(collection.developmentFee || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-orange-600">
+                              ₹{(collection.othersFee || 0).toLocaleString()}
+                            </span>
+                          </td>
+                        </>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-green-600">
-                          ₹{(collection.amount || 0).toLocaleString()}
+                          ₹{(collection.totalAmount || 0).toLocaleString()}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
