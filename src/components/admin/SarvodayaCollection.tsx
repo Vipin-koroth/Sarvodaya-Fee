@@ -562,31 +562,114 @@ const SarvodayaCollection: React.FC = () => {
           {availableTeachers.map(teacher => {
             const fromPayments = teacherTotalsFromPayments[teacher.value] || { busFee: 0, developmentFund: 0, others: 0, total: 0 };
             const teacherEntries = userSectionCollections.filter(entry => entry.fromTeacher === teacher.value);
-            const totalEntered = teacherEntries.reduce((sum, entry) => sum + entry.amount, 0);
+            
+            // Calculate entered amounts by fee type
+            const enteredBusFee = teacherEntries
+              .filter(entry => entry.feeType === 'bus_fee')
+              .reduce((sum, entry) => sum + entry.amount, 0);
+            const enteredDevelopmentFee = teacherEntries
+              .filter(entry => entry.feeType === 'development_fund')
+              .reduce((sum, entry) => sum + entry.amount, 0);
+            const enteredOthers = teacherEntries
+              .filter(entry => entry.feeType === 'others')
+              .reduce((sum, entry) => sum + entry.amount, 0);
+            const totalEntered = enteredBusFee + enteredDevelopmentFee + enteredOthers;
             
             return (
-              <div key={teacher.value} className="bg-white border rounded-lg p-4">
+              <div key={teacher.value} className="bg-white border rounded-lg p-4 space-y-3">
                 <h4 className="font-medium text-gray-900 mb-3">{teacher.label}</h4>
                 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">From Students:</span>
-                    <span className="font-medium">₹{fromPayments.total.toLocaleString()}</span>
+                {/* Bus Fee */}
+                <div className="bg-orange-50 rounded p-3">
+                  <div className="font-medium text-orange-900 text-sm mb-2">Bus Fee</div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-orange-700">From Students:</span>
+                      <span className="font-medium">₹{fromPayments.busFee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-orange-700">Entered:</span>
+                      <span className="font-medium text-green-600">₹{enteredBusFee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-orange-200 pt-1">
+                      <span className="text-orange-700 font-medium">Balance:</span>
+                      <span className={`font-bold ${
+                        fromPayments.busFee - enteredBusFee === 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        ₹{Math.abs(fromPayments.busFee - enteredBusFee).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Entered to Section:</span>
-                    <span className="font-medium text-green-600">₹{totalEntered.toLocaleString()}</span>
+                </div>
+                
+                {/* Development Fee */}
+                <div className="bg-blue-50 rounded p-3">
+                  <div className="font-medium text-blue-900 text-sm mb-2">Development Fee</div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">From Students:</span>
+                      <span className="font-medium">₹{fromPayments.developmentFund.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">Entered:</span>
+                      <span className="font-medium text-green-600">₹{enteredDevelopmentFee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-blue-200 pt-1">
+                      <span className="text-blue-700 font-medium">Balance:</span>
+                      <span className={`font-bold ${
+                        fromPayments.developmentFund - enteredDevelopmentFee === 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        ₹{Math.abs(fromPayments.developmentFund - enteredDevelopmentFee).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="text-gray-600">Balance Due:</span>
-                    <span className={`font-bold ${
-                      fromPayments.total - totalEntered === 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      ₹{Math.abs(fromPayments.total - totalEntered).toLocaleString()}
-                    </span>
+                </div>
+                
+                {/* Others */}
+                <div className="bg-gray-50 rounded p-3">
+                  <div className="font-medium text-gray-900 text-sm mb-2">Others</div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">From Students:</span>
+                      <span className="font-medium">₹{fromPayments.others.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Entered:</span>
+                      <span className="font-medium text-green-600">₹{enteredOthers.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-gray-200 pt-1">
+                      <span className="text-gray-700 font-medium">Balance:</span>
+                      <span className={`font-bold ${
+                        fromPayments.others - enteredOthers === 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        ₹{Math.abs(fromPayments.others - enteredOthers).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Entries: {teacherEntries.length}
+                </div>
+                
+                {/* Total Summary */}
+                <div className="bg-yellow-50 rounded p-3 border-t">
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-yellow-700 font-medium">Total from Students:</span>
+                      <span className="font-bold">₹{fromPayments.total.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-yellow-700 font-medium">Total Entered:</span>
+                      <span className="font-bold text-green-600">₹{totalEntered.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-yellow-200 pt-1">
+                      <span className="text-yellow-700 font-medium">Overall Balance:</span>
+                      <span className={`font-bold ${
+                        fromPayments.total - totalEntered === 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        ₹{Math.abs(fromPayments.total - totalEntered).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-center text-yellow-600 font-medium">
+                      Entries: {teacherEntries.length}
+                    </div>
                   </div>
                 </div>
               </div>
