@@ -669,21 +669,32 @@ const SarvodayaCollection: React.FC = () => {
                 for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
                   for (let division of ['A', 'B', 'C', 'D', 'E']) {
                     const classKey = `${classNum}${division}`;
+                    const actualAmount = classActuals[classKey] || 0;
+                    const reportedAmount = classReported[classKey] || 0;
+                    const pendingAmount = actualAmount - reportedAmount;
+                    
+                    // Get class-specific payments and collections
+                    const classPayments = getFilteredPayments().filter(p => 
+                      p.class === classNum.toString() && p.division === division
+                    );
+                    const classCollectionsForClass = classCollections.filter(c => 
+                      c.class === classNum.toString() && c.division === division
+                    );
+                    
                      // Calculate totals by fee type
                      const receivedBusFee = classPayments.reduce((sum, p) => sum + (p.busFee || 0), 0);
                      const receivedDevFee = classPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);
                      const receivedOthersFee = classPayments.reduce((sum, p) => sum + (p.specialFee || 0), 0);
                      const totalReceived = receivedBusFee + receivedDevFee + receivedOthersFee;
                      
-                     const reportedBusFee = classCollections.reduce((sum, c) => sum + (c.busFee || 0), 0);
-                     const reportedDevFee = classCollections.reduce((sum, c) => sum + (c.developmentFee || 0), 0);
-                     const reportedOthersFee = classCollections.reduce((sum, c) => sum + (c.othersFee || 0), 0);
+                     const reportedBusFee = classCollectionsForClass.reduce((sum, c) => sum + (c.busFee || 0), 0);
+                     const reportedDevFee = classCollectionsForClass.reduce((sum, c) => sum + (c.developmentFee || 0), 0);
+                     const reportedOthersFee = classCollectionsForClass.reduce((sum, c) => sum + (c.othersFee || 0), 0);
                      const totalReported = reportedBusFee + reportedDevFee + reportedOthersFee;
                      
                      const pendingBusFee = receivedBusFee - reportedBusFee;
                      const pendingDevFee = receivedDevFee - reportedDevFee;
                      const pendingOthersFee = receivedOthersFee - reportedOthersFee;
-                     const pendingAmount = pendingBusFee + pendingDevFee + pendingOthersFee;
                     
                     // Only show classes that have actual collections or reported collections
                     if (actualAmount > 0 || reportedAmount > 0) {
@@ -695,8 +706,6 @@ const SarvodayaCollection: React.FC = () => {
                               pendingAmount === 0 ? 'bg-green-500' : 'bg-red-500'
                             }`}></div>
                           </div>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
                          <div className="space-y-3 text-sm">
                            {/* Bus Fee */}
                            <div className="bg-blue-50 p-2 rounded">
