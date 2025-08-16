@@ -912,7 +912,10 @@ const SarvodayaCollection: React.FC = () => {
                                 ? 'text-green-600' 
                                 : 'text-red-600'
                             }`}>
-                              ₹{Math.max(0, (classActuals[\`${collection.class}${collection.division}`] || 0) - (classReported[\`${collection.class}${collection.division}`] || 0)).toLocaleString()}
+                              {(() => {
+                                const classKey = `${collection.class}${collection.division}`;
+                                return `₹${Math.max(0, (classActuals[classKey] || 0) - (classReported[classKey] || 0)).toLocaleString()}`;
+                              })()}
                             </span>
                           </td>
                         </>
