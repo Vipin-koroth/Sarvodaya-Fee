@@ -669,9 +669,21 @@ const SarvodayaCollection: React.FC = () => {
                 for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
                   for (let division of ['A', 'B', 'C', 'D', 'E']) {
                     const classKey = `${classNum}${division}`;
-                    const actualAmount = classActuals[classKey] || 0;
-                    const reportedAmount = classReported[classKey] || 0;
-                    const pendingAmount = Math.max(0, actualAmount - reportedAmount);
+                     // Calculate totals by fee type
+                     const receivedBusFee = classPayments.reduce((sum, p) => sum + (p.busFee || 0), 0);
+                     const receivedDevFee = classPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0);
+                     const receivedOthersFee = classPayments.reduce((sum, p) => sum + (p.specialFee || 0), 0);
+                     const totalReceived = receivedBusFee + receivedDevFee + receivedOthersFee;
+                     
+                     const reportedBusFee = classCollections.reduce((sum, c) => sum + (c.busFee || 0), 0);
+                     const reportedDevFee = classCollections.reduce((sum, c) => sum + (c.developmentFee || 0), 0);
+                     const reportedOthersFee = classCollections.reduce((sum, c) => sum + (c.othersFee || 0), 0);
+                     const totalReported = reportedBusFee + reportedDevFee + reportedOthersFee;
+                     
+                     const pendingBusFee = receivedBusFee - reportedBusFee;
+                     const pendingDevFee = receivedDevFee - reportedDevFee;
+                     const pendingOthersFee = receivedOthersFee - reportedOthersFee;
+                     const pendingAmount = pendingBusFee + pendingDevFee + pendingOthersFee;
                     
                     // Only show classes that have actual collections or reported collections
                     if (actualAmount > 0 || reportedAmount > 0) {
@@ -685,22 +697,62 @@ const SarvodayaCollection: React.FC = () => {
                           </div>
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Total Received:</span>
-                              <span className="font-medium text-blue-600">₹{actualAmount.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Reported:</span>
-                              <span className="font-medium text-green-600">₹{reportedAmount.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between border-t pt-2">
-                              <span className="text-gray-600 font-medium">Pending:</span>
-                              <span className={`font-bold ${
-                                pendingAmount === 0 ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                ₹{pendingAmount.toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
+                         <div className="space-y-3 text-sm">
+                           {/* Bus Fee */}
+                           <div className="bg-blue-50 p-2 rounded">
+                             <div className="font-medium text-blue-800 mb-1">Bus Fee</div>
+                             <div className="flex justify-between text-xs">
+                               <span>Received: ₹{receivedBusFee.toLocaleString()}</span>
+                               <span>Reported: ₹{reportedBusFee.toLocaleString()}</span>
+                             </div>
+                             <div className="flex justify-between text-xs font-medium">
+                               <span>Pending:</span>
+                               <span className={pendingBusFee === 0 ? 'text-green-600' : 'text-red-600'}>
+                                 ₹{Math.abs(pendingBusFee).toLocaleString()}
+                               </span>
+                             </div>
+                           </div>
+                           
+                           {/* Development Fee */}
+                           <div className="bg-purple-50 p-2 rounded">
+                             <div className="font-medium text-purple-800 mb-1">Development Fee</div>
+                             <div className="flex justify-between text-xs">
+                               <span>Received: ₹{receivedDevFee.toLocaleString()}</span>
+                               <span>Reported: ₹{reportedDevFee.toLocaleString()}</span>
+                             </div>
+                             <div className="flex justify-between text-xs font-medium">
+                               <span>Pending:</span>
+                               <span className={pendingDevFee === 0 ? 'text-green-600' : 'text-red-600'}>
+                                 ₹{Math.abs(pendingDevFee).toLocaleString()}
+                               </span>
+                             </div>
+                           </div>
+                           
+                           {/* Others Fee */}
+                           <div className="bg-orange-50 p-2 rounded">
+                             <div className="font-medium text-orange-800 mb-1">Others Fee</div>
+                             <div className="flex justify-between text-xs">
+                               <span>Received: ₹{receivedOthersFee.toLocaleString()}</span>
+                               <span>Reported: ₹{reportedOthersFee.toLocaleString()}</span>
+                             </div>
+                             <div className="flex justify-between text-xs font-medium">
+                               <span>Pending:</span>
+                               <span className={pendingOthersFee === 0 ? 'text-green-600' : 'text-red-600'}>
+                                 ₹{Math.abs(pendingOthersFee).toLocaleString()}
+                               </span>
+                             </div>
+                           </div>
+                           
+                           {/* Total Summary */}
+                           <div className="border-t pt-2">
+                             <div className="flex justify-between font-medium">
+                               <span className="text-gray-700">Total Pending:</span>
+                               <span className={`font-bold ${pendingAmount === 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                 ₹{Math.abs(pendingAmount).toLocaleString()}
+                               </span>
+                             </div>
+                           </div>
+                         </div>
                         </div>
                       );
                     }
