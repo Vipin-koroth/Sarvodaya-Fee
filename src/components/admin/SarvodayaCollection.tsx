@@ -907,7 +907,7 @@ const SarvodayaCollection: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={\`text-sm font-medium ${
+                            <span className={`text-sm font-medium ${
                               Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)) === 0 
                                 ? 'text-green-600' 
                                 : 'text-red-600'
