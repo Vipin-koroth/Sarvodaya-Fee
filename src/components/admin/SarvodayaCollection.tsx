@@ -694,15 +694,15 @@ const SarvodayaCollection: React.FC = () => {
                      
                      const pendingBusFee = receivedBusFee - reportedBusFee;
                      const pendingDevFee = receivedDevFee - reportedDevFee;
-                            {(pendingBusFee + pendingDevFee + pendingOthersFee) === 0 ? (
+                     const pendingOthersFee = receivedOthersFee - reportedOthersFee;
                     
                     // Only show classes that have actual collections or reported collections
                     if (actualAmount > 0 || reportedAmount > 0) {
                       classCards.push(
                         <div key={classKey} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-                              {(pendingBusFee + pendingDevFee + pendingOthersFee) === 0 
+                          <div className="flex items-center justify-between mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">Class {classNum}-{division}</h3>
-                                : `Pending: ₹${Math.abs(pendingBusFee + pendingDevFee + pendingOthersFee).toLocaleString()}`
+                            <div className={`w-3 h-3 rounded-full ${
                               pendingAmount === 0 ? 'bg-green-500' : 'bg-red-500'
                             }`}></div>
                           </div>
@@ -738,20 +738,20 @@ const SarvodayaCollection: React.FC = () => {
                            </div>
                            
                            {/* Others Fee */}
-                                <span className={Math.abs(pendingBusFee) > 0 ? 'text-red-600' : 'text-green-600'}>
-                                  {Math.abs(pendingBusFee) > 0 ? `Pending ₹${Math.abs(pendingBusFee)}` : 'Balanced ₹0'}
+                           <div className="bg-orange-50 p-2 rounded">
+                             <div className="font-mediu\m text-orange-800 mb-1">Others Fee</div>
                              <div className="flex justify-between text-xs">
                                <span>Received: ₹{receivedOthersFee.toLocaleString()}</span>
                                <span>Reported: ₹{reportedOthersFee.toLocaleString()}</span>
                              </div>
-                                <span className={Math.abs(pendingDevFee) > 0 ? 'text-red-600' : 'text-green-600'}>
-                                  {Math.abs(pendingDevFee) > 0 ? `Pending ₹${Math.abs(pendingDevFee)}` : 'Balanced ₹0'}
+                             <div className="flex justify-between text-xs font-medium">
+                               <span\>Pending:</span>
                                <span className={pendingOthersFee === 0 ? 'text-green-600' : 'text-red-600'}>
                                  ₹{Math.abs(pendingOthersFee).toLocaleString()}
                                </span>
                              </div>
-                                <span className={Math.abs(pendingOthersFee) > 0 ? 'text-red-600' : 'text-green-600'}>
-                                  {Math.abs(pendingOthersFee) > 0 ? `Pending ₹${Math.abs(pendingOthersFee)}` : 'Balanced ₹0'}
+    \                       </div>
+                           
                            {/* Total Summary */}
                            <div className="border-t pt-2">
                              <div className="flex justify-between font-medium">
@@ -903,16 +903,16 @@ const SarvodayaCollection: React.FC = () => {
                         <>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-blue-600">
-                              ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                              ₹{(classActuals[\`${collection.class}${collection.division}`] || 0).toLocaleString()}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-medium ${
+                            <span className={\`text-sm font-medium ${
                               Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)) === 0 
                                 ? 'text-green-600' 
                                 : 'text-red-600'
                             }`}>
-                              ₹{Math.max(0, (classActuals[`${collection.class}${collection.division}`] || 0) - (classReported[`${collection.class}${collection.division}`] || 0)).toLocaleString()}
+                              ₹{Math.max(0, (classActuals[\`${collection.class}${collection.division}`] || 0) - (classReported[\`${collection.class}${collection.division}`] || 0)).toLocaleString()}
                             </span>
                           </td>
                         </>
