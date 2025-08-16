@@ -36,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'collection', label: 'Collection Entry', icon: Receipt },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
     { id: 'password', label: 'Change Password', icon: Lock },
@@ -45,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'Students', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'collection', label: 'Collection Entry', icon: Receipt },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'print-receipt', label: 'Print Receipt', icon: Printer },
     { id: 'password', label: 'Change Password', icon: Lock },
@@ -67,6 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const sarvodayaMenuItems = [
+    { id: 'collection', label: 'Collection Entry', icon: CreditCard },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'password', label: 'Change Password', icon: Lock },
   ];
