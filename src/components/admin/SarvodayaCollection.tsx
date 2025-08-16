@@ -596,7 +596,8 @@ const SarvodayaCollection: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="bg-green-100 rounded p-2">
+                      <>
+                        <div className="bg-green-100 rounded p-2">
                         <div className="font-medium text-green-900 mb-1">
                           {isSectionUser() ? 'To Admin/Clerk (Tier 2)' : 'From Teachers (Tier 2)'}
                         </div>
@@ -623,6 +624,7 @@ const SarvodayaCollection: React.FC = () => {
                           </span>
                         </div>
                       </div>
+                      </>
                     </div>
                   </div>
                 );
