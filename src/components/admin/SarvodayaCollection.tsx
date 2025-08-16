@@ -795,23 +795,6 @@ const SarvodayaCollection: React.FC = () => {
           </>
         )}
       </div>
-    </div>
-  );
-};
-
-export default SarvodayaCollection;
-          <button
-            onClick={() => setActiveView('overview')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeView === 'overview'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            System Overview
-          </button>
-          
-      </div>
 
       {/* Add/Edit Collection Entry Modal */}
       {showAddModal && (
