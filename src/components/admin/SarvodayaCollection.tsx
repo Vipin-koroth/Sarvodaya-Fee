@@ -1229,6 +1229,188 @@ const SarvodayaCollection: React.FC = () => {
         )}
       </div>
 
+      {/* Teacher Collection Entries */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Users className="w-6 h-6 text-purple-600" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Teacher Collection Entries</h2>
+              <p className="text-sm text-gray-600">View and download teacher collection submissions</p>
+            </div>
+          </div>
+          <button
+            onClick={downloadTeacherEntriesCSV}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            <span>Download CSV</span>
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={teacherEntriesFilter.dateFrom}
+                onChange={(e) => setTeacherEntriesFilter(prev => ({ ...prev, dateFrom: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={teacherEntriesFilter.dateTo}
+                onChange={(e) => setTeacherEntriesFilter(prev => ({ ...prev, dateTo: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Teacher
+              </label>
+              <input
+                type="text"
+                placeholder="Search teacher..."
+                value={teacherEntriesFilter.teacher}
+                onChange={(e) => setTeacherEntriesFilter(prev => ({ ...prev, teacher: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fee Type
+              </label>
+              <select
+                value={teacherEntriesFilter.feeType}
+                onChange={(e) => setTeacherEntriesFilter(prev => ({ ...prev, feeType: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Fee Types</option>
+                <option value="Bus Fee">Bus Fee</option>
+                <option value="Development Fee">Development Fee</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="text-blue-600 text-sm font-medium">Total Entries</div>
+            <div className="text-2xl font-bold text-gray-900">{getFilteredTeacherEntries().length}</div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="text-green-600 text-sm font-medium">Total Amount</div>
+            <div className="text-2xl font-bold text-gray-900">
+              ₹{getFilteredTeacherEntries().reduce((sum, entry) => sum + entry.amount, 0).toLocaleString()}
+            </div>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-4">
+            <div className="text-purple-600 text-sm font-medium">Submitted</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {getFilteredTeacherEntries().filter(entry => entry.status === 'Submitted').length}
+            </div>
+          </div>
+          <div className="bg-orange-50 rounded-lg p-4">
+            <div className="text-orange-600 text-sm font-medium">Pending</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {getFilteredTeacherEntries().filter(entry => entry.status === 'Pending').length}
+            </div>
+          </div>
+        </div>
+
+        {/* Teacher Entries Table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Entry ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Teacher
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Fee Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Submitted At
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {getFilteredTeacherEntries().map((entry) => (
+                <tr key={entry.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {entry.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{entry.teacher}</div>
+                    <div className="text-sm text-gray-500">
+                      {entry.teacher.includes('class') ? `Class ${entry.teacher.replace('class', '').replace(/[a-z]/g, (match) => `-${match.toUpperCase()}`)}` : entry.teacher}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      entry.feeType === 'Bus Fee' ? 'bg-orange-100 text-orange-800' :
+                      entry.feeType === 'Development Fee' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {entry.feeType}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                    ₹{entry.amount.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {new Date(entry.date).toLocaleDateString('en-GB')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      entry.status === 'Submitted' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {entry.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(entry.submittedAt).toLocaleString('en-GB')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {getFilteredTeacherEntries().length === 0 && (
+          <div className="text-center py-12">
+            <Users className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No teacher entries found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              No teacher collection entries match your selected criteria.
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Add/Edit Collection Entry Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
