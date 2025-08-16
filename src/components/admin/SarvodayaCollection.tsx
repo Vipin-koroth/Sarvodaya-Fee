@@ -739,17 +739,9 @@ const SarvodayaCollection: React.FC = () => {
                            
                            {/* Others Fee */}
                            <div className="bg-orange-50 p-2 rounded">
-                                <div className="text-purple-600">
-                                  {classData.pending.developmentFee > 0 ? 'Pending' : classData.pending.developmentFee < 0 ? 'Excess' : 'Balanced'}
-                                </div>
-                                <div className={`font-semibold ${
-                                  classData.pending.developmentFee > 0 ? 'text-red-600' : 
-                                  classData.pending.developmentFee < 0 ? 'text-orange-600' : 
-                                  'text-green-600'
-                                }`}>
-                                  {classData.pending.developmentFee === 0 ? '₹0' : 
-                                   classData.pending.developmentFee > 0 ? `₹${classData.pending.developmentFee}` : 
-                                   `₹${Math.abs(classData.pending.developmentFee)}`}
+                             <div className="font-medium text-orange-800 mb-1">Others Fee</div>
+                             <div className="flex justify-between text-xs">
+                               <span>Received: ₹{receivedOthersFee.toLocaleString()}</span>
                                <span>Reported: ₹{reportedOthersFee.toLocaleString()}</span>
                              </div>
                              <div className="flex justify-between text-xs font-medium">
@@ -763,52 +755,9 @@ const SarvodayaCollection: React.FC = () => {
                            {/* Total Summary */}
                            <div className="border-t pt-2">
                              <div className="flex justify-between font-medium">
-                                <div className="text-blue-600">
-                                  {classData.pending.busFee > 0 ? 'Pending' : classData.pending.busFee < 0 ? 'Excess' : 'Balanced'}
-                                </div>
-                                <div className={`font-semibold ${
-                                  classData.pending.busFee > 0 ? 'text-red-600' : 
-                                  classData.pending.busFee < 0 ? 'text-orange-600' : 
-                                  'text-green-600'
-                                }`}>
-                              {(classData.pending.busFee !== 0 || classData.pending.developmentFee !== 0 || classData.pending.othersFee !== 0) ? (
-                                  {classData.pending.othersFee > 0 ? 'Pending' : classData.pending.othersFee < 0 ? 'Excess' : 'Balanced'}
-                                  {(() => {
-                                    const totalPending = classData.pending.busFee + classData.pending.developmentFee + classData.pending.othersFee;
-                                    if (totalPending > 0) {
-                                      return (
-                                        <>
-                                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                          <span className="text-sm text-red-600 font-medium">
-                                            Pending: ₹{totalPending}
-                                          </span>
-                                        </>
-                                      );
-                                    } else if (totalPending < 0) {
-                                      return (
-                                        <>
-                                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                                          <span className="text-sm text-orange-600 font-medium">
-                                            Excess: ₹{Math.abs(totalPending)}
-                                          </span>
-                                        </>
-                                      );
-                                    } else {
-                                      return (
-                                        <>
-                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                          <span className="text-sm text-green-600 font-medium">
-                                            Balanced
-                                          </span>
-                                        </>
-                                      );
-                                    }
-                                  })()}
-                                  'text-green-600'
-                                }`}>
-                                  {classData.pending.othersFee === 0 ? '₹0' : 
-                                   classData.pending.othersFee > 0 ? `₹${classData.pending.othersFee}` : 
-                                   `₹${Math.abs(classData.pending.othersFee)}`}
+                               <span>Total Pending:</span>
+                               <span className={pendingAmount === 0 ? 'text-green-600' : 'text-red-600'}>
+                                 ₹{Math.abs(pendingAmount).toLocaleString()}
                                </span>
                              </div>
                            </div>
