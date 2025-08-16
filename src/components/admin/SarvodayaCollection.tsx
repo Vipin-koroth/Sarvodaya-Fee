@@ -1,36 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, TrendingUp, Calendar, FileText, Edit, Trash2, Save, X, Receipt, DollarSign } from 'lucide-react';
+import { Plus, Users, TrendingUp, Calendar, FileText, Edit, Trash2, Save, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 
-interface TeacherCollectionEntry {
-  id: string;
-  teacherUsername: string;
-  class: string;
-  division: string;
-  feeType: 'bus_fee' | 'development_fund' | 'others';
-  amount: number;
-  date: string;
-  addedBy: string;
-  description?: string;
-  created_at: string;
-}
-
-interface SectionCollectionEntry {
+interface CollectionEntry {
   id: string;
   sectionHead: string;
-  fromTeacher: string;
-  feeType: 'bus_fee' | 'development_fund' | 'others';
-  amount: number;
-  date: string;
-  addedBy: string;
-  description?: string;
-  created_at: string;
-}
-
-interface ClerkCollectionEntry {
-  id: string;
-  fromSectionHead: string;
   feeType: 'bus_fee' | 'development_fund' | 'others';
   amount: number;
   date: string;
@@ -42,49 +17,33 @@ interface ClerkCollectionEntry {
 const SarvodayaCollection: React.FC = () => {
   const { user } = useAuth();
   const { students, payments } = useData();
-  const [activeView, setActiveView] = useState<'overview' | 'teacher-entry' | 'section-entry' | 'clerk-entry'>('overview');
+  const [activeView, setActiveView] = useState<'section-wise' | 'class-wise'>('section-wise');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [editingEntry, setEditingEntry] = useState<CollectionEntry | null>(null);
+  const [collectionEntries, setCollectionEntries] = useState<CollectionEntry[]>([]);
   
-  // Collection entries state
-  const [teacherCollections, setTeacherCollections] = useState<TeacherCollectionEntry[]>([]);
-  const [sectionCollections, setSectionCollections] = useState<SectionCollectionEntry[]>([]);
-  const [clerkCollections, setClerkCollections] = useState<ClerkCollectionEntry[]>([]);
-  
-  // Form state
+  // Form state for adding/editing collection entries
   const [formData, setFormData] = useState({
-    target: '', // teacher/section head to collect from
+    sectionHead: '',
     feeType: 'development_fund' as 'bus_fee' | 'development_fund' | 'others',
     amount: 0,
     date: new Date().toISOString().split('T')[0],
     description: ''
   });
 
-  // Helper function to check user type
-  const isSectionUser = () => {
-    return user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user?.username || '');
-  };
-
-  const isClerkUser = () => {
-    return user?.role === 'admin' || user?.role === 'clerk' || user?.username === 'sarvodaya';
-  };
-
   // Load collection entries from localStorage
   useEffect(() => {
-    const savedTeacherCollections = localStorage.getItem('teacherCollectionEntries');
-    const savedSectionCollections = localStorage.getItem('sectionCollectionEntries');
-    const savedClerkCollections = localStorage.getItem('clerkCollectionEntries');
-    
-    if (savedTeacherCollections) {
-      setTeacherCollections(JSON.parse(savedTeacherCollections));
-    }
-    if (savedSectionCollections) {
-      setSectionCollections(JSON.parse(savedSectionCollections));
-    }
-    if (savedClerkCollections) {
-      setClerkCollections(JSON.parse(savedClerkCollections));
+    const savedEntries = localStorage.getItem('sectionCollectionEntries');
+    if (savedEntries) {
+      setCollectionEntries(JSON.parse(savedEntries));
     }
   }, []);
+
+  // Save collection entries to localStorage
+  const saveCollectionEntries = (entries: CollectionEntry[]) => {
+    localStorage.setItem('sectionCollectionEntries', JSON.stringify(entries));
+    setCollectionEntries(entries);
+  };
 
   // Helper function to get class range for user
   const getClassRangeForUser = () => {
@@ -106,221 +65,26 @@ const SarvodayaCollection: React.FC = () => {
     }
   };
 
-  // Get available class teachers for section user
-  const getAvailableClassTeachers = () => {
+  // Filter data based on user's class range
+  const getFilteredData = () => {
     const classRange = getClassRangeForUser();
-    if (!classRange) return [];
+    if (!classRange) return { students, payments }; // Full access for sarvodaya/admin/clerk
     
-    const classTeachers = [];
-    for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
-      for (let division of ['A', 'B', 'C', 'D', 'E']) {
-        // Check if there are students in this class-division
-        const hasStudents = students.some(s => 
-          s.class === classNum.toString() && s.division === division
-        );
-        if (hasStudents) {
-          classTeachers.push({
-            value: `class${classNum}${division.toLowerCase()}`,
-            label: `Class ${classNum}-${division} Teacher`,
-            class: classNum.toString(),
-            division: division
-          });
-        }
-      }
-    }
-    return classTeachers;
-  };
-
-  // Get available section heads for clerk users
-  const getAvailableSectionHeads = () => {
-    return [
-      { value: 'lp', label: 'LP (Classes 1-4)' },
-      { value: 'up', label: 'UP (Classes 5-7)' },
-      { value: 'hs', label: 'HS (Classes 8-10)' },
-      { value: 'hss', label: 'HSS (Classes 11-12)' }
-    ];
-  };
-
-  // Calculate teacher collections from student payments
-  const getTeacherCollectionsFromPayments = () => {
-    const teacherTotals: Record<string, { busFee: number; developmentFund: number; others: number; total: number }> = {};
-    
-    payments.forEach(payment => {
-      const teacherKey = `class${payment.class}${payment.division.toLowerCase()}`;
-      
-      if (!teacherTotals[teacherKey]) {
-        teacherTotals[teacherKey] = { busFee: 0, developmentFund: 0, others: 0, total: 0 };
-      }
-      
-      teacherTotals[teacherKey].busFee += payment.busFee;
-      teacherTotals[teacherKey].developmentFund += payment.developmentFee;
-      teacherTotals[teacherKey].others += payment.specialFee;
-      teacherTotals[teacherKey].total += payment.totalAmount;
+    const filteredStudents = students.filter(student => {
+      const classNum = parseInt(student.class);
+      return classNum >= classRange.min && classNum <= classRange.max;
     });
     
-    return teacherTotals;
-  };
-
-  // Calculate section collections from teacher entries
-
-  // Calculate clerk collections from section entries
-  const getClerkCollectionsFromEntries = () => {
-    const clerkTotals = { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: clerkCollections.length };
-
-    clerkCollections.forEach(entry => {
-      clerkTotals[entry.feeType === 'bus_fee' ? 'busFee' : 
-                  entry.feeType === 'development_fund' ? 'developmentFund' : 'others'] += entry.amount;
-      clerkTotals.total += entry.amount;
-    });
-
-    return clerkTotals;
-  };
-
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.target || formData.amount <= 0) {
-      alert('Please fill all required fields');
-      return;
-    }
-
-    const baseEntry = {
-      id: editingEntry?.id || Date.now().toString(),
-      feeType: formData.feeType,
-      amount: formData.amount,
-      date: formData.date,
-      addedBy: user?.username || '',
-      description: formData.description,
-      created_at: editingEntry?.created_at || new Date().toISOString()
-    };
-
-    if (isSectionUser()) {
-      // Section user adding teacher collection
-      const newEntry: SectionCollectionEntry = {
-        ...baseEntry,
-        sectionHead: user?.username || '',
-        fromTeacher: formData.target
-      };
-
-      let updatedEntries;
-      if (editingEntry) {
-        updatedEntries = sectionCollections.map(entry => 
-          entry.id === editingEntry.id ? newEntry : entry
-        );
-      } else {
-        updatedEntries = [...sectionCollections, newEntry];
-      }
-
-      localStorage.setItem('sectionCollectionEntries', JSON.stringify(updatedEntries));
-      setSectionCollections(updatedEntries);
-    } else if (isClerkUser()) {
-      // Clerk user adding section collection
-      const newEntry: ClerkCollectionEntry = {
-        ...baseEntry,
-        fromSectionHead: formData.target
-      };
-
-      let updatedEntries;
-      if (editingEntry) {
-        updatedEntries = clerkCollections.map(entry => 
-          entry.id === editingEntry.id ? newEntry : entry
-        );
-      } else {
-        updatedEntries = [...clerkCollections, newEntry];
-      }
-
-      localStorage.setItem('clerkCollectionEntries', JSON.stringify(updatedEntries));
-      setClerkCollections(updatedEntries);
-    }
-
-    resetForm();
-    setShowAddModal(false);
-    setEditingEntry(null);
-  };
-
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      target: '',
-      feeType: 'development_fund',
-      amount: 0,
-      date: new Date().toISOString().split('T')[0],
-      description: ''
-    });
-  };
-
-  // Handle edit
-  const handleEdit = (entry: any) => {
-    setEditingEntry(entry);
-    setFormData({
-      target: isSectionUser() ? entry.fromTeacher : entry.fromSectionHead,
-      feeType: entry.feeType,
-      amount: entry.amount,
-      date: entry.date,
-      description: entry.description || ''
-    });
-    setShowAddModal(true);
-  };
-
-  // Handle delete
-  const handleDelete = (entryId: string) => {
-    if (confirm('Are you sure you want to delete this collection entry?')) {
-      if (isSectionUser()) {
-        const updatedEntries = sectionCollections.filter(entry => entry.id !== entryId);
-        localStorage.setItem('sectionCollectionEntries', JSON.stringify(updatedEntries));
-        setSectionCollections(updatedEntries);
-      } else if (isClerkUser()) {
-        const updatedEntries = clerkCollections.filter(entry => entry.id !== entryId);
-        localStorage.setItem('clerkCollectionEntries', JSON.stringify(updatedEntries));
-        setClerkCollections(updatedEntries);
-      }
-    }
-  };
-
-  // Get fee type display name
-  const getFeeTypeDisplay = (feeType: string) => {
-    switch (feeType) {
-      case 'bus_fee': return 'Bus Fee';
-      case 'development_fund': return 'Development Fund';
-      case 'others': return 'Others';
-      default: return feeType;
-    }
-  };
-
-  // Get section display name
-  const getSectionDisplay = (section: string) => {
-    switch (section) {
-      case 'lp': return 'LP (Classes 1-4)';
-      case 'up': return 'UP (Classes 5-7)';
-      case 'hs': return 'HS (Classes 8-10)';
-      case 'hss': return 'HSS (Classes 11-12)';
-      default: return section.toUpperCase();
-    }
-  };
-
-  // Calculate totals from student payments by teacher
-  const getTeacherTotalsFromPayments = () => {
-    const teacherTotals: Record<string, { busFee: number; developmentFund: number; others: number; total: number }> = {};
-    
-    payments.forEach(payment => {
-      const teacherKey = `class${payment.class}${payment.division.toLowerCase()}`;
-      
-      if (!teacherTotals[teacherKey]) {
-        teacherTotals[teacherKey] = { busFee: 0, developmentFund: 0, others: 0, total: 0 };
-      }
-      
-      teacherTotals[teacherKey].busFee += payment.busFee;
-      teacherTotals[teacherKey].developmentFund += payment.developmentFee;
-      teacherTotals[teacherKey].others += payment.specialFee;
-      teacherTotals[teacherKey].total += payment.totalAmount;
+    const filteredPayments = payments.filter(payment => {
+      const classNum = parseInt(payment.class);
+      return classNum >= classRange.min && classNum <= classRange.max;
     });
     
-    return teacherTotals;
+    return { students: filteredStudents, payments: filteredPayments };
   };
 
-  // Calculate section totals from student payments
-  const getSectionTotalsFromPayments = () => {
+  // Calculate section totals from actual payments
+  const getSectionTotals = () => {
     const sectionTotals = {
       lp: { busFee: 0, developmentFund: 0, others: 0, total: 0 },
       up: { busFee: 0, developmentFund: 0, others: 0, total: 0 },
@@ -347,735 +111,120 @@ const SarvodayaCollection: React.FC = () => {
     return sectionTotals;
   };
 
-  // Calculate section collections from entries
-  const getSectionCollectionsFromEntries = () => {
-    const sectionTotals = {
+  // Calculate collection entries by section and fee type
+  const getCollectionEntriesBySection = () => {
+    const sectionCollections = {
       lp: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 },
       up: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 },
       hs: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 },
       hss: { busFee: 0, developmentFund: 0, others: 0, total: 0, entries: 0 }
     };
 
-    sectionCollections.forEach(entry => {
+    collectionEntries.forEach(entry => {
       const section = entry.sectionHead as 'lp' | 'up' | 'hs' | 'hss';
-      if (sectionTotals[section]) {
-        sectionTotals[section][entry.feeType === 'bus_fee' ? 'busFee' : 
-                              entry.feeType === 'development_fund' ? 'developmentFund' : 'others'] += entry.amount;
-        sectionTotals[section].total += entry.amount;
-        sectionTotals[section].entries += 1;
+      if (sectionCollections[section]) {
+        sectionCollections[section][entry.feeType === 'bus_fee' ? 'busFee' : 
+                                    entry.feeType === 'development_fund' ? 'developmentFund' : 'others'] += entry.amount;
+        sectionCollections[section].total += entry.amount;
+        sectionCollections[section].entries += 1;
       }
     });
 
-    return sectionTotals;
+    return sectionCollections;
   };
 
-  // Overview Component
-  const OverviewComponent: React.FC = () => {
-    const teacherTotals = getTeacherTotalsFromPayments();
-    const sectionTotalsFromPayments = getSectionTotalsFromPayments();
-    const sectionCollectionsFromEntries = getSectionCollectionsFromEntries();
-    const clerkCollectionsFromEntries = getClerkCollectionsFromEntries();
-
-    return (
-      <div className="space-y-6">
-        {/* 3-Tier System Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Tier 1: Teacher Collections */}
-          <div className="bg-blue-50 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-blue-900">Tier 1: Teacher Collections</h3>
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-blue-700">Total from Students:</span>
-                <span className="font-bold text-blue-900">
-                  ₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.total, 0).toLocaleString()}
-                </span>
-              </div>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Bus Fee:</span>
-                  <span>₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.busFee, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Development:</span>
-                  <span>₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.developmentFund, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Others:</span>
-                  <span>₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.others, 0).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tier 2: Section Collections */}
-          <div className="bg-green-50 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-green-900">Tier 2: Section Collections</h3>
-              <TrendingUp className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-green-700">Total from Teachers:</span>
-                <span className="font-bold text-green-900">
-                  ₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.total, 0).toLocaleString()}
-                </span>
-              </div>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Bus Fee:</span>
-                  <span>₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.busFee, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Development:</span>
-                  <span>₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.developmentFund, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Others:</span>
-                  <span>₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.others, 0).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tier 3: Clerk Collections */}
-          <div className="bg-purple-50 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-purple-900">Tier 3: Final Collections</h3>
-              <DollarSign className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-purple-700">Total from Sections:</span>
-                <span className="font-bold text-purple-900">
-                  ₹{clerkCollectionsFromEntries.total.toLocaleString()}
-                </span>
-              </div>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Bus Fee:</span>
-                  <span>₹{clerkCollectionsFromEntries.busFee.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Development:</span>
-                  <span>₹{clerkCollectionsFromEntries.developmentFund.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Others:</span>
-                  <span>₹{clerkCollectionsFromEntries.others.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section-wise Detailed View */}
-        {(isSectionUser() || isClerkUser()) && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {isSectionUser() ? `${getSectionDisplay(user?.username || '')} Collection Status` : 'Section-wise Collection Status'}
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(isSectionUser() ? [user?.username || ''] : ['lp', 'up', 'hs', 'hss']).map((section) => {
-                const fromPayments = sectionTotalsFromPayments[section as keyof typeof sectionTotalsFromPayments];
-                const fromEntries = sectionCollectionsFromEntries[section as keyof typeof sectionCollectionsFromEntries];
-                
-                return (
-                  <div key={section} className="bg-gray-50 rounded-lg p-6">
-                    <h4 className="font-medium text-gray-900 mb-3">{getSectionDisplay(section)}</h4>
-                    
-                    <div className="space-y-4">
-                      {/* Bus Fee */}
-                      <div className="bg-orange-50 rounded p-3">
-                        <div className="font-medium text-orange-900 text-sm mb-2">Bus Fee</div>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-orange-700">From Students:</span>
-                            <span className="font-medium">₹{fromPayments?.busFee.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-orange-700">From Teachers:</span>
-                            <span className="font-medium text-green-600">₹{fromEntries?.busFee.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between border-t border-orange-200 pt-1">
-                            <span className="text-orange-700 font-medium">
-                              {(fromPayments?.busFee || 0) >= (fromEntries?.busFee || 0) ? 'Balance Due:' : 'Excess:'}
-                            </span>
-                            <span className={`font-bold ${
-                              (fromPayments?.busFee || 0) - (fromEntries?.busFee || 0) === 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ₹{Math.abs((fromPayments?.busFee || 0) - (fromEntries?.busFee || 0)).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Development Fee */}
-                      <div className="bg-blue-50 rounded p-3">
-                        <div className="font-medium text-blue-900 text-sm mb-2">Development Fee</div>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-blue-700">From Students:</span>
-                            <span className="font-medium">₹{fromPayments?.developmentFund.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-blue-700">From Teachers:</span>
-                            <span className="font-medium text-green-600">₹{fromEntries?.developmentFund.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between border-t border-blue-200 pt-1">
-                            <span className="text-blue-700 font-medium">
-                              {(fromPayments?.developmentFund || 0) >= (fromEntries?.developmentFund || 0) ? 'Balance Due:' : 'Excess:'}
-                            </span>
-                            <span className={`font-bold ${
-                              (fromPayments?.developmentFund || 0) - (fromEntries?.developmentFund || 0) === 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ₹{Math.abs((fromPayments?.developmentFund || 0) - (fromEntries?.developmentFund || 0)).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Others */}
-                      <div className="bg-gray-50 rounded p-3">
-                        <div className="font-medium text-gray-900 text-sm mb-2">Others</div>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-gray-700">From Students:</span>
-                            <span className="font-medium">₹{fromPayments?.others.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-700">From Teachers:</span>
-                            <span className="font-medium text-green-600">₹{fromEntries?.others.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between border-t border-gray-200 pt-1">
-                            <span className="text-gray-700 font-medium">
-                              {(fromPayments?.others || 0) >= (fromEntries?.others || 0) ? 'Balance Due:' : 'Excess:'}
-                            </span>
-                            <span className={`font-bold ${
-                              (fromPayments?.others || 0) - (fromEntries?.others || 0) === 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ₹{Math.abs((fromPayments?.others || 0) - (fromEntries?.others || 0)).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Total Summary */}
-                      <div className="bg-yellow-50 rounded p-3 border-t">
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-yellow-700 font-medium">Total from Students:</span>
-                            <span className="font-bold">₹{fromPayments?.total.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-yellow-700 font-medium">Total from Teachers:</span>
-                            <span className="font-bold text-green-600">₹{fromEntries?.total.toLocaleString() || '0'}</span>
-                          </div>
-                          <div className="flex justify-between border-t border-yellow-200 pt-1">
-                            <span className="text-yellow-700 font-medium">
-                              {(fromPayments?.total || 0) >= (fromEntries?.total || 0) ? 'Overall Balance:' : 'Overall Excess:'}
-                            </span>
-                            <span className={`font-bold ${
-                              (fromPayments?.total || 0) - (fromEntries?.total || 0) === 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ₹{Math.abs((fromPayments?.total || 0) - (fromEntries?.total || 0)).toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="text-center text-yellow-600 font-medium">
-                            Entries: {fromEntries?.entries || 0}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Teacher Entry Component (for section users)
-  const TeacherEntryComponent: React.FC = () => {
-    const availableTeachers = getAvailableClassTeachers();
-    const teacherTotalsFromPayments = getTeacherTotalsFromPayments();
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Filter section collections for current user
-    const userSectionCollections = sectionCollections.filter(entry => entry.sectionHead === user?.username);
+    if (!formData.sectionHead || formData.amount <= 0) {
+      alert('Please fill all required fields');
+      return;
+    }
 
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Teacher Collection Entries - {getSectionDisplay(user?.username || '')}
-          </h3>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Teacher Collection</span>
-          </button>
-        </div>
+    const newEntry: CollectionEntry = {
+      id: editingEntry?.id || Date.now().toString(),
+      sectionHead: formData.sectionHead,
+      feeType: formData.feeType,
+      amount: formData.amount,
+      date: formData.date,
+      addedBy: user?.username || '',
+      description: formData.description,
+      created_at: editingEntry?.created_at || new Date().toISOString()
+    };
 
-        {/* Teacher Status Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {availableTeachers.map(teacher => {
-            const fromPayments = teacherTotalsFromPayments[teacher.value] || { busFee: 0, developmentFund: 0, others: 0, total: 0 };
-            const teacherEntries = userSectionCollections.filter(entry => entry.fromTeacher === teacher.value);
-            
-            // Calculate entered amounts by fee type
-            const enteredBusFee = teacherEntries
-              .filter(entry => entry.feeType === 'bus_fee')
-              .reduce((sum, entry) => sum + entry.amount, 0);
-            const enteredDevelopmentFee = teacherEntries
-              .filter(entry => entry.feeType === 'development_fund')
-              .reduce((sum, entry) => sum + entry.amount, 0);
-            const enteredOthers = teacherEntries
-              .filter(entry => entry.feeType === 'others')
-              .reduce((sum, entry) => sum + entry.amount, 0);
-            const totalEntered = enteredBusFee + enteredDevelopmentFee + enteredOthers;
-            
-            return (
-              <div key={teacher.value} className="bg-white border rounded-lg p-4 space-y-3">
-                <h4 className="font-medium text-gray-900 mb-3">{teacher.label}</h4>
-                
-                {/* Bus Fee */}
-                <div className="bg-orange-50 rounded p-3">
-                  <div className="font-medium text-orange-900 text-sm mb-2">Bus Fee</div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-orange-700">From Students:</span>
-                      <span className="font-medium">₹{fromPayments.busFee.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-orange-700">Entered:</span>
-                      <span className="font-medium text-green-600">₹{enteredBusFee.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-orange-200 pt-1">
-                      <span className="text-orange-700 font-medium">Balance:</span>
-                      <span className={`font-bold ${
-                        fromPayments.busFee - enteredBusFee === 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        ₹{Math.abs(fromPayments.busFee - enteredBusFee).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Development Fee */}
-                <div className="bg-blue-50 rounded p-3">
-                  <div className="font-medium text-blue-900 text-sm mb-2">Development Fee</div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-blue-700">From Students:</span>
-                      <span className="font-medium">₹{fromPayments.developmentFund.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-700">Entered:</span>
-                      <span className="font-medium text-green-600">₹{enteredDevelopmentFee.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-blue-200 pt-1">
-                      <span className="text-blue-700 font-medium">Balance:</span>
-                      <span className={`font-bold ${
-                        fromPayments.developmentFund - enteredDevelopmentFee === 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        ₹{Math.abs(fromPayments.developmentFund - enteredDevelopmentFee).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Others */}
-                <div className="bg-gray-50 rounded p-3">
-                  <div className="font-medium text-gray-900 text-sm mb-2">Others</div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">From Students:</span>
-                      <span className="font-medium">₹{fromPayments.others.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-700">Entered:</span>
-                      <span className="font-medium text-green-600">₹{enteredOthers.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-gray-200 pt-1">
-                      <span className="text-gray-700 font-medium">Balance:</span>
-                      <span className={`font-bold ${
-                        fromPayments.others - enteredOthers === 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        ₹{Math.abs(fromPayments.others - enteredOthers).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Total Summary */}
-                <div className="bg-yellow-50 rounded p-3 border-t">
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-yellow-700 font-medium">Total from Students:</span>
-                      <span className="font-bold">₹{fromPayments.total.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-yellow-700 font-medium">Total Entered:</span>
-                      <span className="font-bold text-green-600">₹{totalEntered.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-yellow-200 pt-1">
-                      <span className="text-yellow-700 font-medium">Overall Balance:</span>
-                      <span className={`font-bold ${
-                        fromPayments.total - totalEntered === 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        ₹{Math.abs(fromPayments.total - totalEntered).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="text-center text-yellow-600 font-medium">
-                      Entries: {teacherEntries.length}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    let updatedEntries;
+    if (editingEntry) {
+      updatedEntries = collectionEntries.map(entry => 
+        entry.id === editingEntry.id ? newEntry : entry
+      );
+    } else {
+      updatedEntries = [...collectionEntries, newEntry];
+    }
 
-        {/* Collection Entries Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Collection Entries from Teachers</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From Teacher</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {userSectionCollections
-                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                  .map((entry) => (
-                    <tr key={entry.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(entry.date).toLocaleDateString('en-GB')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                          {entry.fromTeacher ? entry.fromTeacher.replace('class', 'Class ').replace(/(\d+)([a-z])/, '$1-$2').toUpperCase() : 'Unknown Teacher'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          entry.feeType === 'bus_fee' ? 'bg-orange-100 text-orange-800' :
-                          entry.feeType === 'development_fund' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {getFeeTypeDisplay(entry.feeType)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                        ₹{entry.amount.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                        {entry.description || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEdit(entry)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Edit Entry"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(entry.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete Entry"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {userSectionCollections.length === 0 && (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No collection entries</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Start by adding collections received from class teachers.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    saveCollectionEntries(updatedEntries);
+    resetForm();
+    setShowAddModal(false);
+    setEditingEntry(null);
   };
 
-  // Clerk Entry Component (for admin/clerk/sarvodaya users)
-  const ClerkEntryComponent: React.FC = () => {
-    const sectionTotalsFromPayments = getSectionTotalsFromPayments();
-    const sectionCollectionsFromEntries = getSectionCollectionsFromEntries();
-
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Section Head Collection Entries</h3>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Section Collection</span>
-          </button>
-        </div>
-
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {(['lp', 'up', 'hs', 'hss'] as const).map((section) => {
-              const fromEntries = sectionCollectionsFromEntries[section];
-              const sectionClerkEntries = clerkCollections.filter(entry => entry.fromSectionHead === section);
-              const totalToClerk = sectionClerkEntries.reduce((sum, entry) => sum + entry.amount, 0);
-              
-              // Calculate fee type breakdowns
-              const busFeeFromTeachers = fromEntries.busFee;
-              const devFeeFromTeachers = fromEntries.developmentFund;
-              const othersFromTeachers = fromEntries.others;
-              const totalFromTeachers = fromEntries.total;
-              
-              const busFeeToClerk = sectionClerkEntries
-                .filter(entry => entry.feeType === 'bus_fee')
-                .reduce((sum, entry) => sum + entry.amount, 0);
-              const devFeeToClerk = sectionClerkEntries
-                .filter(entry => entry.feeType === 'development_fund')
-                .reduce((sum, entry) => sum + entry.amount, 0);
-              const othersToClerk = sectionClerkEntries
-                .filter(entry => entry.feeType === 'others')
-                .reduce((sum, entry) => sum + entry.amount, 0);
-              
-              const busFeeBalance = busFeeFromTeachers - busFeeToClerk;
-              const devFeeBalance = devFeeFromTeachers - devFeeToClerk;
-              const othersBalance = othersFromTeachers - othersToClerk;
-              const balance = totalFromTeachers - totalToClerk;
-              
-              return (
-                <div key={section} className="bg-white border rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 mb-4 text-lg">{getSectionDisplay(section)}</h3>
-                  
-                  {/* Fee Type Breakdown */}
-                  <div className="grid grid-cols-1 gap-4 mb-4">
-                    {/* Bus Fee */}
-                    <div className="bg-orange-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-orange-900">Bus Fee</h4>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-orange-700">From Teachers:</span>
-                          <span className="font-medium">₹{busFeeFromTeachers.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-orange-700">To Clerk:</span>
-                          <span className="font-medium">₹{busFeeToClerk.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-orange-200 pt-1">
-                          <span className="text-orange-800 font-medium">
-                            {busFeeBalance >= 0 ? 'Balance Due:' : 'Excess:'}
-                          </span>
-                          <span className={`font-bold ${busFeeBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ₹{Math.abs(busFeeBalance).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Development Fee */}
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-blue-900">Development Fee</h4>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-blue-700">From Teachers:</span>
-                          <span className="font-medium">₹{devFeeFromTeachers.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-blue-700">To Clerk:</span>
-                          <span className="font-medium">₹{devFeeToClerk.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-blue-200 pt-1">
-                          <span className="text-blue-800 font-medium">
-                            {devFeeBalance >= 0 ? 'Balance Due:' : 'Excess:'}
-                          </span>
-                          <span className={`font-bold ${devFeeBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ₹{Math.abs(devFeeBalance).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Others */}
-                    <div className="bg-gray-100 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">Others</h4>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">From Teachers:</span>
-                          <span className="font-medium">₹{othersFromTeachers.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">To Clerk:</span>
-                          <span className="font-medium">₹{othersToClerk.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-gray-300 pt-1">
-                          <span className="text-gray-800 font-medium">
-                            {othersBalance >= 0 ? 'Balance Due:' : 'Excess:'}
-                          </span>
-                          <span className={`font-bold ${othersBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ₹{Math.abs(othersBalance).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Total Summary */}
-                  <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                    <h4 className="font-medium text-yellow-900 mb-2">Total Summary</h4>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="text-yellow-700">From Teachers</div>
-                        <div className="font-bold text-lg">₹{totalFromTeachers.toLocaleString()}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-yellow-700">To Clerk</div>
-                        <div className="font-bold text-lg">₹{totalToClerk.toLocaleString()}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-yellow-700">{balance >= 0 ? 'Balance Due' : 'Excess'}</div>
-                        <div className={`font-bold text-lg ${balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          ₹{Math.abs(balance).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-500 text-center mt-2">
-                      Entries: {sectionClerkEntries.length}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Collection Entries Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Collection Entries from Section Heads</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From Section Head</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {clerkCollections
-                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                    .map((entry) => (
-                      <tr key={entry.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(entry.date).toLocaleDateString('en-GB')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            entry.fromSectionHead === 'lp' ? 'bg-blue-100 text-blue-800' :
-                            entry.fromSectionHead === 'up' ? 'bg-green-100 text-green-800' :
-                            entry.fromSectionHead === 'hs' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-purple-100 text-purple-800'
-                          }`}>
-                            {getSectionDisplay(entry.fromSectionHead)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            entry.feeType === 'bus_fee' ? 'bg-orange-100 text-orange-800' :
-                            entry.feeType === 'development_fund' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {getFeeTypeDisplay(entry.feeType)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                          ₹{entry.amount.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                          {entry.description || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {entry.addedBy}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEdit(entry)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Edit Entry"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(entry.id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete Entry"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {clerkCollections.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No collection entries</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Start by adding collections received from section heads.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      sectionHead: '',
+      feeType: 'development_fund',
+      amount: 0,
+      date: new Date().toISOString().split('T')[0],
+      description: ''
+    });
   };
 
-  // Check access permissions
+  // Handle edit
+  const handleEdit = (entry: CollectionEntry) => {
+    setEditingEntry(entry);
+    setFormData({
+      sectionHead: entry.sectionHead,
+      feeType: entry.feeType,
+      amount: entry.amount,
+      date: entry.date,
+      description: entry.description || ''
+    });
+    setShowAddModal(true);
+  };
+
+  // Handle delete
+  const handleDelete = (entryId: string) => {
+    if (confirm('Are you sure you want to delete this collection entry?')) {
+      const updatedEntries = collectionEntries.filter(entry => entry.id !== entryId);
+      saveCollectionEntries(updatedEntries);
+    }
+  };
+
+  // Get fee type display name
+  const getFeeTypeDisplay = (feeType: string) => {
+    switch (feeType) {
+      case 'bus_fee': return 'Bus Fee';
+      case 'development_fund': return 'Development Fund';
+      case 'others': return 'Others';
+      default: return feeType;
+    }
+  };
+
+  // Get section display name
+  const getSectionDisplay = (section: string) => {
+    switch (section) {
+      case 'lp': return 'LP (Classes 1-4)';
+      case 'up': return 'UP (Classes 5-7)';
+      case 'hs': return 'HS (Classes 8-10)';
+      case 'hss': return 'HSS (Classes 11-12)';
+      default: return section.toUpperCase();
+    }
+  };
+
+  const sectionTotals = getSectionTotals();
+  const collectionsBySection = getCollectionEntriesBySection();
+
+  // Check if user has access to collection entry
   const canAccessCollectionEntry = () => {
     return user?.role === 'admin' || user?.role === 'clerk' || user?.role === 'sarvodaya';
   };
@@ -1093,59 +242,259 @@ const SarvodayaCollection: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {isSectionUser() 
-              ? `${getSectionDisplay(user?.username || '')} Collection Management`
-              : 'Collection Management System'
+            {user?.role === 'sarvodaya' && user.username !== 'sarvodaya' 
+              ? `${getSectionDisplay(user.username)} Collection Entry`
+              : 'Section Collection Entry'
             }
           </h1>
           <p className="text-gray-600">
-            3-Tier Collection System: Students → Teachers → Section Heads → Admin/Clerk
+            3-Tier Collection System: Teacher → Section Head → Admin/Clerk/Sarvodaya
           </p>
         </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Collection Entry</span>
+        </button>
       </div>
 
       {/* Collection System Overview */}
+      <div className="bg-blue-50 rounded-lg p-4">
+        <h3 className="font-medium text-blue-900 mb-2">3-Tier Collection System</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800">
+          <div className="bg-white rounded p-3">
+            <div className="font-medium">Tier 1: Teacher Collection</div>
+            <div>Teachers collect fees from students</div>
+          </div>
+          <div className="bg-white rounded p-3">
+            <div className="font-medium">Tier 2: Section Head Collection</div>
+            <div>Section heads (LP/UP/HS/HSS) collect from teachers</div>
+          </div>
+          <div className="bg-white rounded p-3">
+            <div className="font-medium">Tier 3: Final Collection</div>
+            <div>Admin/Clerk/Sarvodaya collect from section heads</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fee Types Overview */}
+      <div className="bg-green-50 rounded-lg p-4">
+        <h3 className="font-medium text-green-900 mb-2">Fee Types</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-800">
+          <div className="bg-white rounded p-3">
+            <div className="font-medium">Bus Fee</div>
+            <div>Transportation charges</div>
+          </div>
+          <div className="bg-white rounded p-3">
+            <div className="font-medium">Development Fund</div>
+            <div>School development fees</div>
+          </div>
+          <div className="bg-white rounded p-3">
+            <div className="font-medium">Others</div>
+            <div>Special fees and miscellaneous</div>
+          </div>
+        </div>
+      </div>
 
       {/* View Toggle */}
       <div className="bg-white rounded-lg shadow p-6">
-        {!isSectionUser() && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            <button
-              onClick={() => setActiveView('overview')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeView === 'overview'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              System Overview
-            </button>
-            
-            {isClerkUser() && (
-              <button
-                onClick={() => setActiveView('clerk-entry')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeView === 'clerk-entry'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Section Collections
-              </button>
-            )}
+        <div className="flex space-x-4 mb-4">
+          <button
+            onClick={() => setActiveView('section-wise')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeView === 'section-wise'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Section-wise View
+          </button>
+          <button
+            onClick={() => setActiveView('class-wise')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeView === 'class-wise'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Collection Entries
+          </button>
+        </div>
+
+        {activeView === 'section-wise' ? (
+          <div className="space-y-6">
+            {/* Section-wise Collection Summary */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Section-wise Collection Summary</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {(['lp', 'up', 'hs', 'hss'] as const).map((section) => {
+                  const actualTotal = sectionTotals[section];
+                  const collectedTotal = collectionsBySection[section];
+                  
+                  return (
+                    <div key={section} className="bg-white border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-900">{getSectionDisplay(section)}</h4>
+                        <Users className="h-5 w-5 text-blue-600" />
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Received:</span>
+                          <span className="font-medium">₹{actualTotal.total.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="border-t pt-2">
+                          <div className="text-xs font-medium text-gray-700 mb-1">Fee Type Breakdown:</div>
+                          <div className="flex justify-between text-xs">
+                            <span>Bus Fee:</span>
+                            <span>₹{actualTotal.busFee.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span>Development:</span>
+                            <span>₹{actualTotal.developmentFund.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span>Others:</span>
+                            <span>₹{actualTotal.others.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Section Total Entered amount:</span>
+                            <span className="font-medium text-green-600">₹{collectedTotal.total.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Entries:</span>
+                            <span className="font-medium">{collectedTotal.entries}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t pt-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Balance Due:</span>
+                            <div className={`font-medium ${
+                              actualTotal.total - collectedTotal.total === 0 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              ₹{Math.abs(actualTotal.total - collectedTotal.total).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        )}
-        
-        {isSectionUser() && (
-          <TeacherEntryComponent />
-        )}
-        
-        {!isSectionUser() && (
-          <>
-            {/* Render active view */}
-            {activeView === 'overview' && <OverviewComponent />}
-            {activeView === 'clerk-entry' && isClerkUser() && <ClerkEntryComponent />}
-          </>
+        ) : (
+          <div className="space-y-6">
+            {/* Collection Entries Table */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Collection Entries</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Section Head
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Fee Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Added By
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {collectionEntries
+                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .map((entry) => (
+                        <tr key={entry.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(entry.date).toLocaleDateString('en-GB')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              entry.sectionHead === 'lp' ? 'bg-blue-100 text-blue-800' :
+                              entry.sectionHead === 'up' ? 'bg-green-100 text-green-800' :
+                              entry.sectionHead === 'hs' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-purple-100 text-purple-800'
+                            }`}>
+                              {getSectionDisplay(entry.sectionHead)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              entry.feeType === 'bus_fee' ? 'bg-orange-100 text-orange-800' :
+                              entry.feeType === 'development_fund' ? 'bg-indigo-100 text-indigo-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {getFeeTypeDisplay(entry.feeType)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                            ₹{entry.amount.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                            {entry.description || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {entry.addedBy}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleEdit(entry)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Edit Entry"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(entry.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete Entry"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {collectionEntries.length === 0 && (
+                <div className="text-center py-12">
+                  <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No collection entries</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Get started by adding a collection entry from section heads.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
@@ -1155,8 +504,7 @@ const SarvodayaCollection: React.FC = () => {
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingEntry ? 'Edit Collection Entry' : 
-                 isSectionUser() ? 'Add Teacher Collection' : 'Add Section Collection'}
+                {editingEntry ? 'Edit Collection Entry' : 'Add Collection Entry'}
               </h2>
               <button 
                 onClick={() => {
@@ -1173,37 +521,20 @@ const SarvodayaCollection: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {isSectionUser() ? 'Class Teacher' : 'Section Head'}
+                  Section Head
                 </label>
-                {isSectionUser() ? (
-                  <select
-                    value={formData.target}
-                    onChange={(e) => setFormData(prev => ({ ...prev, target: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select Class Teacher</option>
-                    {getAvailableClassTeachers().map(teacher => (
-                      <option key={teacher.value} value={teacher.value}>
-                        {teacher.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <select
-                    value={formData.target}
-                    onChange={(e) => setFormData(prev => ({ ...prev, target: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select Section Head</option>
-                    {getAvailableSectionHeads().map(section => (
-                      <option key={section.value} value={section.value}>
-                        {section.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                <select
+                  value={formData.sectionHead}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sectionHead: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select Section Head</option>
+                  <option value="lp">LP (Classes 1-4)</option>
+                  <option value="up">UP (Classes 5-7)</option>
+                  <option value="hs">HS (Classes 8-10)</option>
+                  <option value="hss">HSS (Classes 11-12)</option>
+                </select>
               </div>
 
               <div>
@@ -1216,25 +547,27 @@ const SarvodayaCollection: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="bus_fee">Bus Fee</option>
                   <option value="development_fund">Development Fund</option>
+                  <option value="bus_fee">Bus Fee</option>
                   <option value="others">Others</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount
+                  Amount (₹)
                 </label>
-                <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  min="0"
-                  step="0.01"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                  <input
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, amount: parseInt(e.target.value) || 0 }))}
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    min="0"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
