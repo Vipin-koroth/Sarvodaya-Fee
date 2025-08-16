@@ -1216,8 +1216,8 @@ const SarvodayaCollection: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="development_fund">Development Fund</option>
                   <option value="bus_fee">Bus Fee</option>
+                  <option value="development_fund">Development Fund</option>
                   <option value="others">Others</option>
                 </select>
               </div>
