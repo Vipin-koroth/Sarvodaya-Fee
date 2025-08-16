@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Users, TrendingUp, Calendar, FileText, Edit, Trash2, Save, X, Receipt, DollarSign } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { TrendingUp, Users, CreditCard, FileText, ChevronDown, ChevronUp, Download, Calendar, Search } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 interface TeacherCollectionEntry {
@@ -85,6 +85,12 @@ const SarvodayaCollection: React.FC = () => {
       setClerkCollections(JSON.parse(savedClerkCollections));
     }
   }, []);
+  const [teacherEntriesFilter, setTeacherEntriesFilter] = useState({
+    dateFrom: '',
+    dateTo: '',
+    teacher: '',
+    feeType: ''
+  });
 
   // Helper function to get class range for user
   const getClassRangeForUser = () => {
@@ -1087,6 +1093,80 @@ const SarvodayaCollection: React.FC = () => {
       </div>
     );
   }
+
+  // Generate mock teacher collection entries data
+  const generateTeacherEntries = () => {
+    const entries = [];
+    const teachers = ['class1a', 'class2b', 'class3c', 'class4d', 'class5e', 'class6a', 'class7b', 'class8c', 'class9d', 'class10e', 'class11a', 'class12b'];
+    const feeTypes = ['Bus Fee', 'Development Fee', 'Others'];
+    
+    for (let i = 0; i < 50; i++) {
+      const teacher = teachers[Math.floor(Math.random() * teachers.length)];
+      const feeType = feeTypes[Math.floor(Math.random() * feeTypes.length)];
+      const amount = Math.floor(Math.random() * 50000) + 5000;
+      const date = new Date();
+      date.setDate(date.getDate() - Math.floor(Math.random() * 30));
+      
+      entries.push({
+        id: `entry_${i + 1}`,
+        teacher,
+        feeType,
+        amount,
+        date: date.toISOString().split('T')[0],
+        status: Math.random() > 0.3 ? 'Submitted' : 'Pending',
+        submittedAt: date.toISOString()
+      });
+    }
+    
+    return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const teacherEntries = generateTeacherEntries();
+
+  // Filter teacher entries
+  const getFilteredTeacherEntries = () => {
+    return teacherEntries.filter(entry => {
+      const matchesDateFrom = !teacherEntriesFilter.dateFrom || entry.date >= teacherEntriesFilter.dateFrom;
+      const matchesDateTo = !teacherEntriesFilter.dateTo || entry.date <= teacherEntriesFilter.dateTo;
+      const matchesTeacher = !teacherEntriesFilter.teacher || entry.teacher.toLowerCase().includes(teacherEntriesFilter.teacher.toLowerCase());
+      const matchesFeeType = !teacherEntriesFilter.feeType || entry.feeType === teacherEntriesFilter.feeType;
+      
+      return matchesDateFrom && matchesDateTo && matchesTeacher && matchesFeeType;
+    });
+  };
+
+  // Download CSV function
+  const downloadTeacherEntriesCSV = () => {
+    const filteredEntries = getFilteredTeacherEntries();
+    
+    if (filteredEntries.length === 0) {
+      alert('No teacher entries found for the selected criteria.');
+      return;
+    }
+
+    const headers = [
+      'Entry ID', 'Teacher', 'Fee Type', 'Amount', 'Date', 'Status', 'Submitted At'
+    ];
+    
+    const csvData = filteredEntries.map(entry => [
+      entry.id,
+      entry.teacher,
+      entry.feeType,
+      entry.amount,
+      new Date(entry.date).toLocaleDateString('en-GB'),
+      entry.status,
+      new Date(entry.submittedAt).toLocaleString('en-GB')
+    ]);
+    
+    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `teacher_collection_entries_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
