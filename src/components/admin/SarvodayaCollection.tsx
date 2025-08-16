@@ -830,28 +830,9 @@ const SarvodayaCollection: React.FC = () => {
                           </td>
                         </>
                       )}
-                      {!isClassOnlyUser() && (
-                        <>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-blue-600">
-                              ₹{(collection.busFee || 0).toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-purple-600">
-                              ₹{(collection.developmentFee || 0).toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-orange-600">
-                              ₹{(collection.othersFee || 0).toLocaleString()}
-                            </span>
-                          </td>
-                        </>
-                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-green-600">
-                          ₹{(collection.totalAmount || 0).toLocaleString()}
+                          ₹{(collection.amount || 0).toLocaleString()}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -1096,6 +1077,17 @@ const SarvodayaCollection: React.FC = () => {
                   required
                 />
               </div>
+              
+              {/* Total Amount Display */}
+              <div className="bg-green-50 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-green-900">Total Amount:</span>
+                  <span className="text-lg font-bold text-green-600">
+                    ₹{(classFormData.busFee + classFormData.developmentFee + classFormData.othersFee).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              
               <div className="flex space-x-3 pt-4">
                 <button
                   type="button"
@@ -1106,7 +1098,9 @@ const SarvodayaCollection: React.FC = () => {
                       class: '',
                       division: '',
                       teacherName: '',
-                      amount: 0,
+                      busFee: 0,
+                      developmentFee: 0,
+                      othersFee: 0,
                       date: new Date().toISOString().split('T')[0]
                     });
                   }}
@@ -1116,7 +1110,8 @@ const SarvodayaCollection: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={(classFormData.busFee + classFormData.developmentFee + classFormData.othersFee) <= 0}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingClassId ? 'Update' : 'Add'} Collection
                 </button>
