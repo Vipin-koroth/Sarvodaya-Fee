@@ -590,40 +590,6 @@ const SarvodayaCollection: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                        <div className="flex justify-between">
-                          <span>Total:</span>
-                          <span className="font-medium">₹{fromPayments?.total.toLocaleString() || '0'}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-green-100 rounded p-2">
-                        <div className="font-medium text-green-900 mb-1">
-                          {isSectionUser() ? 'To Admin/Clerk (Tier 2)' : 'From Teachers (Tier 2)'}
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total:</span>
-                          <span className="font-medium">₹{fromEntries?.total.toLocaleString() || '0'}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span>Entries:</span>
-                          <span>{fromEntries?.entries || 0}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-yellow-100 rounded p-2">
-                        <div className="font-medium text-yellow-900 mb-1">Balance Due</div>
-                        <div className="flex justify-between">
-                          <span>Amount:</span>
-                          <span className={`font-bold ${
-                            (fromPayments?.total || 0) - (fromEntries?.total || 0) === 0 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
-                            ₹{Math.abs((fromPayments?.total || 0) - (fromEntries?.total || 0)).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 );
               })}
