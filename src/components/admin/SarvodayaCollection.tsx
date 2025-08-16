@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Users, TrendingUp, Calendar, FileText, Edit, Trash2, Save, X, Receipt, DollarSign, CreditCard, ChevronDown, ChevronUp, Download, Search } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 
 interface TeacherCollectionEntry {
