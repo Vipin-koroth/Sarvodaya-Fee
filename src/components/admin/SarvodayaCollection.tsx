@@ -942,7 +942,7 @@ const SarvodayaCollection: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         {!isSectionUser() && (
           <div className="flex flex-wrap gap-2 mb-4">
-            <button
+        <div className="space-y-6">
               onClick={() => setActiveView('overview')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeView === 'overview'
@@ -1052,22 +1052,114 @@ const SarvodayaCollection: React.FC = () => {
                   <option value="bus_fee">Bus Fee</option>
                   <option value="others">Others</option>
                 </select>
+            <div key={section} className="bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{section}</h3>
+              
+              {/* Bus Fee */}
+              <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <h4 className="font-medium text-orange-900 mb-3">Bus Fee</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-orange-700">From Students:</span>
+                    <div className="font-medium">₹{totals.busFee.fromStudents.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-orange-700">From Teachers:</span>
+                    <div className="font-medium">₹{totals.busFee.fromTeachers.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-orange-700">Balance Due:</span>
+                    <div className={`font-medium ${totals.busFee.balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {totals.busFee.balance >= 0 ? `₹${totals.busFee.balance.toLocaleString()}` : `₹0`}
+                    </div>
+                  </div>
+                  {totals.busFee.balance < 0 && (
+                    <div>
+                      <span className="text-orange-700">Excess:</span>
+                      <div className="font-medium text-red-600">₹{Math.abs(totals.busFee.balance).toLocaleString()}</div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount (₹)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                  <input
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amount: parseInt(e.target.value) || 0 }))}
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    min="0"
-                    required
-                  />
+              {/* Development Fee */}
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-900 mb-3">Development Fee</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-blue-700">From Students:</span>
+                    <div className="font-medium">₹{totals.developmentFee.fromStudents.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">From Teachers:</span>
+                    <div className="font-medium">₹{totals.developmentFee.fromTeachers.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-blue-700">Balance Due:</span>
+                    <div className={`font-medium ${totals.developmentFee.balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {totals.developmentFee.balance >= 0 ? `₹${totals.developmentFee.balance.toLocaleString()}` : `₹0`}
+                    </div>
+                  </div>
+                  {totals.developmentFee.balance < 0 && (
+                    <div>
+                      <span className="text-blue-700">Excess:</span>
+                      <div className="font-medium text-red-600">₹{Math.abs(totals.developmentFee.balance).toLocaleString()}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Others */}
+              <div className="mb-4 p-4 bg-gray-100 rounded-lg border border-gray-300">
+                <h4 className="font-medium text-gray-900 mb-3">Others</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-700">From Students:</span>
+                    <div className="font-medium">₹{totals.others.fromStudents.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-700">From Teachers:</span>
+                    <div className="font-medium">₹{totals.others.fromTeachers.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-700">Balance Due:</span>
+                    <div className={`font-medium ${totals.others.balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {totals.others.balance >= 0 ? `₹${totals.others.balance.toLocaleString()}` : `₹0`}
+                    </div>
+                  </div>
+                  {totals.others.balance < 0 && (
+                    <div>
+                      <span className="text-gray-700">Excess:</span>
+                      <div className="font-medium text-red-600">₹{Math.abs(totals.others.balance).toLocaleString()}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Total Summary */}
+              <div className="p-4 bg-white rounded-lg border-2 border-gray-300">
+                <h4 className="font-semibold text-gray-900 mb-3">Total Summary</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-700">Total from Students:</span>
+                    <div className="font-semibold">₹{totals.fromStudents.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-700">Total from Teachers:</span>
+                    <div className="font-semibold">₹{totals.fromTeachers.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-700">Total Balance Due:</span>
+                    <div className={`font-semibold ${totals.balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {totals.balance >= 0 ? `₹${totals.balance.toLocaleString()}` : `₹0`}
+                    </div>
+                  </div>
+                  {totals.balance < 0 && (
+                    <div>
+                      <span className="text-gray-700">Total Excess:</span>
+                      <div className="font-semibold text-red-600">₹{Math.abs(totals.balance).toLocaleString()}</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
