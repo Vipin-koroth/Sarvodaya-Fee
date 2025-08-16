@@ -844,36 +844,148 @@ const SarvodayaCollection: React.FC = () => {
           </button>
         </div>
 
-        {/* Section Status Overview */}
+        <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {(['lp', 'up', 'hs', 'hss'] as const).map((section) => {
             const fromEntries = sectionCollectionsFromEntries[section];
             const sectionClerkEntries = clerkCollections.filter(entry => entry.fromSectionHead === section);
             const totalToClerk = sectionClerkEntries.reduce((sum, entry) => sum + entry.amount, 0);
             
+            
+            // Calculate fee type breakdowns
+            const busFeeFromTeachers = sectionEntries.reduce((sum, entry) => sum + entry.busFee, 0);
+            const devFeeFromTeachers = sectionEntries.reduce((sum, entry) => sum + entry.developmentFee, 0);
+            const othersFromTeachers = sectionEntries.reduce((sum, entry) => sum + entry.others, 0);
+            
+            const busFeeToClerk = sectionData.busFeeFromTeachers;
+            const devFeeToClerk = sectionData.developmentFeeFromTeachers;
+            const othersToClerk = sectionData.othersFromTeachers;
+            
+            const busFeeBalance = busFeeFromTeachers - busFeeToClerk;
+            const devFeeBalance = devFeeFromTeachers - devFeeToClerk;
+            const othersBalance = othersFromTeachers - othersToClerk;
             return (
               <div key={section} className="bg-white border rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">{getSectionDisplay(section)}</h4>
+              <div key={section} className="bg-gray-50 rounded-lg p-6">
+                <h3 className="font-medium text-gray-900 mb-4 text-lg">{section}</h3>
                 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">From Teachers:</span>
-                    <span className="font-medium">₹{fromEntries.total.toLocaleString()}</span>
+                {/* Fee Type Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  {/* Bus Fee */}
+                  <div className="bg-orange-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-orange-900">Bus Fee</h4>
+                      <select className="text-xs bg-white border border-orange-200 rounded px-2 py-1">
+                        <option>View Details</option>
+                        <option>From Teachers</option>
+                        <option>To Clerk</option>
+                        <option>Balance</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-orange-700">From Teachers:</span>
+                        <span className="font-medium">₹{busFeeFromTeachers.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-orange-700">To Clerk:</span>
+                        <span className="font-medium">₹{busFeeToClerk.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-orange-200 pt-1">
+                        <span className="text-orange-800 font-medium">
+                          {busFeeBalance >= 0 ? 'Balance Due:' : 'Excess:'}
+                        </span>
+                        <span className={`font-bold ${busFeeBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          ₹{Math.abs(busFeeBalance).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">To Clerk:</span>
-                    <span className="font-medium text-green-600">₹{totalToClerk.toLocaleString()}</span>
+                  
+                  {/* Development Fee */}
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-blue-900">Development Fee</h4>
+                      <select className="text-xs bg-white border border-blue-200 rounded px-2 py-1">
+                        <option>View Details</option>
+                        <option>From Teachers</option>
+                        <option>To Clerk</option>
+                        <option>Balance</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">From Teachers:</span>
+                        <span className="font-medium">₹{devFeeFromTeachers.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">To Clerk:</span>
+                        <span className="font-medium">₹{devFeeToClerk.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-blue-200 pt-1">
+                        <span className="text-blue-800 font-medium">
+                          {devFeeBalance >= 0 ? 'Balance Due:' : 'Excess:'}
+                        </span>
+                        <span className={`font-bold ${devFeeBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          ₹{Math.abs(devFeeBalance).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="text-gray-600">Balance Due:</span>
-                    <span className={`font-bold ${
-                      fromEntries.total - totalToClerk === 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      ₹{Math.abs(fromEntries.total - totalToClerk).toLocaleString()}
-                    </span>
+                  
+                  {/* Others */}
+                  <div className="bg-gray-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">Others</h4>
+                      <select className="text-xs bg-white border border-gray-300 rounded px-2 py-1">
+                        <option>View Details</option>
+                        <option>From Teachers</option>
+                        <option>To Clerk</option>
+                        <option>Balance</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">From Teachers:</span>
+                        <span className="font-medium">₹{othersFromTeachers.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">To Clerk:</span>
+                        <span className="font-medium">₹{othersToClerk.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-gray-300 pt-1">
+                        <span className="text-gray-800 font-medium">
+                          {othersBalance >= 0 ? 'Balance Due:' : 'Excess:'}
+                        </span>
+                        <span className={`font-bold ${othersBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          ₹{Math.abs(othersBalance).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="text-xs text-gray-500">
                     Entries: {sectionClerkEntries.length}
+                  </div>
+                </div>
+                
+                {/* Total Summary */}
+                <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                  <h4 className="font-medium text-yellow-900 mb-2">Total Summary</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-yellow-700">From Teachers</div>
+                      <div className="font-bold text-lg">₹{totalFromTeachers.toLocaleString()}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-yellow-700">To Clerk</div>
+                      <div className="font-bold text-lg">₹{totalToClerk.toLocaleString()}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-yellow-700">{balance >= 0 ? 'Balance Due' : 'Excess'}</div>
+                      <div className={`font-bold text-lg ${balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        ₹{Math.abs(balance).toLocaleString()}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
