@@ -787,8 +787,34 @@ const SarvodayaCollection: React.FC = () => {
                         </th>
                       </>
                     )}
+                    {isClassOnlyUser() && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Bus Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Development Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Others Fee
+                        </th>
+                      </>
+                    )}
+                    {!isClassOnlyUser() && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Bus Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Development Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Others Fee
+                        </th>
+                      </>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
+                      Total Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
@@ -831,8 +857,23 @@ const SarvodayaCollection: React.FC = () => {
                         </>
                       )}
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-blue-600">
+                          ₹{(collection.busFee || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-purple-600">
+                          ₹{(collection.developmentFee || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-orange-600">
+                          ₹{(collection.othersFee || 0).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-green-600">
-                          ₹{(collection.amount || 0).toLocaleString()}
+                          ₹{(collection.totalAmount || 0).toLocaleString()}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
