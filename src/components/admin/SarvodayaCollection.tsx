@@ -903,7 +903,7 @@ const SarvodayaCollection: React.FC = () => {
                         <>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-blue-600">
-                              ₹{(classActuals[\`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                              &#8377;{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
