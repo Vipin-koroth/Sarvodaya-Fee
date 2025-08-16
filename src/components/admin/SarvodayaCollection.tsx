@@ -811,37 +811,6 @@ export default SarvodayaCollection;
             System Overview
           </button>
           
-          {isSectionUser() && (
-            <button
-              onClick={() => setActiveView('teacher-entry')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeView === 'teacher-entry'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Teacher Collections
-            </button>
-          )}
-          
-          {isClerkUser() && (
-            <button
-              onClick={() => setActiveView('clerk-entry')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeView === 'clerk-entry'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Section Collections
-            </button>
-          )}
-        </div>
-
-        {/* Render active view */}
-        {activeView === 'overview' && <OverviewComponent />}
-        {activeView === 'teacher-entry' && isSectionUser() && <TeacherEntryComponent />}
-        {activeView === 'clerk-entry' && isClerkUser() && <ClerkEntryComponent />}
       </div>
 
       {/* Add/Edit Collection Entry Modal */}
