@@ -378,158 +378,56 @@ const SarvodayaCollection: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        {/* 3-Tier System Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Tier 1: Teacher Collections */}
-          <div className="bg-blue-50 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-blue-900">Tier 1: Teacher Collections</h3>
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-blue-700">Total from Students:</span>
-                <span className="font-bold text-blue-900">
-                  ₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.total, 0).toLocaleString()}
-                </span>
-              </div>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Bus Fee:</span>
-                  <span>₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.busFee, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Development:</span>
-                  <span>₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.developmentFund, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Others:</span>
-                  <span>₹{Object.values(teacherTotals).reduce((sum, t) => sum + t.others, 0).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Tier 2: Section Collections */}
-          <div className="bg-green-50 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-green-900">Tier 2: Section Collections</h3>
-              <TrendingUp className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-green-700">Total from Teachers:</span>
-                <span className="font-bold text-green-900">
-                  ₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.total, 0).toLocaleString()}
-                </span>
-              </div>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Bus Fee:</span>
-                  <span>₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.busFee, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Development:</span>
-                  <span>₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.developmentFund, 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Others:</span>
-                  <span>₹{Object.values(sectionCollectionsFromEntries).reduce((sum, s) => sum + s.others, 0).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tier 3: Clerk Collections */}
-          <div className="bg-purple-50 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-purple-900">Tier 3: Final Collections</h3>
-              <DollarSign className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-purple-700">Total from Sections:</span>
-                <span className="font-bold text-purple-900">
-                  ₹{clerkCollectionsFromEntries.total.toLocaleString()}
-                </span>
-              </div>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Bus Fee:</span>
-                  <span>₹{clerkCollectionsFromEntries.busFee.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Development:</span>
-                  <span>₹{clerkCollectionsFromEntries.developmentFund.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Others:</span>
-                  <span>₹{clerkCollectionsFromEntries.others.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section-wise Detailed View */}
-        {(isSectionUser() || isClerkUser()) && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {isSectionUser() ? `${getSectionDisplay(user?.username || '')} Collection Status` : 'Section-wise Collection Status'}
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(isSectionUser() ? [user?.username || ''] : ['lp', 'up', 'hs', 'hss']).map((section) => {
-                const fromPayments = sectionTotalsFromPayments[section as keyof typeof sectionTotalsFromPayments];
-                const fromEntries = sectionCollectionsFromEntries[section as keyof typeof sectionCollectionsFromEntries];
-                
-                return (
-                  <div key={section} className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">{getSectionDisplay(section)}</h4>
+        {/* Section-wise Overview */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Section-wise Collection Overview</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {(['lp', 'up', 'hs', 'hss'] as const).map((section) => {
+              const fromPayments = sectionTotalsFromPayments[section];
+              const fromEntries = sectionCollectionsFromEntries[section];
+              
+              return (
+                <div key={section} className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3">{getSectionDisplay(section)}</h4>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="bg-blue-100 rounded p-2">
+                      <div className="font-medium text-blue-900 mb-1">From Students</div>
+                      <div className="flex justify-between">
+                        <span>Total:</span>
+                        <span className="font-medium">₹{fromPayments?.total.toLocaleString() || '0'}</span>
+                      </div>
+                    </div>
                     
-                    <div className="space-y-2 text-sm">
-                      <div className="bg-blue-100 rounded p-2">
-                        <div className="font-medium text-blue-900 mb-1">From Students (Tier 1)</div>
-                        <div className="flex justify-between">
-                          <span>Total:</span>
-                          <span className="font-medium">₹{fromPayments?.total.toLocaleString() || '0'}</span>
-                        </div>
+                    <div className="bg-green-100 rounded p-2">
+                      <div className="font-medium text-green-900 mb-1">From Teachers</div>
+                      <div className="flex justify-between">
+                        <span>Total:</span>
+                        <span className="font-medium">₹{fromEntries?.total.toLocaleString() || '0'}</span>
                       </div>
-                      
-                      <div className="bg-green-100 rounded p-2">
-                        <div className="font-medium text-green-900 mb-1">
-                          {isSectionUser() ? 'To Admin/Clerk (Tier 2)' : 'From Teachers (Tier 2)'}
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total:</span>
-                          <span className="font-medium">₹{fromEntries?.total.toLocaleString() || '0'}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span>Entries:</span>
-                          <span>{fromEntries?.entries || 0}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-yellow-100 rounded p-2">
-                        <div className="font-medium text-yellow-900 mb-1">Balance Due</div>
-                        <div className="flex justify-between">
-                          <span>Amount:</span>
-                          <span className={`font-bold ${
-                            (fromPayments?.total || 0) - (fromEntries?.total || 0) === 0 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
-                            ₹{Math.abs((fromPayments?.total || 0) - (fromEntries?.total || 0)).toLocaleString()}
-                          </span>
-                        </div>
+                    </div>
+                    
+                    <div className="bg-yellow-100 rounded p-2">
+                      <div className="font-medium text-yellow-900 mb-1">Balance Due</div>
+                      <div className="flex justify-between">
+                        <span>Amount:</span>
+                        <span className={`font-bold ${
+                          (fromPayments?.total || 0) - (fromEntries?.total || 0) === 0 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          ₹{Math.abs((fromPayments?.total || 0) - (fromEntries?.total || 0)).toLocaleString()}
+                        </span>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
       </div>
     );
   };
@@ -854,46 +752,54 @@ const SarvodayaCollection: React.FC = () => {
       </div>
 
       {/* Collection System Overview */}
-      <div className="bg-blue-50 rounded-lg p-4">
-        <h3 className="font-medium text-blue-900 mb-2">3-Tier Collection System</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800">
-          <div className="bg-white rounded p-3">
-            <div className="font-medium">Tier 1: Student → Teacher</div>
-            <div>Teachers collect fees from students (Payment System)</div>
-          </div>
-          <div className="bg-white rounded p-3">
-            <div className="font-medium">Tier 2: Teacher → Section Head</div>
-            <div>Section heads collect from class teachers</div>
-          </div>
-          <div className="bg-white rounded p-3">
-            <div className="font-medium">Tier 3: Section Head → Admin/Clerk</div>
-            <div>Admin/Clerk collect from section heads</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Fee Types Overview */}
-      <div className="bg-green-50 rounded-lg p-4">
-        <h3 className="font-medium text-green-900 mb-2">Fee Types</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-800">
-          <div className="bg-white rounded p-3">
-            <div className="font-medium">Bus Fee</div>
-            <div>Transportation charges</div>
-          </div>
-          <div className="bg-white rounded p-3">
-            <div className="font-medium">Development Fund</div>
-            <div>School development fees</div>
-          </div>
-          <div className="bg-white rounded p-3">
-            <div className="font-medium">Others</div>
-            <div>Special fees and miscellaneous</div>
-          </div>
-        </div>
-      </div>
 
       {/* View Toggle */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-wrap gap-2 mb-4">
+        {!isSectionUser() && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setActiveView('overview')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeView === 'overview'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              System Overview
+            </button>
+            
+            {isClerkUser() && (
+              <button
+                onClick={() => setActiveView('clerk-entry')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeView === 'clerk-entry'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Section Collections
+              </button>
+            )}
+          </div>
+        )}
+        
+        {isSectionUser() && (
+          <TeacherEntryComponent />
+        )}
+        
+        {!isSectionUser() && (
+          <>
+            {/* Render active view */}
+            {activeView === 'overview' && <OverviewComponent />}
+            {activeView === 'clerk-entry' && isClerkUser() && <ClerkEntryComponent />}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SarvodayaCollection;
           <button
             onClick={() => setActiveView('overview')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
