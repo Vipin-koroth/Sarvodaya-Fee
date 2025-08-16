@@ -521,6 +521,7 @@ const SarvodayaCollection: React.FC = () => {
                           }`}>
                             ₹{Math.abs((fromPayments?.total || 0) - (fromEntries?.total || 0)).toLocaleString()}
                           </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -809,12 +810,12 @@ const SarvodayaCollection: React.FC = () => {
             </table>
           </div>
           
-          {userSectionCollections.length === 0 && (
+          {clerkCollections.length === 0 && (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No collection entries</h3>
               <p className="mt-1 text-sm text-gray-500">
-                Start by adding collections received from class teachers.
+                Start by adding collections received from section heads.
               </p>
             </div>
           )}
@@ -1079,11 +1080,6 @@ const SarvodayaCollection: React.FC = () => {
       )}
     </div>
   );
-};
-
-// Helper component for clerk entry view
-const ClerkEntryComponent: React.FC = () => {
-  return <div>Clerk Entry Component will be rendered here</div>;
 };
 
 export default SarvodayaCollection;
