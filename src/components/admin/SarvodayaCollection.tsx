@@ -739,7 +739,7 @@ const SarvodayaCollection: React.FC = () => {
                            
                            {/* Others Fee */}
                            <div className="bg-orange-50 p-2 rounded">
-                             <div className="font-mediu\m text-orange-800 mb-1">Others Fee</div>
+                             <div className="font-medium text-orange-800 mb-1">Others Fee</div>
                              <div className="flex justify-between text-xs">
                                <span>Received: ₹{receivedOthersFee.toLocaleString()}</span>
                                <span>Reported: ₹{reportedOthersFee.toLocaleString()}</span>
@@ -750,7 +750,7 @@ const SarvodayaCollection: React.FC = () => {
                                  ₹{Math.abs(pendingOthersFee).toLocaleString()}
                                </span>
                              </div>
-    \                       </div>
+                           </div>
                            
                            {/* Total Summary */}
                            <div className="border-t pt-2">
