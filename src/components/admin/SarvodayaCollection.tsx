@@ -498,22 +498,70 @@ const SarvodayaCollection: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Actual:</span>
                       <span className="font-medium">₹{(actual || 0).toLocaleString()}</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bus Fee (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                      <input
+                        type="number"
+                        value={newSectionEntry.busFee}
+                        onChange={(e) => handleSectionEntryChange('busFee', e.target.value)}
+                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
+                        min="0"
+                      />
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Reported:</span>
-                      <span className="font-medium">₹{(reported || 0).toLocaleString()}</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Development Fee (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                      <input
+                        type="number"
+                        value={newSectionEntry.developmentFee}
+                        onChange={(e) => handleSectionEntryChange('developmentFee', e.target.value)}
+                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
+                        min="0"
+                      />
                     </div>
-                    <div className="flex justify-between border-t pt-1">
-                      <span className="text-gray-600">Difference:</span>
-                      <span className={`font-medium ${
-                        status === 'balanced' ? 'text-green-600' : 
-                        status === 'pending' ? 'text-red-600' : 'text-orange-600'
-                      }`}>
-                        ₹{Math.abs(difference || 0).toLocaleString()}
-                      </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Others Fee (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                      <input
+                        type="number"
+                        value={newSectionEntry.othersFee}
+                        onChange={(e) => handleSectionEntryChange('othersFee', e.target.value)}
+                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
+                        min="0"
+                      />
                     </div>
                   </div>
                 </div>
+
+                {/* Total Amount Display */}
+                {(newSectionEntry.busFee > 0 || newSectionEntry.developmentFee > 0 || newSectionEntry.othersFee > 0) && (
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-medium text-green-900">Total Amount:</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        ₹{(newSectionEntry.busFee + newSectionEntry.developmentFee + newSectionEntry.othersFee).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
               );
             })}
           </div>
