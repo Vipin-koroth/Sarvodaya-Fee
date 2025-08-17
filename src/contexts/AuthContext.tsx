@@ -64,14 +64,17 @@ const ChangePassword: React.FC = () => {
         // Show success message for longer
         setTimeout(() => {
           setSuccess(false);
+        }, 8000);
         
         // Show success message for longer
         setTimeout(() => {
           setSuccess(false);
+        }, 8000);
         
         // Show success message for longer
         setTimeout(() => {
           setSuccess(false);
+        }, 8000);
         
         // Show success message for longer and provide feedback
         setTimeout(() => {
