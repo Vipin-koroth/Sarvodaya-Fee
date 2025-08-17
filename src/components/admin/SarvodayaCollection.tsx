@@ -448,10 +448,19 @@ const SarvodayaCollection: React.FC = () => {
       {/* Tab Navigation */}
       {!isClassOnlyUser() && (
         <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
+                  busFee: 0,
+                  developmentFee: 0,
+                  othersFee: 0,
+                  busFee: 0,
+                  developmentFee: 0,
+                  othersFee: 0,
+                  totalAmount: 0,
           <nav className="-mb-px flex">
             <button
               onClick={() => setActiveTab('section')}
+              acc[sectionKey].busFee += entry.busFee || 0;
+              acc[sectionKey].developmentFee += entry.developmentFee || 0;
+              acc[sectionKey].othersFee += entry.othersFee || 0;
               className={`py-4 px-6 text-sm font-medium border-b-2 ${
                 activeTab === 'section'
                   ? 'border-blue-500 text-blue-600'
@@ -465,12 +474,71 @@ const SarvodayaCollection: React.FC = () => {
               className={`py-4 px-6 text-sm font-medium border-b-2 ${
                 activeTab === 'class'
                   ? 'border-blue-500 text-blue-600'
+              acc[entry.class].busFee += entry.busFee || 0;
+              acc[entry.class].developmentFee += entry.developmentFee || 0;
+              acc[entry.class].othersFee += entry.othersFee || 0;
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Class-wise Entry
-            </button>
-          </nav>
+              <div className="text-right">
+                <div className="grid grid-cols-3 gap-4 text-sm mb-1">
+                  <div className="text-blue-600">
+                    Bus: ₹{data.busFee.toLocaleString()}
+                  </div>
+                  <div className="text-green-600">
+                    Dev: ₹{data.developmentFee.toLocaleString()}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">
+              ₹{(
+                sectionEntries.reduce((sum, entry) => sum + (entry.busFee || 0), 0) +
+                classEntries.reduce((sum, entry) => sum + (entry.busFee || 0), 0)
+              ).toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600">Total Bus Fee</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">
+              ₹{(
+                sectionEntries.reduce((sum, entry) => sum + (entry.developmentFee || 0), 0) +
+                classEntries.reduce((sum, entry) => sum + (entry.developmentFee || 0), 0)
+              ).toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600">Total Development Fee</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              ₹{(
+                sectionEntries.reduce((sum, entry) => sum + (entry.othersFee || 0), 0) +
+                classEntries.reduce((sum, entry) => sum + (entry.othersFee || 0), 0)
+              ).toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600">Total Others Fee</div>
+          </div>
+                  </div>
+                  <div className="text-purple-600">
+                    Others: ₹{data.othersFee.toLocaleString()}
+                  </div>
+            <div className="text-sm text-gray-600">Grand Total</div>
+                <div className="font-semibold text-gray-900">
+        </div>
+        
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200">
+          <div className="text-center">
+            <div className="text-xl font-bold text-blue-600">
+              {sectionEntries.length + classEntries.length}
+            </div>
+            <div className="text-sm text-gray-600">Total Entries</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-green-600">
+              {new Set([...sectionEntries.map(e => `${e.class}-${e.division}`), ...classEntries.map(e => e.class)]).size}
+            </div>
+            <div className="text-sm text-gray-600">Classes/Sections</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-purple-600">
+              {new Date().toLocaleDateString('en-GB')}
+            </div>
+            <div className="text-sm text-gray-600">Collection Date</div>
+          </div>
         </div>
       </div>
       )}
