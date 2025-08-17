@@ -34,42 +34,55 @@ const ChangePassword: React.FC = () => {
       return;
     }
 
+    if (oldPassword === newPassword) {
+      setError('New password must be different from current password');
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      setError('New password must be different from current password');
+      return;
+    }
+
     setLoading(true);
     
     try {
       console.log('Attempting to change password...');
+      console.log('Attempting to change password...');
+      console.log('Attempting to change password...');
       const success = await changePassword(oldPassword, newPassword);
       
       if (success) {
+        console.log('Password change successful');
+        console.log('Password change successful');
         console.log('Password change successful');
         setSuccess(true);
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
         
-        
-        // Force a storage event to update other tabs/windows
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'users',
-          newValue: JSON.stringify(storedUsers),
-          oldValue: localStorage.getItem('users'),
-          storageArea: localStorage
-        }));
+        // Show success message for longer
+        setTimeout(() => {
+          setSuccess(false);
         
         // Show success message for longer
         setTimeout(() => {
-        
-        // Verify the password was actually saved
-        const verifyUsers = JSON.parse(localStorage.getItem('users') || '{}');
-        const verifyUser = verifyUsers[user.username];
-        console.log('Verification - Password saved correctly:', verifyUser?.password === newPassword);
-        
           setSuccess(false);
-        }, 3000);
+        
+        // Show success message for longer
+        setTimeout(() => {
+          setSuccess(false);
+        
+        // Show success message for longer and provide feedback
+        setTimeout(() => {
+          setSuccess(false);
+        }, 8000);
       } else {
+        console.log('❌ Password change failed in UI');
         setError('Current password is incorrect');
       }
     } catch (error) {
+      console.error('Password change error in UI:', error);
       setError(error instanceof Error ? error.message : 'An error occurred while changing password');
     }
     
