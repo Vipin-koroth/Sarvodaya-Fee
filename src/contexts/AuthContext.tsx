@@ -158,23 +158,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('❌ No user logged in for password change');
+      return false;
+    }
 
     try {
+      console.log('🔄 Starting password change for user:', user.username);
+      console.log('Old password provided:', oldPassword);
+      console.log('New password provided:', newPassword);
+
       // Use localStorage for password changes (same as login system)
       const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+      console.log('Current stored users:', Object.keys(storedUsers));
+      
       const userAccount = storedUsers[user.username];
+      console.log('User account found:', !!userAccount);
+      
+      if (userAccount) {
+        console.log('Current stored password:', userAccount.password);
+        console.log('Password verification:', userAccount.password === oldPassword);
+      }
 
       if (userAccount && userAccount.password === oldPassword) {
+        // Update the password
         userAccount.password = newPassword;
+        
+        // Save back to localStorage
         localStorage.setItem('users', JSON.stringify(storedUsers));
-        console.log('Password updated successfully for user:', user.username);
+        
+        // Dispatch storage event to notify other tabs
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'users',
+          newValue: JSON.stringify(storedUsers),
+          url: window.location.href
+        }));
+        
+        // Verify the password was saved correctly
+        const verifyUsers = JSON.parse(localStorage.getItem('users') || '{}');
+        const verifyAccount = verifyUsers[user.username];
+        console.log('✅ Password verification after save:', verifyAccount?.password === newPassword);
+        
+        console.log('✅ Password updated successfully for user:', user.username);
         return true;
+      } else {
+        console.log('❌ Old password verification failed');
+        return false;
       }
       
-      return false;
     } catch (error) {
-      console.error('Error changing password:', error);
+      console.error('❌ Error changing password:', error);
       return false;
     }
   };
