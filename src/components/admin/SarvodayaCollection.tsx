@@ -666,7 +666,7 @@ const SarvodayaCollection: React.FC = () => {
                 const classCards = [];
                 for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
                   for (let division of ['A', 'B', 'C', 'D', 'E']) {
-                    const classKey = \`${classNum}${division}`;
+                    const classKey = `${classNum}${division}`;
                     const actualAmount = classActuals[classKey] || 0;
                     const reportedAmount = classReported[classKey] || 0;
                     const pendingAmount = actualAmount - reportedAmount;
