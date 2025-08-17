@@ -319,29 +319,6 @@ const SarvodayaCollection: React.FC = () => {
     return { sectionReported, classReported };
   };
 
-  // Get total fee breakdown
-  const getTotalFeeBreakdown = () => {
-    const sectionBreakdown = sectionCollections.reduce((acc, entry) => {
-      acc.busFee += entry.busFee || 0;
-      acc.developmentFee += entry.developmentFee || 0;
-      acc.othersFee += entry.othersFee || 0;
-      return acc;
-    }, { busFee: 0, developmentFee: 0, othersFee: 0 });
-
-    const classBreakdown = classCollections.reduce((acc, entry) => {
-      acc.busFee += entry.busFee || 0;
-      acc.developmentFee += entry.developmentFee || 0;
-      acc.othersFee += entry.othersFee || 0;
-      return acc;
-    }, { busFee: 0, developmentFee: 0, othersFee: 0 });
-
-    return {
-      busFee: sectionBreakdown.busFee + classBreakdown.busFee,
-      developmentFee: sectionBreakdown.developmentFee + classBreakdown.developmentFee,
-      othersFee: sectionBreakdown.othersFee + classBreakdown.othersFee
-    };
-  };
-
   // CSV Download functions
   const downloadSectionCollectionsCSV = () => {
     const headers = ['Section', 'Head Name', 'Amount', 'Date', 'Added By'];
@@ -871,32 +848,15 @@ const SarvodayaCollection: React.FC = () => {
                         </th>
                       </>
                     )}
-                    {isClassOnlyUser() && (
-                      <>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Bus Fee
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Development Fee
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Others Fee
-                        </th>
-                      </>
-                    )}
-                    {!isClassOnlyUser() && (
-                      <>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Bus Fee
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Development Fee
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Others Fee
-                        </th>
-                      </>
-                    )}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Bus Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Development Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Others Fee
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Total Amount
                     </th>
