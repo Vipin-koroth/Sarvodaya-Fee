@@ -13,7 +13,9 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
-  isLoading: boolean;
+  loading: boolean;
+  getAllUsers: () => any[];
+  resetUserPassword: (username: string, newPassword: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,21 +26,49 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // Default users for local storage
   const defaultUsers = {
-    admin: { id: '1', username: 'admin', password: 'admin123', role: 'admin' as const, name: 'Administrator' },
-    teacher1: { id: '2', username: 'teacher1', password: 'teacher123', role: 'teacher' as const, name: 'Teacher One', assignedClasses: ['1A', '1B'] },
-    teacher2: { id: '3', username: 'teacher2', password: 'teacher456', role: 'teacher' as const, name: 'Teacher Two', assignedClasses: ['2A', '2B'] },
-    clerk: { id: '4', username: 'clerk', password: 'clerk123', role: 'clerk' as const, name: 'Clerk User' }
+    admin: { id: '1', username: 'admin', password: 'admin', role: 'admin' as const, name: 'Administrator' },
+    clerk: { id: '2', username: 'clerk', password: 'admin', role: 'clerk' as const, name: 'Clerk User' },
+    sarvodaya: { id: '3', username: 'sarvodaya', password: 'admin', role: 'sarvodaya' as const, name: 'Sarvodaya Reports' },
+    lp: { id: '4', username: 'lp', password: 'admin', role: 'sarvodaya' as const, name: 'LP Reports' },
+    up: { id: '5', username: 'up', password: 'admin', role: 'sarvodaya' as const, name: 'UP Reports' },
+    hs: { id: '6', username: 'hs', password: 'admin', role: 'sarvodaya' as const, name: 'HS Reports' },
+    hss: { id: '7', username: 'hss', password: 'admin', role: 'sarvodaya' as const, name: 'HSS Reports' }
+  };
+
+  // Generate class teacher accounts
+  const generateClassTeachers = () => {
+    const teachers: Record<string, any> = {};
+    let id = 8;
+    
+    for (let classNum = 1; classNum <= 12; classNum++) {
+      for (let division of ['a', 'b', 'c', 'd', 'e']) {
+        const teacherUsername = `class${classNum}${division}`;
+        teachers[teacherUsername] = {
+          id: id.toString(),
+          username: teacherUsername,
+          password: 'admin',
+          role: 'teacher' as const,
+          name: `Class ${classNum}${division.toUpperCase()} Teacher`,
+          class: classNum.toString(),
+          division: division.toUpperCase()
+        };
+        id++;
+      }
+    }
+    
+    return teachers;
   };
 
   useEffect(() => {
     // Initialize users in localStorage if not exists
     const storedUsers = localStorage.getItem('users');
     if (!storedUsers) {
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
+      const allUsers = { ...defaultUsers, ...generateClassTeachers() };
+      localStorage.setItem('users', JSON.stringify(allUsers));
     }
 
     // Check for existing session
@@ -51,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('currentUser');
       }
     }
-    setIsLoading(false);
+    setLoading(false);
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
@@ -67,7 +97,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           username: (foundUser as any).username,
           role: (foundUser as any).role,
           name: (foundUser as any).name,
-          assignedClasses: (foundUser as any).assignedClasses
+          class: (foundUser as any).class,
+          division: (foundUser as any).division
         };
         setUser(userWithoutPassword);
         localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
@@ -83,6 +114,76 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('currentUser');
+  };
+
+  const getAllUsers = () => {
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      return Object.values(users).map((user: any) => ({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        name: user.name,
+        class: user.class,
+        division: user.division
+      }));
+    } catch (error) {
+      console.error('Error getting users:', error);
+      return [];
+    }
+  };
+
+  const resetUserPassword = async (username: string, newPassword: string): Promise<boolean> => {
+    try {
+      console.log('🔄 Starting password reset process...');
+      console.log('Target user:', username);
+
+      // Get current users from localStorage
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      console.log('Current users in storage:', Object.keys(users));
+
+      // Find the target user in storage
+      const userKey = Object.keys(users).find(key => users[key].username === username);
+      
+      if (!userKey) {
+        console.error('❌ User not found in storage');
+        return false;
+      }
+
+      const targetUser = users[userKey];
+      console.log('Found user in storage:', targetUser.username);
+
+      // Update password
+      users[userKey].password = newPassword;
+      console.log('🔄 Updating password in storage...');
+
+      // Save to localStorage
+      localStorage.setItem('users', JSON.stringify(users));
+      console.log('✅ Password updated in localStorage');
+
+      // Verify the password was saved correctly
+      const updatedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+      const verifyUser = updatedUsers[userKey];
+      
+      if (verifyUser && verifyUser.password === newPassword) {
+        console.log('✅ Password reset verified successfully');
+        
+        // Dispatch storage event to notify other tabs
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'users',
+          newValue: JSON.stringify(users),
+          storageArea: localStorage
+        }));
+        
+        return true;
+      } else {
+        console.error('❌ Password verification failed after save');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Password reset error:', error);
+      return false;
+    }
   };
 
   const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
@@ -158,7 +259,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     changePassword,
-    isLoading
+    loading,
+    getAllUsers,
+    resetUserPassword
   };
 
   return (
