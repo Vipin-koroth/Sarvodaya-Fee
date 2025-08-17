@@ -503,13 +503,13 @@ const SarvodayaCollection: React.FC = () => {
                       <span className="text-gray-600">Reported:</span>
                       <span className="font-medium">₹{(reported || 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between border-t pt-1">
-                      <span className="text-gray-600">Difference:</span>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{status === 'pending' ? 'Pending:' : status === 'excess' ? 'Excess:' : 'Balanced:'}</span>
                       <span className={`font-medium ${
                         status === 'balanced' ? 'text-green-600' : 
                         status === 'pending' ? 'text-red-600' : 'text-orange-600'
                       }`}>
-                        ₹{Math.abs(difference || 0).toLocaleString()}
+                        ₹{Math.abs(difference).toLocaleString()}
                       </span>
                     </div>
                   </div>
