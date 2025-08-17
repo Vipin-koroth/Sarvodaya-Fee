@@ -319,6 +319,29 @@ const SarvodayaCollection: React.FC = () => {
     return { sectionReported, classReported };
   };
 
+  // Get total fee breakdown
+  const getTotalFeeBreakdown = () => {
+    const sectionBreakdown = sectionCollections.reduce((acc, entry) => {
+      acc.busFee += entry.busFee || 0;
+      acc.developmentFee += entry.developmentFee || 0;
+      acc.othersFee += entry.othersFee || 0;
+      return acc;
+    }, { busFee: 0, developmentFee: 0, othersFee: 0 });
+
+    const classBreakdown = classCollections.reduce((acc, entry) => {
+      acc.busFee += entry.busFee || 0;
+      acc.developmentFee += entry.developmentFee || 0;
+      acc.othersFee += entry.othersFee || 0;
+      return acc;
+    }, { busFee: 0, developmentFee: 0, othersFee: 0 });
+
+    return {
+      busFee: sectionBreakdown.busFee + classBreakdown.busFee,
+      developmentFee: sectionBreakdown.developmentFee + classBreakdown.developmentFee,
+      othersFee: sectionBreakdown.othersFee + classBreakdown.othersFee
+    };
+  };
+
   // CSV Download functions
   const downloadSectionCollectionsCSV = () => {
     const headers = ['Section', 'Head Name', 'Amount', 'Date', 'Added By'];
@@ -454,8 +477,8 @@ const SarvodayaCollection: React.FC = () => {
               onClick={() => setActiveTab('section')}
               className={`py-4 px-6 text-sm font-medium border-b-2 ${
                 activeTab === 'section'
-                <p className="text-sm font-medium text-blue-600">Total Bus Fee</p>
-                <p className="text-2xl font-bold text-gray-900">₹{getTotalFeeBreakdown().busFee.toLocaleString()}</p>
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               Section-wise Entry
@@ -464,29 +487,11 @@ const SarvodayaCollection: React.FC = () => {
               onClick={() => setActiveTab('class')}
               className={`py-4 px-6 text-sm font-medium border-b-2 ${
                 activeTab === 'class'
-                <p className="text-sm font-medium text-green-600">Total Development Fee</p>
-                <p className="text-2xl font-bold text-gray-900">₹{getTotalFeeBreakdown().developmentFee.toLocaleString()}</p>
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Bus Fee:</span>
-                  <span className="font-semibold text-blue-600">₹{getSectionFeeBreakdown(section).busFee.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-green-600">Development:</span>
-                <p className="text-sm font-medium text-purple-600">Total Others Fee</p>
-                <p className="text-2xl font-bold text-gray-900">₹{getTotalFeeBreakdown().othersFee.toLocaleString()}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-purple-600">Others:</span>
-                  <span className="font-semibold text-purple-600">₹{getSectionFeeBreakdown(section).othersFee.toLocaleString()}</span>
-                </div>
-                <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-900">Total:</span>
-                    <span className="text-lg font-bold text-gray-900">₹{total.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
+            >
+              Class-wise Entry
             </button>
           </nav>
         </div>
