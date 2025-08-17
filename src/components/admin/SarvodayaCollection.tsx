@@ -503,7 +503,7 @@ const SarvodayaCollection: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">{status === 'pending' ? 'Pending:' : status === 'excess' ? 'Excess:' : 'Difference:'}</span>
-                      <span className={`font-medium ${
+                      <span className={\`font-medium ${
                         status === 'balanced' ? 'text-green-600' : 
                         status === 'pending' ? 'text-red-600' : 'text-orange-600'
                       }`}>
@@ -666,7 +666,7 @@ const SarvodayaCollection: React.FC = () => {
                 const classCards = [];
                 for (let classNum = classRange.min; classNum <= classRange.max; classNum++) {
                   for (let division of ['A', 'B', 'C', 'D', 'E']) {
-                    const classKey = `${classNum}${division}`;
+                    const classKey = \`${classNum}${division}`;
                     const actualAmount = classActuals[classKey] || 0;
                     const reportedAmount = classReported[classKey] || 0;
                     const pendingAmount = actualAmount - reportedAmount;
@@ -700,7 +700,7 @@ const SarvodayaCollection: React.FC = () => {
                         <div key={classKey} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">Class {classNum}-{division}</h3>
-                            <div className={`w-3 h-3 rounded-full ${
+                            <div className={\`w-3 h-3 rounded-full ${
                               pendingAmount === 0 ? 'bg-green-500' : 'bg-red-500'
                             }`}></div>
                           </div>
@@ -901,7 +901,7 @@ const SarvodayaCollection: React.FC = () => {
                         <>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-blue-600">
-                              ₹{(classActuals[`${collection.class}${collection.division}`] || 0).toLocaleString()}
+                              &#8377;{(classActuals[\`${collection.class}${collection.division}`] || 0).toLocaleString()}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
