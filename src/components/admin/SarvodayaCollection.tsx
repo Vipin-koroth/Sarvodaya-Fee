@@ -700,7 +700,7 @@ const SarvodayaCollection: React.FC = () => {
                         <div key={classKey} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">Class {classNum}-{division}</h3>
-                            <div className={\`w-3 h-3 rounded-full ${
+                            <div className={`w-3 h-3 rounded-full ${
                               pendingAmount === 0 ? 'bg-green-500' : 'bg-red-500'
                             }`}></div>
                           </div>
