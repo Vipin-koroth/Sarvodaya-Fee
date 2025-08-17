@@ -161,18 +161,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return false;
 
     try {
-      // Use localStorage for password changes (same as login system)
+      console.log('=== CHANGE PASSWORD ATTEMPT ===');
+      console.log('User:', user.username);
+      console.log('Old password provided:', oldPassword);
+      console.log('New password:', newPassword);
+      
       const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
       const userAccount = storedUsers[user.username];
+      
+      console.log('User account found:', !!userAccount);
+      if (userAccount) {
+        console.log('Current stored password:', userAccount.password);
+        console.log('Old password match:', userAccount.password === oldPassword);
+      }
 
       if (userAccount && userAccount.password === oldPassword) {
         userAccount.password = newPassword;
+        storedUsers[user.username] = userAccount;
         localStorage.setItem('users', JSON.stringify(storedUsers));
-        console.log('Password updated successfully for user:', user.username);
+        console.log('✅ Password updated successfully for user:', user.username);
+        console.log('New password set to:', newPassword);
         return true;
+      } else {
+        console.log('❌ Password change failed - old password incorrect');
+        return false;
       }
-      
-      return false;
     } catch (error) {
       console.error('Error changing password:', error);
       return false;
