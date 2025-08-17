@@ -1,218 +1,177 @@
-import React, { useState } from 'react';
-import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const ChangePassword: React.FC = () => {
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const { changePassword } = useAuth();
+interface User {
+  id: string;
+  username: string;
+  role: 'admin' | 'teacher' | 'clerk';
+  name: string;
+  assignedClasses?: string[];
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess(false);
+interface AuthContextType {
+  user: User | null;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
+  isLoading: boolean;
+}
 
-    if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
-      return;
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Default users for local storage
+  const defaultUsers = {
+    admin: { id: '1', username: 'admin', password: 'admin123', role: 'admin' as const, name: 'Administrator' },
+    teacher1: { id: '2', username: 'teacher1', password: 'teacher123', role: 'teacher' as const, name: 'Teacher One', assignedClasses: ['1A', '1B'] },
+    teacher2: { id: '3', username: 'teacher2', password: 'teacher456', role: 'teacher' as const, name: 'Teacher Two', assignedClasses: ['2A', '2B'] },
+    clerk: { id: '4', username: 'clerk', password: 'clerk123', role: 'clerk' as const, name: 'Clerk User' }
+  };
+
+  useEffect(() => {
+    // Initialize users in localStorage if not exists
+    const storedUsers = localStorage.getItem('users');
+    if (!storedUsers) {
+      localStorage.setItem('users', JSON.stringify(defaultUsers));
     }
 
-    if (newPassword.length < 4) {
-      setError('New password must be at least 4 characters long');
-      return;
+    // Check for existing session
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        localStorage.removeItem('currentUser');
+      }
     }
+    setIsLoading(false);
+  }, []);
 
-    if (oldPassword === newPassword) {
-      setError('New password must be different from current password');
-      return;
-    }
-
-    if (oldPassword === newPassword) {
-      setError('New password must be different from current password');
-      return;
-    }
-
-    if (oldPassword === newPassword) {
-      setError('New password must be different from current password');
-      return;
-    }
-
-    setLoading(true);
-    
+  const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log('Attempting to change password...');
-      console.log('Attempting to change password...');
-      console.log('Attempting to change password...');
-      const success = await changePassword(oldPassword, newPassword);
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      const foundUser = Object.values(users).find((u: any) => 
+        u.username === username && u.password === password
+      );
+
+      if (foundUser) {
+        const userWithoutPassword = {
+          id: (foundUser as any).id,
+          username: (foundUser as any).username,
+          role: (foundUser as any).role,
+          name: (foundUser as any).name,
+          assignedClasses: (foundUser as any).assignedClasses
+        };
+        setUser(userWithoutPassword);
+        localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('currentUser');
+  };
+
+  const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
+    try {
+      if (!user) {
+        console.error('No user logged in');
+        return false;
+      }
+
+      console.log('🔄 Starting password change process...');
+      console.log('User:', user.username);
+
+      // Get current users from localStorage
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      console.log('Current users in storage:', Object.keys(users));
+
+      // Find the current user in storage
+      const userKey = Object.keys(users).find(key => users[key].username === user.username);
       
-      if (success) {
-        console.log('Password change successful');
-        console.log('Password change successful');
-        console.log('Password change successful');
-        setSuccess(true);
-        setOldPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+      if (!userKey) {
+        console.error('❌ User not found in storage');
+        return false;
+      }
+
+      const currentUser = users[userKey];
+      console.log('Found user in storage:', currentUser.username);
+
+      // Verify old password
+      if (currentUser.password !== oldPassword) {
+        console.error('❌ Old password verification failed');
+        console.log('Expected:', currentUser.password);
+        console.log('Provided:', oldPassword);
+        return false;
+      }
+
+      console.log('✅ Old password verified');
+
+      // Update password
+      users[userKey].password = newPassword;
+      console.log('🔄 Updating password in storage...');
+
+      // Save to localStorage
+      localStorage.setItem('users', JSON.stringify(users));
+      console.log('✅ Password updated in localStorage');
+
+      // Verify the password was saved correctly
+      const updatedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+      const verifyUser = updatedUsers[userKey];
+      
+      if (verifyUser && verifyUser.password === newPassword) {
+        console.log('✅ Password change verified successfully');
         
-        // Show success message for longer
-        setTimeout(() => {
-          setSuccess(false);
-        }, 8000);
+        // Dispatch storage event to notify other tabs
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'users',
+          newValue: JSON.stringify(users),
+          storageArea: localStorage
+        }));
         
-        // Show success message for longer
-        setTimeout(() => {
-          setSuccess(false);
-        }, 8000);
-        
-        // Show success message for longer
-        setTimeout(() => {
-          setSuccess(false);
-        }, 8000);
-        
-        // Show success message for longer and provide feedback
-        setTimeout(() => {
-          setSuccess(false);
-        }, 8000);
+        return true;
       } else {
-        console.log('❌ Password change failed in UI');
-        setError('Current password is incorrect');
+        console.error('❌ Password verification failed after save');
+        return false;
       }
     } catch (error) {
-      console.error('Password change error in UI:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred while changing password');
+      console.error('❌ Password change error:', error);
+      return false;
     }
-    
-    setLoading(false);
+  };
+
+  const value: AuthContextType = {
+    user,
+    login,
+    logout,
+    changePassword,
+    isLoading
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Lock className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Change Password</h2>
-            <p className="text-sm text-gray-600">Update your account password</p>
-          </div>
-        </div>
-
-        {success && (
-          <div className="flex items-center space-x-2 p-4 mb-6 text-green-700 bg-green-50 border border-green-200 rounded-lg">
-            <CheckCircle className="h-5 w-5" />
-            <div>
-              <span>Password changed successfully!</span>
-              <p className="text-xs text-green-600 mt-1">
-                Your password has been updated in the database and is now active.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Current Password
-            </label>
-            <div className="relative">
-              <input
-                type={showOldPassword ? 'text' : 'password'}
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowOldPassword(!showOldPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              >
-                {showOldPassword ? (
-                  <EyeOff className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <Eye className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              New Password
-            </label>
-            <div className="relative">
-              <input
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              >
-                {showNewPassword ? (
-                  <EyeOff className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <Eye className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm New Password
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <Eye className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Updating...' : 'Update Password'}
-          </button>
-        </form>
-      </div>
-    </div>
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 
-export default ChangePassword;
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
