@@ -431,6 +431,35 @@ const SarvodayaCollection: React.FC = () => {
     return user?.role === 'sarvodaya' && ['lp', 'up', 'hs', 'hss'].includes(user?.username || '');
   };
 
+  // Helper function to get section fee breakdown
+  const getSectionFeeBreakdown = (section: string) => {
+    const filteredPayments = getFilteredPayments();
+    let classRange: number[] = [];
+    
+    switch (section) {
+      case 'LP':
+        classRange = [1, 2, 3, 4];
+        break;
+      case 'UP':
+        classRange = [5, 6, 7];
+        break;
+      case 'HS':
+        classRange = [8, 9, 10];
+        break;
+      case 'HSS':
+        classRange = [11, 12];
+        break;
+    }
+    
+    const sectionPayments = filteredPayments.filter(p => classRange.includes(parseInt(p.class)));
+    
+    return {
+      busFee: sectionPayments.reduce((sum, p) => sum + (p.busFee || 0), 0),
+      developmentFee: sectionPayments.reduce((sum, p) => sum + (p.developmentFee || 0), 0),
+      othersFee: sectionPayments.reduce((sum, p) => sum + (p.specialFee || 0), 0)
+    };
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -448,31 +477,31 @@ const SarvodayaCollection: React.FC = () => {
       {/* Tab Navigation */}
       {!isClassOnlyUser() && (
         <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex">
-            <button
-              onClick={() => setActiveTab('section')}
-              className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                activeTab === 'section'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Section-wise Entry
-            </button>
-            <button
-              onClick={() => setActiveTab('class')}
-              className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                activeTab === 'class'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Class-wise Entry
-            </button>
-          </nav>
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex">
+              <button
+                onClick={() => setActiveTab('section')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                  activeTab === 'section'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Section-wise Entry
+              </button>
+              <button
+                onClick={() => setActiveTab('class')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 ${
+                  activeTab === 'class'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Class-wise Entry
+              </button>
+            </nav>
+          </div>
         </div>
-      </div>
       )}
 
       {/* Section-wise Tab */}
@@ -484,6 +513,7 @@ const SarvodayaCollection: React.FC = () => {
               const reported = sectionReported[section as keyof typeof sectionReported] || 0;
               const difference = actual - reported;
               const status = difference === 0 ? 'balanced' : difference > 0 ? 'pending' : 'excess';
+              const total = actual;
               
               return (
                 <div key={section} className="bg-white rounded-lg shadow p-4">
@@ -494,7 +524,27 @@ const SarvodayaCollection: React.FC = () => {
                       status === 'pending' ? 'bg-red-500' : 'bg-orange-500'
                     }`}></div>
                   </div>
-                  <div className="space-y-1 text-sm">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-blue-600">Bus Fee:</span>
+                      <span className="font-semibold text-blue-600">₹{getSectionFeeBreakdown(section).busFee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-green-600">Development:</span>
+                      <span className="font-semibold text-green-600">₹{getSectionFeeBreakdown(section).developmentFee.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-purple-600">Others:</span>
+                      <span className="font-semibold text-purple-600">₹{getSectionFeeBreakdown(section).othersFee.toLocaleString()}</span>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-900">Total:</span>
+                        <span className="text-lg font-bold text-gray-900">₹{total.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-sm mt-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Actual:</span>
                       <span className="font-medium">₹{(actual || 0).toLocaleString()}</span>
@@ -848,15 +898,32 @@ const SarvodayaCollection: React.FC = () => {
                         </th>
                       </>
                     )}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Bus Fee
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Development Fee
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Others Fee
-                    </th>
+                    {isClassOnlyUser() && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Bus Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Development Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Others Fee
+                        </th>
+                      </>
+                    )}
+                    {!isClassOnlyUser() && (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Bus Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Development Fee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Others Fee
+                        </th>
+                      </>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Total Amount
                     </th>
