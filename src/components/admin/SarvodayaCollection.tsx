@@ -454,8 +454,8 @@ const SarvodayaCollection: React.FC = () => {
               onClick={() => setActiveTab('section')}
               className={`py-4 px-6 text-sm font-medium border-b-2 ${
                 activeTab === 'section'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                <p className="text-sm font-medium text-blue-600">Total Bus Fee</p>
+                <p className="text-2xl font-bold text-gray-900">₹{getTotalFeeBreakdown().busFee.toLocaleString()}</p>
               }`}
             >
               Section-wise Entry
@@ -464,8 +464,8 @@ const SarvodayaCollection: React.FC = () => {
               onClick={() => setActiveTab('class')}
               className={`py-4 px-6 text-sm font-medium border-b-2 ${
                 activeTab === 'class'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                <p className="text-sm font-medium text-green-600">Total Development Fee</p>
+                <p className="text-2xl font-bold text-gray-900">₹{getTotalFeeBreakdown().developmentFee.toLocaleString()}</p>
               }`}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
@@ -474,8 +474,8 @@ const SarvodayaCollection: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-green-600">Development:</span>
-                  <span className="font-semibold text-green-600">₹{getSectionFeeBreakdown(section).developmentFee.toLocaleString()}</span>
-                </div>
+                <p className="text-sm font-medium text-purple-600">Total Others Fee</p>
+                <p className="text-2xl font-bold text-gray-900">₹{getTotalFeeBreakdown().othersFee.toLocaleString()}</p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-purple-600">Others:</span>
                   <span className="font-semibold text-purple-600">₹{getSectionFeeBreakdown(section).othersFee.toLocaleString()}</span>
