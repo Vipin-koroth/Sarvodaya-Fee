@@ -503,7 +503,7 @@ const SarvodayaCollection: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">{status === 'pending' ? 'Pending:' : status === 'excess' ? 'Excess:' : 'Difference:'}</span>
-                      <span className={\`font-medium ${
+                      <span className={`font-medium ${
                         status === 'balanced' ? 'text-green-600' : 
                         status === 'pending' ? 'text-red-600' : 'text-orange-600'
                       }`}>
