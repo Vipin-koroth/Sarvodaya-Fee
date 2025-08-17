@@ -65,6 +65,7 @@ const ChangePassword: React.FC = () => {
         console.log('Verification - Password saved correctly:', verifyUser?.password === newPassword);
         
           setSuccess(false);
+        }, 3000);
       } else {
         setError('Current password is incorrect');
       }

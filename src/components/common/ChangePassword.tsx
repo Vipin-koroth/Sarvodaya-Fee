@@ -34,20 +34,13 @@ const ChangePassword: React.FC = () => {
       return;
     }
 
-    if (oldPassword === newPassword) {
-      setError('New password must be different from current password');
-      return;
-    }
-
     setLoading(true);
     
     try {
       console.log('Attempting to change password...');
-      console.log('Attempting to change password...');
       const success = await changePassword(oldPassword, newPassword);
       
       if (success) {
-        console.log('Password change successful');
         console.log('Password change successful');
         setSuccess(true);
         setOldPassword('');
@@ -57,10 +50,7 @@ const ChangePassword: React.FC = () => {
         // Show success message for longer
         setTimeout(() => {
           setSuccess(false);
-        
-        // Show success message for longer
-        setTimeout(() => {
-          setSuccess(false);
+        }, 8000);
         
         // Show success message for longer and provide feedback
         setTimeout(() => {
