@@ -227,7 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
       console.log('Current stored users:', Object.keys(storedUsers));
       
-      const userAccount = storedUsers[user.username];
+      const userAccount = storedUsers[user!.username];
       console.log('User account found:', !!userAccount);
       
       if (userAccount) {
@@ -251,16 +251,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Verify the password was saved correctly
         const verifyUsers = JSON.parse(localStorage.getItem('users') || '{}');
-        const verifyAccount = verifyUsers[user.username];
+        const verifyAccount = verifyUsers[user!.username];
         console.log('✅ Password verification after save:', verifyAccount?.password === newPassword);
         
-        console.log('✅ Password updated successfully for user:', user.username);
+        console.log('✅ Password updated successfully for user:', user!.username);
         return true;
       } else {
         console.log('❌ Old password verification failed');
         return false;
       }
-      
+    } catch (error) {
+      console.error('❌ Error changing password in localStorage:', error);
+      return false;
+    }
   };
 
   const resetUserPassword = async (username: string, newPassword: string): Promise<boolean> => {
@@ -293,22 +296,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       } else {
         // Use localStorage for password reset
-      const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
-      const targetUser = storedUsers[username];
+        const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+        const targetUser = storedUsers[username];
 
-      if (targetUser) {
-        // Update the password
-        targetUser.password = newPassword;
-        
-        // Save back to localStorage
-        localStorage.setItem('users', JSON.stringify(storedUsers));
-        
-        console.log(`Password reset successful for user: ${username}`);
-        return true;
-      } else {
-        console.error(`User ${username} not found for password reset`);
-        return false;
-      }
+        if (targetUser) {
+          // Update the password
+          targetUser.password = newPassword;
+          
+          // Save back to localStorage
+          localStorage.setItem('users', JSON.stringify(storedUsers));
+          
+          console.log(`Password reset successful for user: ${username}`);
+          return true;
+        } else {
+          console.error(`User ${username} not found for password reset`);
+          return false;
+        }
       }
     } catch (error) {
       console.error('Error resetting password:', error);
