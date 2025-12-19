@@ -168,7 +168,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Old password provided:', oldPassword);
       console.log('New password provided:', newPassword);
 
-      // Use localStorage for password changes (same as login system)
+      // Check if Supabase is configured
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
+
+      if (isSupabaseConfigured) {
+        // Use Supabase for password changes
+        const { supabase } = await import('../lib/supabase');
+        
+        // First verify the old password
+        const { data: userData, error: fetchError } = await supabase
+          .from('users')
+          .select('password')
+          .eq('username', user.username)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching user from Supabase:', fetchError);
+          // Fallback to localStorage if Supabase fails
+          return await changePasswordLocalStorage(oldPassword, newPassword);
+        }
+
+        if (!userData || userData.password !== oldPassword) {
+          console.log('❌ Old password verification failed in Supabase');
+          return false;
+        }
+
+        // Update password in Supabase
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ password: newPassword, updated_at: new Date().toISOString() })
+          .eq('username', user.username);
+
+        if (updateError) {
+          console.error('Error updating password in Supabase:', updateError);
+          return false;
+        }
+
+        console.log('✅ Password updated successfully in Supabase for user:', user.username);
+        return true;
+      } else {
+        // Use localStorage for password changes
+        return await changePasswordLocalStorage(oldPassword, newPassword);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error changing password:', error);
+      return false;
+    }
+  };
+
+  const changePasswordLocalStorage = async (oldPassword: string, newPassword: string): Promise<boolean> => {
+    try {
       const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
       console.log('Current stored users:', Object.keys(storedUsers));
       
@@ -206,16 +261,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-    } catch (error) {
-      console.error('❌ Error changing password:', error);
-      return false;
-    }
   };
 
   const resetUserPassword = async (username: string, newPassword: string): Promise<boolean> => {
     if (!user || user.role !== 'admin') return false;
 
     try {
+      // Check if Supabase is configured
+      const isSupabaseConfigured = !!(
+        import.meta.env.VITE_SUPABASE_URL && 
+        import.meta.env.VITE_SUPABASE_ANON_KEY &&
+        import.meta.env.VITE_SUPABASE_URL !== 'your_supabase_project_url' &&
+        import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key'
+      );
+
+      if (isSupabaseConfigured) {
+        // Use Supabase for password reset
+        const { supabase } = await import('../lib/supabase');
+        
+        const { error } = await supabase
+          .from('users')
+          .update({ password: newPassword, updated_at: new Date().toISOString() })
+          .eq('username', username);
+
+        if (error) {
+          console.error('Error resetting password in Supabase:', error);
+          return false;
+        }
+
+        console.log(`✅ Password reset successful in Supabase for user: ${username}`);
+        return true;
+      } else {
+        // Use localStorage for password reset
       const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
       const targetUser = storedUsers[username];
 
@@ -231,6 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         console.error(`User ${username} not found for password reset`);
         return false;
+      }
       }
     } catch (error) {
       console.error('Error resetting password:', error);
@@ -251,9 +329,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (isSupabaseConfigured) {
-        // This would need to be implemented with a server function
-        // For now, fall back to localStorage
-        console.log('Supabase user listing requires server-side implementation');
+        // For now, fall back to localStorage for user listing
+        // Supabase user management would require server-side implementation
+        console.log('Using localStorage for user listing (Supabase user management requires server-side implementation)');
       }
       
       // Use localStorage for user listing
